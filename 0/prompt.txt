@@ -1,0 +1,4 @@
+During verification, run a few checks:
+- the server tip aligns with the local
+- the root of trust aligns with known value
+- the signer (if Entire cluster) aligns with known value and the name
