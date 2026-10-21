@@ -166,7 +166,7 @@ func refWarnings(r refReport) []warning {
 }
 
 // writeRefReport prints r, with lead fields first in the same columns.
-func writeRefReport(w io.Writer, r refReport, lead ...field) error {
+func writeRefReport(w io.Writer, r refReport, st styles, lead ...field) error {
 	local := "absent"
 	if len(r.LocalTip) != 0 {
 		local = r.LocalTip.String()
@@ -184,14 +184,14 @@ func writeRefReport(w io.Writer, r refReport, lead ...field) error {
 		}
 		fields = append(fields,
 			field{"Time", formatTime(c.Time) + " (asserted by the signer)"},
-			field{"Signer", signerText(c.Signature)},
+			field{"Signer", signerText(c.Signature, st)},
 		)
 	} else {
 		fields = append(fields, field{"RSL tip", "none"})
 	}
 
 	if r.Verification != nil {
-		fields = append(fields, verificationFields(*r.Verification)...)
+		fields = append(fields, verificationFields(*r.Verification, st)...)
 	} else {
 		fields = append(fields, field{"Verification", "skipped (--no-verify)"})
 	}
@@ -213,7 +213,7 @@ func writeRefReport(w io.Writer, r refReport, lead ...field) error {
 
 	fmt.Fprintf(w, "\nHistory (%d of %d entries, newest first)\n", len(r.History.Entries), r.History.Total)
 	tw := tabwriter.NewWriter(w, 0, 4, 2, ' ', 0)
-	fmt.Fprintln(tw, "NUMBER\tENTRY\tTARGET\tTIME\tBY\tSIGNER\tSKIPPED")
+	fmt.Fprintln(tw, "NUMBER\tENTRY\tTARGET\tTIME\tBY\t"+st.plain("SIGNER")+"\tSKIPPED")
 	for _, e := range r.History.Entries {
 		by := entirefields.Parse(redact.Values(e.CustomFields)).Who()
 		if by == "" {
@@ -223,7 +223,7 @@ func writeRefReport(w io.Writer, r refReport, lead ...field) error {
 		if e.Skipped() {
 			skipped = "yes, by " + shortID(e.SkippedBy[0])
 		}
-		fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%s\t%s\t%s\n", e.Number, shortID(e.ID), shortID(e.TargetID), formatTime(e.Time), sanitize.Truncate(sanitize.Line(by), 40), signerShort(e.Signature), skipped)
+		fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%s\t%s\t%s\n", e.Number, shortID(e.ID), shortID(e.TargetID), formatTime(e.Time), sanitize.Truncate(sanitize.Line(by), 40), signerShort(e.Signature, st), skipped)
 	}
 	if err := tw.Flush(); err != nil {
 		return fmt.Errorf("write history: %w", err)
@@ -276,5 +276,5 @@ func (a *app) runRefReport(cmd *cobra.Command, flags *refCommandFlags, ref strin
 	if flags.asJSON {
 		return writeJSON(cmd.OutOrStdout(), report.toJSON())
 	}
-	return writeRefReport(cmd.OutOrStdout(), report)
+	return writeRefReport(cmd.OutOrStdout(), report, a.styles())
 }

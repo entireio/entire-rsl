@@ -79,7 +79,7 @@ func TestVerificationReasonIsSanitized(t *testing.T) {
 
 	res := verify.Result{State: verify.Failed, Reason: "root key " + hostile + " https://u:tok@h/x"}
 
-	fields := verificationFields(res)
+	fields := verificationFields(res, styles{})
 
 	require.NotEmpty(t, fields)
 	assert.NotContains(t, fields[0].value, "\x1b")

@@ -45,6 +45,17 @@ func execute(t *testing.T, env testEnv, args ...string) result {
 // stdin as what the user types.
 func executeInteractive(t *testing.T, env testEnv, interactive bool, stdin string, args ...string) result {
 	t.Helper()
+	return executeWith(t, env, interactive, false, stdin, args...)
+}
+
+// executeColor is execute with stdout on a terminal that may be coloured.
+func executeColor(t *testing.T, env testEnv, args ...string) result {
+	t.Helper()
+	return executeWith(t, env, false, true, "", args...)
+}
+
+func executeWith(t *testing.T, env testEnv, interactive, color bool, stdin string, args ...string) result {
+	t.Helper()
 
 	var stdout, stderr bytes.Buffer
 	cwd := t.TempDir()
@@ -55,6 +66,7 @@ func executeInteractive(t *testing.T, env testEnv, interactive bool, stdin strin
 		Getenv:      env.get,
 		Getwd:       func() (string, error) { return cwd, nil },
 		Interactive: func() bool { return interactive },
+		ColorStdout: func() bool { return color },
 		TrustedKeys: testutil.TrustedKeys(t),
 	})
 	root.SetArgs(args)

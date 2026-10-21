@@ -61,7 +61,7 @@ Entire-Checkpoint trailer names it.`,
 					return err
 				}
 			} else {
-				fields := append([]field{{labelRef, sanitize.Line(ref)}}, verificationFields(res)...)
+				fields := append([]field{{labelRef, sanitize.Line(ref)}}, verificationFields(res, a.styles())...)
 				if err := writeFields(cmd.OutOrStdout(), fields); err != nil {
 					return err
 				}

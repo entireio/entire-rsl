@@ -54,9 +54,10 @@ func toVerificationJSON(r verify.Result) verificationJSON {
 	return j
 }
 
-// verificationFields describes a result for a detail view.
-func verificationFields(r verify.Result) []field {
-	fields := []field{{"Verification", string(r.State) + ": " + sanitize.Line(redact.URLs(r.Reason))}}
+// verificationFields describes a result for a detail view, the state green
+// when verified, red when failed or in error, yellow when unprotected.
+func verificationFields(r verify.Result, st styles) []field {
+	fields := []field{{"Verification", stateStyle(r.State, st) + ": " + sanitize.Line(redact.URLs(r.Reason))}}
 	if r.Err != nil {
 		fields = append(fields, field{"Detail", sanitize.Lines(redact.URLs(r.Err.Error()))})
 	}
@@ -70,9 +71,35 @@ func verificationFields(r verify.Result) []field {
 		fields = append(fields, field{"Rules", sanitize.Line(strings.Join(r.Rules, ", "))})
 	}
 	for _, c := range r.Checks {
-		fields = append(fields, field{"Check " + c.Name, string(c.Status) + ": " + sanitize.Line(redact.URLs(c.Detail))})
+		fields = append(fields, field{"Check " + c.Name, checkStyle(c.Status, st) + ": " + sanitize.Line(redact.URLs(c.Detail))})
 	}
 	return fields
+}
+
+func stateStyle(state verify.State, st styles) string {
+	switch state {
+	case verify.Verified:
+		return st.good(string(state))
+	case verify.Unprotected:
+		return st.warn(string(state))
+	case verify.Failed, verify.Error:
+		return st.bad(string(state))
+	default:
+		return string(state)
+	}
+}
+
+func checkStyle(status verify.CheckStatus, st styles) string {
+	switch status {
+	case verify.CheckPass:
+		return st.good(string(status))
+	case verify.CheckFail:
+		return st.bad(string(status))
+	case verify.CheckSkip:
+		return string(status)
+	default:
+		return string(status)
+	}
 }
 
 // verifyFlags are the verification flags of the detail commands.

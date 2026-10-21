@@ -130,7 +130,7 @@ ULID), or by a full commit ID whose Entire-Checkpoint trailer names it.`,
 			if len(target.commit) != 0 {
 				fields = append(fields, field{"From commit", target.commit.String() + " (Entire-Checkpoint trailer)"})
 			}
-			return writeRefReport(cmd.OutOrStdout(), report, fields...)
+			return writeRefReport(cmd.OutOrStdout(), report, a.styles(), fields...)
 		},
 	}
 	flags.register(cmd)

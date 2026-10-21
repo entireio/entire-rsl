@@ -79,7 +79,7 @@ use 'entire rsl verify'.`,
 				fmt.Fprintln(cmd.OutOrStdout(), "No RSL entries match.")
 				return nil
 			}
-			return writeLogTable(cmd.OutOrStdout(), entries)
+			return writeLogTable(cmd.OutOrStdout(), entries, a.styles())
 		},
 	}
 

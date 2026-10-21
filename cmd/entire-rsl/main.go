@@ -48,6 +48,7 @@ func run() int {
 		Interactive: func() bool {
 			return term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stderr.Fd()))
 		},
+		ColorStdout: func() bool { return term.IsTerminal(int(os.Stdout.Fd())) },
 
 		SetDefaultLogger: slog.SetDefault,
 	})

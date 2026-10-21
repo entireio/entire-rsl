@@ -41,7 +41,7 @@ hex characters. Only entries reachable from the RSL tip are found.`,
 			if asJSON {
 				return writeJSON(cmd.OutOrStdout(), entryDocJSON{SchemaVersion: schemaVersion, Entry: toEntryJSON(e)})
 			}
-			return writeFields(cmd.OutOrStdout(), entryFields(e))
+			return writeFields(cmd.OutOrStdout(), entryFields(e, a.styles()))
 		},
 	}
 

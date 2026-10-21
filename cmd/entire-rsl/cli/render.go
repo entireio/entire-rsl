@@ -41,30 +41,30 @@ func formatTime(t time.Time) string {
 	return t.UTC().Format(time.RFC3339)
 }
 
-// signerText describes a signature in a phrase. Only a valid signature names
-// a key.
-func signerText(s rslread.Signature) string {
+// signerText describes a signature in a phrase, green when it checks out and
+// red otherwise. Only a valid signature names a key.
+func signerText(s rslread.Signature, st styles) string {
 	if !s.Valid {
-		return s.Method + ": " + s.Problem
+		return st.bad(s.Method + ": " + s.Problem)
 	}
 	if name := signerName(s); name != "" {
-		return s.KeyID + " (" + name + "), signature valid"
+		return st.good(s.KeyID + " (" + name + "), signature valid")
 	}
-	return s.KeyID + ", signature valid"
+	return st.good(s.KeyID + ", signature valid")
 }
 
 // signerShort is signerText for a table cell.
-func signerShort(s rslread.Signature) string {
+func signerShort(s rslread.Signature, st styles) string {
 	if !s.Valid {
 		if s.Method == rslread.MethodNone {
-			return "unsigned"
+			return st.bad("unsigned")
 		}
-		return "invalid"
+		return st.bad("invalid")
 	}
 	if name := signerName(s); name != "" {
-		return name
+		return st.good(name)
 	}
-	return sanitize.Truncate(s.KeyID, 20)
+	return st.good(sanitize.Truncate(s.KeyID, 20))
 }
 
 func plural(n int, one, many string) string {
@@ -75,9 +75,9 @@ func plural(n int, one, many string) string {
 }
 
 // writeLogTable prints entries as a table, newest first.
-func writeLogTable(w io.Writer, entries []rslread.Entry) error {
+func writeLogTable(w io.Writer, entries []rslread.Entry, st styles) error {
 	tw := tabwriter.NewWriter(w, 0, 4, 2, ' ', 0)
-	fmt.Fprintln(tw, "NUMBER\tENTRY\tTYPE\tREF\tTARGET\tTIME\tSIGNER\tSKIPPED")
+	fmt.Fprintln(tw, "NUMBER\tENTRY\tTYPE\tREF\tTARGET\tTIME\t"+st.plain("SIGNER")+"\tSKIPPED")
 	for _, e := range entries {
 		ref := sanitize.Line(e.RefName)
 		target := shortID(e.TargetID)
@@ -96,7 +96,7 @@ func writeLogTable(w io.Writer, entries []rslread.Entry) error {
 		}
 
 		fmt.Fprintf(tw, "%d\t%s\t%s\t%s\t%s\t%s\t%s\t%s\n",
-			e.Number, shortID(e.ID), e.Kind, ref, target, formatTime(e.Time), signerShort(e.Signature), skipped)
+			e.Number, shortID(e.ID), e.Kind, ref, target, formatTime(e.Time), signerShort(e.Signature, st), skipped)
 	}
 	if err := tw.Flush(); err != nil {
 		return fmt.Errorf("write table: %w", err)
@@ -123,7 +123,7 @@ func writeFields(w io.Writer, fields []field) error {
 }
 
 // entryFields describes one entry in full.
-func entryFields(e rslread.Entry) []field {
+func entryFields(e rslread.Entry, st styles) []field {
 	fields := []field{
 		{"Entry", fmt.Sprintf("#%d %s", e.Number, e.ID.String())},
 		{"Type", e.Kind},
@@ -155,7 +155,7 @@ func entryFields(e rslread.Entry) []field {
 
 	fields = append(fields,
 		field{"Time", formatTime(e.Time) + " (asserted by the signer)"},
-		field{"Signer", signerText(e.Signature)},
+		field{"Signer", signerText(e.Signature, st)},
 		field{"Committer", sanitize.Line(e.Committer.Name) + " <" + sanitize.Line(e.Committer.Email) + "> (unverified)"},
 	)
 

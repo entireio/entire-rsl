@@ -26,6 +26,9 @@ type Options struct {
 	// Interactive reports whether prompts can be shown and answered: stdin
 	// and stderr are terminals. Nil means never.
 	Interactive func() bool
+	// ColorStdout reports whether stdout is a terminal that may be coloured.
+	// Nil means never.
+	ColorStdout func() bool
 
 	// TrustedKeys extend the built-in Entire key table the verification
 	// checks accept. Tests use it for fixture keys.
