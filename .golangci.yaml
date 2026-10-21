@@ -74,6 +74,11 @@ linters:
     errcheck:
       check-type-assertions: true
       check-blank: true
+    wrapcheck:
+      # The repository's own packages already return errors with context.
+      # Wrapping them again at every call site only repeats it.
+      ignore-package-globs:
+        - github.com/entireio/entire-rsl/internal/*
     forbidigo:
       analyze-types: true
       forbid:

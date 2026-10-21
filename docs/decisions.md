@@ -88,3 +88,43 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   the null device and `GIT_CONFIG_NOSYSTEM=1` before any test runs. Tests stay
   parallel because nothing changes the environment afterwards.
 - **Rejected:** `t.Setenv`, which forbids `t.Parallel()`.
+
+## 2026-10-21: entire-rsl checks SSH signatures before naming a signer
+
+- **Context:** the key embedded in an SSH signature is chosen by whoever made
+  the signature, so naming it unchecked would let a forged entry display as
+  signed by an Entire cluster in `log` and `entry`.
+- **Decision:** `internal/rslread` names a key only after `sshsig.Verify`
+  over the entry's signed payload, with namespace `git` and SHA-512, exactly as
+  gittuf's SSH verifier does (`internal/signerverifier/ssh/ssh.go:38`).
+  Signatures with more than one armored block are refused, as
+  `pkg/gitinterface/signature.go` requires of verifiers. GPG and x509
+  signatures are reported by method only. A valid signature proves who signed,
+  not that they may: authorization stays with gittuf verification.
+- **Rejected:** showing the embedded key unchecked, and reimplementing
+  gittuf's policy evaluation to decide authorization in `log`.
+
+## 2026-10-21: Cluster names come from a built-in table
+
+- **Context:** Phase 0 answer 2 asks for the cluster name next to the signer,
+  best effort and built into the CLI. Entire publishes no unauthenticated
+  endpoint for signer keys.
+- **Decision:** `internal/clusters` maps the public RSL signer and fleet root
+  fingerprints in entiredb `core/cluster/fixtures/clusters.{prod,staging}.yaml`
+  (e64a4f389a) to cluster names. A test derives each fingerprint from the
+  fixture's public key. The table only labels keys and never affects trust.
+- **Rejected:** fetching keys at run time, which needs network access and an
+  authenticated admin route (`GET /api/admin/repos/{repoID}/trust`).
+
+## 2026-10-21: RSL walks start at the tip and build entries lazily
+
+- **Context:** an annotation is newer than the entries it refers to, and gittuf
+  parses any commit that reads as an entry, reachable or not.
+- **Decision:** every walk starts at the RSL tip, so an entry is only read when
+  reachable and all its annotations have been seen first. `entry <id>` walks to
+  the entry rather than parsing the named commit directly. Walks parse each
+  entry, and only entries a command returns are completed with commit
+  metadata and a signature check. Walks stop on context cancellation and after
+  five million entries.
+- **Rejected:** `rsl.GetEntry` on the named ID, which would accept commits that
+  are not in the log.

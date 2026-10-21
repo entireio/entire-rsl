@@ -7,6 +7,7 @@ replace github.com/gittuf/gittuf => github.com/pjbgf/gittuf v0.0.0-2026101514345
 require (
 	github.com/gittuf/gittuf v0.17.0
 	github.com/go-git/go-git/v6 v6.0.0-beta.1
+	github.com/hiddeco/sshsig v0.2.0
 	github.com/spf13/cobra v1.10.2
 	github.com/stretchr/testify v1.12.1
 	golang.org/x/crypto v0.57.0
@@ -111,7 +112,6 @@ require (
 	github.com/hashicorp/go-sockaddr v1.0.7 // indirect
 	github.com/hashicorp/hcl v1.0.1-vault-7 // indirect
 	github.com/hashicorp/vault/api v1.23.0 // indirect
-	github.com/hiddeco/sshsig v0.2.0 // indirect
 	github.com/in-toto/attestation v1.2.0 // indirect
 	github.com/in-toto/in-toto-golang v0.11.0 // indirect
 	github.com/inconshreveable/mousetrap v1.1.0 // indirect

@@ -13,8 +13,8 @@ const (
 	CheckpointULID = "01JC0FFEE0BADC0DE00000007Z"
 	CheckpointHex  = "a3b2c4d5e6f7"
 	RepositoryID   = "01J9ZREPQ0000000000000000R"
-	PusherJane     = "01J9ZUSER000000000000000JD (jane)"
-	PusherBob      = "01J9ZUSER000000000000000BB (bob)"
+	PusherJane     = "01J9ZACCT000000000000000JD (jane)"
+	PusherBob      = "01J9ZACCT000000000000000BB (bob)"
 )
 
 // Scenario is a repository shaped like one Entire's server records: a root
