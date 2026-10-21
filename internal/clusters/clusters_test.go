@@ -35,8 +35,12 @@ func TestFingerprintsDeriveFromFixtureKeys(t *testing.T) {
 			name = k.Environment + " root"
 		}
 
+		assert.Equal(t, publicKeys[name], k.PublicKey, name)
 		raw, err := base64.StdEncoding.DecodeString(publicKeys[name])
 		require.NoError(t, err, name)
+		pubKey, err := k.CryptoPublicKey()
+		require.NoError(t, err, name)
+		assert.Equal(t, raw, []byte(pubKey), name)
 		pub, err := ssh.ParsePublicKey(sshWireKey(raw))
 		require.NoError(t, err, name)
 

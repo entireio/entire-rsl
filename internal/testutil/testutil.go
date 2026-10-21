@@ -10,12 +10,14 @@ import (
 	"crypto"
 	"crypto/ed25519"
 	"crypto/sha256"
+	"encoding/base64"
 	"encoding/pem"
 	"os"
 	"os/exec"
 	"testing"
 	"time"
 
+	"github.com/entireio/entire-rsl/internal/clusters"
 	"github.com/gittuf/gittuf/pkg/githash"
 	"github.com/gittuf/gittuf/pkg/gitinterface"
 	"github.com/gittuf/gittuf/pkg/policy"
@@ -88,6 +90,18 @@ func (k Key) Fingerprint(t testing.TB) string {
 		t.Fatalf("fixture key: %v", err)
 	}
 	return ssh.FingerprintSHA256(pub)
+}
+
+// TrustedKeys describes the fixture root and cluster keys the way the
+// built-in table describes Entire's, so verification checks accept them.
+func TrustedKeys(t testing.TB) []clusters.Key {
+	t.Helper()
+
+	root, cluster := NewKey(t, "root"), NewKey(t, "cluster")
+	return []clusters.Key{
+		{PublicKey: base64.StdEncoding.EncodeToString(root.Public), Fingerprint: root.Fingerprint(t), Environment: "test", Role: clusters.RoleFleetRoot, Generation: 1},
+		{PublicKey: base64.StdEncoding.EncodeToString(cluster.Public), Fingerprint: cluster.Fingerprint(t), Cluster: "test-cluster", Region: "local", Environment: "test", Role: clusters.RoleRSLSigner, Generation: 1},
+	}
 }
 
 // Repo is a fixture repository.

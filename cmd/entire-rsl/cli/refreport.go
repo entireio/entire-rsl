@@ -252,11 +252,11 @@ func (f *refCommandFlags) validate() error {
 }
 
 // addVerification runs verification for the report unless it was skipped.
-func (a *app) addVerification(ctx context.Context, s *session, r *refReport, flags verifyFlags) {
+func (a *app) addVerification(ctx context.Context, s *session, r *refReport, flags verifyFlags, local localTip) {
 	if flags.noVerify {
 		return
 	}
-	res := a.verify(ctx, s, r.Ref, flags)
+	res := a.verify(ctx, s, r.Ref, flags, local)
 	r.Verification = &res
 }
 
@@ -271,7 +271,7 @@ func (a *app) runRefReport(cmd *cobra.Command, flags *refCommandFlags, ref strin
 	if err != nil {
 		return err
 	}
-	a.addVerification(cmd.Context(), s, &report, flags.verify)
+	a.addVerification(cmd.Context(), s, &report, flags.verify, s.localRef)
 
 	if flags.asJSON {
 		return writeJSON(cmd.OutOrStdout(), report.toJSON())

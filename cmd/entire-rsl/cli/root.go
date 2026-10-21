@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"runtime"
 
+	"github.com/entireio/entire-rsl/internal/clusters"
 	"github.com/entireio/entire-rsl/internal/versioninfo"
 	"github.com/spf13/cobra"
 )
@@ -25,6 +26,10 @@ type Options struct {
 	// Interactive reports whether prompts can be shown and answered: stdin
 	// and stderr are terminals. Nil means never.
 	Interactive func() bool
+
+	// TrustedKeys extend the built-in Entire key table the verification
+	// checks accept. Tests use it for fixture keys.
+	TrustedKeys []clusters.Key
 
 	// SetDefaultLogger installs the debug logger as the process default so
 	// gittuf's own slog output reaches it. Nil leaves the default alone.

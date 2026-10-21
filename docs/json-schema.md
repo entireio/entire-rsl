@@ -158,10 +158,18 @@ is given.
 | `verified_tip` | string | For `verified`: the target of the latest RSL entry, which gittuf verified. |
 | `from_entry` | string | The ref's first RSL entry, where full verification starts. |
 | `rules` | array of string | Policy rules covering the ref. Global rules carry a `global:` prefix. |
+| `checks` | array | entire-rsl's own checks, each `{name, status, detail}`. `status` is `pass`, `fail` or `skip`. A failed check makes the state `failed`. |
+
+Checks:
+
+| `name` | Passes when |
+| --- | --- |
+| `tip` | The local ref equals the target the ref's latest RSL entry records. Skipped when the ref does not exist locally. |
+| `root_of_trust` | The policy's first root of trust is signed by a known root key (Entire's prod or staging root, or a `--root-key`), and every current root key is known. |
+| `signer` | For a repository rooted by Entire, the ref's latest entry is signed by a known Entire cluster key of the same environment. Skipped for other roots. |
 
 `verified` means gittuf's full verification of every RSL entry for the ref
-returned no error. It says nothing about the local ref, which `branch` and
-`tag` compare separately (`local_drift`).
+returned no error and no check failed.
 
 ## `verify`
 

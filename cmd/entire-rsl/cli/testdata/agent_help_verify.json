@@ -11,6 +11,12 @@
       "usage": "print JSON"
     },
     {
+      "name": "root-key",
+      "type": "stringArray",
+      "default": "[]",
+      "usage": "also accept this root of trust, an ed25519 key as an \"ssh-ed25519 ...\" line or @file (repeatable)"
+    },
+    {
       "name": "timeout",
       "type": "duration",
       "default": "5m0s",

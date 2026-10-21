@@ -48,12 +48,12 @@ Entire-Checkpoint trailer names it.`,
 				return err
 			}
 
-			ref, err := resolveVerifyTarget(cmd.Context(), s, args[0])
+			ref, local, err := resolveVerifyTarget(cmd.Context(), s, args[0])
 			if err != nil {
 				return err
 			}
 
-			res := a.verify(cmd.Context(), s, ref, flags)
+			res := a.verify(cmd.Context(), s, ref, flags, local)
 			code := exitCodeFor(res.State)
 
 			if asJSON {
@@ -79,8 +79,9 @@ Entire-Checkpoint trailer names it.`,
 	return cmd
 }
 
-// resolveVerifyTarget turns a verify target into a full ref name.
-func resolveVerifyTarget(ctx context.Context, s *session, target string) (string, error) {
+// resolveVerifyTarget turns a verify target into a full ref name and the
+// lookup of its local value.
+func resolveVerifyTarget(ctx context.Context, s *session, target string) (string, localTip, error) {
 	isCheckpoint := refresolve.IsCheckpointID(target)
 	isCommit := refresolve.IsCommitID(target)
 
@@ -104,20 +105,23 @@ func resolveVerifyTarget(ctx context.Context, s *session, target string) (string
 	ref, err := refresolve.Resolve(target, exists)
 	switch {
 	case err == nil && (isCheckpoint || isCommit):
-		return "", usageError(fmt.Errorf("%w %q is both a ref (%s) and a checkpoint or commit ID. Name the ref in full", refresolve.ErrAmbiguous, target, ref))
+		return "", nil, usageError(fmt.Errorf("%w %q is both a ref (%s) and a checkpoint or commit ID. Name the ref in full", refresolve.ErrAmbiguous, target, ref))
 	case err == nil:
-		return ref, nil
+		if id, ok := refresolve.CheckpointFromRef(ref); ok {
+			return ref, s.localCheckpoint(id), nil
+		}
+		return ref, s.localRef, nil
 	case errors.Is(err, refresolve.ErrAmbiguous), errors.Is(err, refname.ErrInvalid):
-		return "", usageError(err)
+		return "", nil, usageError(err)
 	case !errors.Is(err, refresolve.ErrNotFound):
-		return "", err
+		return "", nil, err
 	case isCheckpoint || isCommit:
 		cp, err := resolveCheckpoint(s, target)
 		if err != nil {
-			return "", err
+			return "", nil, err
 		}
-		return refresolve.CheckpointRef(cp.id), nil
+		return refresolve.CheckpointRef(cp.id), s.localCheckpoint(cp.id), nil
 	default:
-		return "", err
+		return "", nil, err
 	}
 }

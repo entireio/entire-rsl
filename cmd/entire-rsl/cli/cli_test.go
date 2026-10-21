@@ -55,6 +55,7 @@ func executeInteractive(t *testing.T, env testEnv, interactive bool, stdin strin
 		Getenv:      env.get,
 		Getwd:       func() (string, error) { return cwd, nil },
 		Interactive: func() bool { return interactive },
+		TrustedKeys: testutil.TrustedKeys(t),
 	})
 	root.SetArgs(args)
 

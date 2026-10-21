@@ -177,10 +177,8 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   selectors removed, `core.fsmonitor` and `core.hooksPath` neutralised through
   `GIT_CONFIG_COUNT`. Follow-up: expose coverage over a `gitstore.Storer` in
   the fork's `pkg/policy`.
-- **Local drift does not fail verification:** gittuf's `VerifyRef` also checks
-  the local tip (`experimental/gittuf/verify.go:210`). SPEC.md section 3
-  reports drift as a warning, so `verified` covers the RSL history and
-  `branch`/`tag` report drift separately.
+- **Local drift:** superseded by the checks entry below, which fails
+  verification on drift.
 - **Known gittuf limitation:** when a ref's very first entry is a violation,
   gittuf cannot recover even if it is skipped and fixed, because it has no last
   good state (`TODO: what if the very first entry for a ref is a violation?`).
@@ -246,3 +244,28 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   CLI's accessible mode.
 - **Rejected:** tracking refs only (breaks verification of a fetched RSL),
   and `huh` forms (a new dependency for two prompts).
+
+## 2026-10-21: Verification runs tip, root of trust and signer checks
+
+- **Context:** the user asked, during Phase 1, for verification to check that
+  the server tip matches the local ref, the root of trust matches a known
+  value, and an Entire cluster signer matches its known key and name.
+- **Decision:** after gittuf's verification, `internal/verify` runs three
+  checks and turns `verified` into `failed` when one fails:
+  - `tip`: the target of the ref's latest RSL entry equals the local ref, as
+    gittuf's own `VerifyRef` requires (`experimental/gittuf/verify.go:210`).
+    Skipped when the ref does not exist locally, since there is nothing to
+    compare.
+  - `root_of_trust`: `pkg/policy.InspectRoot` with `WithInitialRootKeys`
+    proves the policy history starts from a known root and every transition
+    verifies. gittuf requires every initial key it is given to have signed
+    the first root (`internal/policy/policy.go:301`, threshold = number of
+    keys), so each known root is tried alone. The current root keys must all
+    be known too. Known roots are Entire's prod and staging fleet roots, plus
+    `--root-key` ed25519 keys for self-managed gittuf repositories.
+  - `signer`: for an Entire root, the latest entry's checked SSH signer must
+    be a known Entire cluster key of the same environment, named in the
+    result. Skipped for user-supplied roots.
+- **Rejected:** reporting drift only as a warning (the user asked for it as a
+  check), and accepting unknown roots silently, which would let any
+  self-rooted RSL verify as if Entire had signed it.

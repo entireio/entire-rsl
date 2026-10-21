@@ -2,14 +2,18 @@ package verify
 
 import (
 	"context"
+	"errors"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"testing"
 	"time"
 
+	"github.com/entireio/entire-rsl/internal/clusters"
 	"github.com/entireio/entire-rsl/internal/store"
 	"github.com/entireio/entire-rsl/internal/testutil"
+	"github.com/gittuf/gittuf/pkg/githash"
+	"github.com/gittuf/gittuf/pkg/gitstore"
 	gogit "github.com/go-git/go-git/v6"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -22,13 +26,44 @@ func TestMain(m *testing.M) {
 
 func run(ctx context.Context, t *testing.T, dir, ref string, timeout time.Duration) Result {
 	t.Helper()
+	return runWithKeys(ctx, t, dir, ref, timeout, testutil.TrustedKeys(t))
+}
+
+func runWithKeys(ctx context.Context, t *testing.T, dir, ref string, timeout time.Duration, keys []clusters.Key) Result {
+	t.Helper()
 
 	g, err := gogit.PlainOpen(dir)
 	require.NoError(t, err)
 	st, err := store.New(g)
 	require.NoError(t, err)
 
-	return Verify(ctx, st, ref, Options{Logger: slog.New(slog.DiscardHandler), RepoPath: dir, Timeout: timeout})
+	localTip := func(ref string) (githash.Hash, error) {
+		tip, err := st.GetReference(ref)
+		if errors.Is(err, gitstore.ErrReferenceNotFound) {
+			return nil, nil
+		}
+		return tip, err
+	}
+
+	return Verify(ctx, st, ref, Options{
+		Logger:   slog.New(slog.DiscardHandler),
+		RepoPath: dir,
+		Timeout:  timeout,
+		LocalTip: localTip,
+		Keys:     keys,
+	})
+}
+
+func checkByName(t *testing.T, res Result, name string) Check {
+	t.Helper()
+
+	for _, c := range res.Checks {
+		if c.Name == name {
+			return c
+		}
+	}
+	t.Fatalf("no %s check in %+v", name, res.Checks)
+	return Check{}
 }
 
 func TestScenarioStates(t *testing.T) {
@@ -213,4 +248,104 @@ func TestFirstEntryViolationFailsEvenWhenSkipped(t *testing.T) {
 	res := run(t.Context(), t, r.Dir, "refs/heads/main", time.Minute)
 
 	assert.Equal(t, Failed, res.State, "gittuf has no last good state to recover to")
+}
+
+func TestChecksPassOnTheScenario(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+
+	res := run(t.Context(), t, sc.Dir, "refs/heads/main", time.Minute)
+
+	require.Equal(t, Verified, res.State, res.Reason)
+	assert.Equal(t, CheckPass, checkByName(t, res, CheckTip).Status)
+	root := checkByName(t, res, CheckRoot)
+	assert.Equal(t, CheckPass, root.Status, root.Detail)
+	assert.Contains(t, root.Detail, "Entire test root")
+	signer := checkByName(t, res, CheckSigner)
+	assert.Equal(t, CheckPass, signer.Status, signer.Detail)
+	assert.Contains(t, signer.Detail, "Entire test test-cluster (local)")
+}
+
+func TestLocalDriftFailsVerification(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	sc.SetRef("refs/heads/main", sc.MainFirst)
+
+	res := run(t.Context(), t, sc.Dir, "refs/heads/main", time.Minute)
+
+	assert.Equal(t, Failed, res.State)
+	assert.Contains(t, res.Reason, "tip check failed")
+	assert.Equal(t, CheckFail, checkByName(t, res, CheckTip).Status)
+}
+
+func TestMissingLocalRefSkipsTheTipCheck(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	require.NoError(t, sc.Git.DeleteReference("refs/heads/feature"))
+
+	res := run(t.Context(), t, sc.Dir, "refs/heads/feature", time.Minute)
+
+	assert.Equal(t, Verified, res.State, res.Reason)
+	assert.Equal(t, CheckSkip, checkByName(t, res, CheckTip).Status)
+}
+
+func TestUnknownRootFailsVerification(t *testing.T) {
+	t.Parallel()
+
+	r := testutil.NewRepo(t)
+	r.Root = testutil.NewKey(t, "someone else's root")
+	r.Bootstrap()
+	r.Commit("refs/heads/main", "only")
+	r.Record(r.Cluster, "refs/heads/main", nil)
+
+	res := run(t.Context(), t, r.Dir, "refs/heads/main", time.Minute)
+
+	assert.Equal(t, Failed, res.State)
+	root := checkByName(t, res, CheckRoot)
+	assert.Equal(t, CheckFail, root.Status)
+	assert.Contains(t, root.Detail, "not signed by a known root key")
+	assert.Equal(t, CheckSkip, checkByName(t, res, CheckSigner).Status)
+}
+
+func TestSignerOutsideTheClusterTableFailsVerification(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	keys := testutil.TrustedKeys(t)[:1] // the root only
+
+	res := runWithKeys(t.Context(), t, sc.Dir, "refs/heads/main", time.Minute, keys)
+
+	assert.Equal(t, Failed, res.State)
+	signer := checkByName(t, res, CheckSigner)
+	assert.Equal(t, CheckFail, signer.Status)
+	assert.Contains(t, signer.Detail, "not a known Entire cluster key")
+}
+
+func TestSignerFromAnotherEnvironmentFailsVerification(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	keys := testutil.TrustedKeys(t)
+	keys[1].Environment = "staging"
+
+	res := runWithKeys(t.Context(), t, sc.Dir, "refs/heads/main", time.Minute, keys)
+
+	assert.Equal(t, Failed, res.State)
+	assert.Contains(t, checkByName(t, res, CheckSigner).Detail, "rooted in test")
+}
+
+func TestUserSuppliedRootSkipsTheSignerCheck(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	keys := testutil.TrustedKeys(t)[:1]
+	keys[0].Environment = clusters.EnvironmentUser
+
+	res := runWithKeys(t.Context(), t, sc.Dir, "refs/heads/main", time.Minute, keys)
+
+	assert.Equal(t, Verified, res.State, res.Reason)
+	assert.Equal(t, CheckSkip, checkByName(t, res, CheckSigner).Status)
 }

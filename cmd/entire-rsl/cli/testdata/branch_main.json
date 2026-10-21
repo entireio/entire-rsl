@@ -129,11 +129,28 @@
   "warnings": [],
   "verification": {
     "state": "verified",
-    "reason": "gittuf verified every RSL entry for the ref against the policy",
+    "reason": "gittuf verified every RSL entry for the ref against the policy, and every check passed",
     "verified_tip": "8c9626aa9daaf78041a7db7045b058738597e154",
     "from_entry": "d424aa2b5963fed76767d1335a83938adc61a300",
     "rules": [
       "authorize-rsl-signers"
+    ],
+    "checks": [
+      {
+        "name": "tip",
+        "status": "pass",
+        "detail": "the local ref matches the tip the RSL records (8c9626aa9daaf78041a7db7045b058738597e154)"
+      },
+      {
+        "name": "root_of_trust",
+        "status": "pass",
+        "detail": "anchored to Entire test root (SHA256:XoKzzUGnLJ4GK8IPQ+7CYaXXU5HjoVZaneZsu6w4Mtw), root version 1"
+      },
+      {
+        "name": "signer",
+        "status": "pass",
+        "detail": "signed by Entire test test-cluster (local) (SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE)"
+      }
     ]
   }
 }

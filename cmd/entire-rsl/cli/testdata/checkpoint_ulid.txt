@@ -1,14 +1,17 @@
-Checkpoint    01JC0FFEE0BADC0DE00000007Z
-Ref           refs/entire/checkpoints/7Z/01JC0FFEE0BADC0DE00000007Z
-Local tip     fe16799c32d2f19aeba4d415f9b42f37799acc3e
-RSL tip       fe16799c32d2f19aeba4d415f9b42f37799acc3e (entry #8)
-Pushed by     jane, as recorded by Entire
-Time          1995-10-26T09:00:00Z (asserted by the signer)
-Signer        SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE, signature valid
-Verification  verified: gittuf verified every RSL entry for the ref against the policy
-Verified tip  fe16799c32d2f19aeba4d415f9b42f37799acc3e
-Checked from  e0ff9ff266d46ca738826fd52b1db5dab6f46271
-Rules         authorize-rsl-signers
+Checkpoint           01JC0FFEE0BADC0DE00000007Z
+Ref                  refs/entire/checkpoints/7Z/01JC0FFEE0BADC0DE00000007Z
+Local tip            fe16799c32d2f19aeba4d415f9b42f37799acc3e
+RSL tip              fe16799c32d2f19aeba4d415f9b42f37799acc3e (entry #8)
+Pushed by            jane, as recorded by Entire
+Time                 1995-10-26T09:00:00Z (asserted by the signer)
+Signer               SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE, signature valid
+Verification         verified: gittuf verified every RSL entry for the ref against the policy, and every check passed
+Verified tip         fe16799c32d2f19aeba4d415f9b42f37799acc3e
+Checked from         e0ff9ff266d46ca738826fd52b1db5dab6f46271
+Rules                authorize-rsl-signers
+Check tip            pass: the local ref matches the tip the RSL records (fe16799c32d2f19aeba4d415f9b42f37799acc3e)
+Check root_of_trust  pass: anchored to Entire test root (SHA256:XoKzzUGnLJ4GK8IPQ+7CYaXXU5HjoVZaneZsu6w4Mtw), root version 1
+Check signer         pass: signed by Entire test test-cluster (local) (SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE)
 
 History (1 of 1 entries, newest first)
 NUMBER  ENTRY         TARGET        TIME                  BY    SIGNER                SKIPPED

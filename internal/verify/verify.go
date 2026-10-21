@@ -17,6 +17,7 @@ import (
 	"log/slog"
 	"time"
 
+	"github.com/entireio/entire-rsl/internal/clusters"
 	"github.com/entireio/entire-rsl/internal/rslread"
 	"github.com/entireio/entire-rsl/internal/store"
 	"github.com/gittuf/gittuf/experimental/gittuf"
@@ -54,7 +55,10 @@ type Result struct {
 	// Reason explains the state in a sentence.
 	Reason string
 	// Rules names the policy rules that cover the ref.
-	Rules    []string
+	Rules []string
+	// Checks are entire-rsl's own checks, run once gittuf has evaluated the
+	// ref.
+	Checks   []Check
 	Duration time.Duration
 }
 
@@ -64,7 +68,11 @@ type Options struct {
 	// RepoPath is the repository root, used to list policy rules through
 	// gittuf's git binary backed repository.
 	RepoPath string
-	Timeout  time.Duration
+	// LocalTip reads the local value of a ref, nil when it does not exist.
+	LocalTip func(ref string) (githash.Hash, error)
+	// Keys are the root and RSL signer keys the checks accept.
+	Keys    []clusters.Key
+	Timeout time.Duration
 }
 
 // Verify runs full gittuf verification for ref.
@@ -140,11 +148,19 @@ func Verify(ctx context.Context, st *store.Store, ref string, opts Options) (res
 			return errorResult(ctx, ref, "verification could not complete", err)
 		}
 		res.State, res.Reason, res.Err = Failed, "gittuf verification failed", err
-		return res
+	} else {
+		res.State, res.ExpectedTip = Verified, tip
+		res.Reason = "gittuf verified every RSL entry for the ref against the policy, and every check passed"
 	}
 
-	res.State, res.ExpectedTip = Verified, tip
-	res.Reason = "gittuf verified every RSL entry for the ref against the policy"
+	res.Checks = runChecks(ctx, st, reader, ref, res, opts)
+	if err := ctx.Err(); err != nil {
+		return errorResult(ctx, ref, "verification could not complete", err)
+	}
+	if failed, ok := failedCheck(res.Checks); ok && res.State == Verified {
+		res.State, res.ExpectedTip = Failed, nil
+		res.Reason = "gittuf verified the ref, but the " + failed.Name + " check failed: " + failed.Detail
+	}
 	return res
 }
 

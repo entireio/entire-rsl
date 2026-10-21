@@ -107,14 +107,15 @@ ULID), or by a full commit ID whose Entire-Checkpoint trailer names it.`,
 			}
 
 			ref := refresolve.CheckpointRef(target.id)
-			report, err := buildRefReport(cmd.Context(), s, ref, flags.history, s.localCheckpoint(target.id))
+			local := s.localCheckpoint(target.id)
+			report, err := buildRefReport(cmd.Context(), s, ref, flags.history, local)
 			if err != nil {
 				return err
 			}
 			if len(report.LocalTip) == 0 && report.History.Total == 0 {
 				return fmt.Errorf("%w: %s has no local ref %s and no RSL entries", ErrCheckpointNotFound, target.id, ref)
 			}
-			a.addVerification(cmd.Context(), s, &report, flags.verify)
+			a.addVerification(cmd.Context(), s, &report, flags.verify, local)
 
 			if flags.asJSON {
 				out := checkpointJSON{refReportJSON: report.toJSON(), Checkpoint: checkpointInfoJSON{ID: target.id, ResolvedFrom: "id"}}
