@@ -1,0 +1,5 @@
+Perhaps better to show the range of RSL entries checked, show me first what they would look like before fixing it
+
+---
+
+B is LGTM
