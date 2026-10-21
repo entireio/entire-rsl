@@ -75,9 +75,12 @@ gittuf policy do.
 
 `entire rsl refresh [remote]` fetches the remote's gittuf refs into
 `refs/remotes/<remote>/gittuf/*` and updates the local `refs/gittuf/*` refs:
-missing ones are created and existing ones are fast-forwarded. A local ref
-the remote's does not descend from is left alone and reported as `diverged`,
-with exit code 1. Branches, tags and checkpoint refs are not fetched, so fetch
+missing ones are created and existing ones are fast-forwarded. Each ref shows
+how many commits it gained, and the RSL also its entry numbers before and
+after, such as `+2 commits (entry #14 → #16)`. A local ref the remote's does
+not descend from is left alone and reported as `diverged`, with exit code 1.
+When several remotes are configured and none is named, `origin` is offered
+first. Branches, tags and checkpoint refs are not fetched, so fetch
 them with git before comparing them with the RSL.
 
 ### Fetching a missing RSL

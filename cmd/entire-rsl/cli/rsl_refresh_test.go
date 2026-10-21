@@ -9,6 +9,18 @@ import (
 	"github.com/stretchr/testify/require"
 )
 
+func refreshRefs(t *testing.T, stdout string) map[string]refreshRefJSON {
+	t.Helper()
+
+	var doc refreshJSON
+	require.NoError(t, json.Unmarshal([]byte(stdout), &doc))
+	out := map[string]refreshRefJSON{}
+	for _, r := range doc.Refs {
+		out[r.Ref] = r
+	}
+	return out
+}
+
 func refreshStatuses(t *testing.T, stdout string) map[string]string {
 	t.Helper()
 
@@ -29,7 +41,10 @@ func TestRefreshFastForwardsTheLocalRSL(t *testing.T) {
 
 	first := execute(t, inRepo(clone), "refresh", "--json")
 	require.Equal(t, ExitOK, first.code, first.stderr)
-	assert.Equal(t, "created", refreshStatuses(t, first.stdout)["refs/gittuf/reference-state-log"])
+	created := refreshRefs(t, first.stdout)["refs/gittuf/reference-state-log"]
+	assert.Equal(t, "created", created.Status)
+	assert.Equal(t, 14, created.Commits)
+	assert.Equal(t, &rslEntriesJSON{New: 14}, created.RSLEntries)
 
 	again := execute(t, inRepo(clone), "refresh", "--json", "origin")
 	require.Equal(t, ExitOK, again.code, again.stderr)
@@ -40,7 +55,10 @@ func TestRefreshFastForwardsTheLocalRSL(t *testing.T) {
 
 	updated := execute(t, inRepo(clone), "refresh", "--json")
 	require.Equal(t, ExitOK, updated.code, updated.stderr)
-	assert.Equal(t, "updated", refreshStatuses(t, updated.stdout)["refs/gittuf/reference-state-log"])
+	rslRef := refreshRefs(t, updated.stdout)["refs/gittuf/reference-state-log"]
+	assert.Equal(t, "updated", rslRef.Status)
+	assert.Equal(t, 1, rslRef.Commits)
+	assert.Equal(t, &rslEntriesJSON{Old: 14, New: 15}, rslRef.RSLEntries)
 	assert.Equal(t, newTip.String(), gitOut(t, clone, "rev-parse", "refs/gittuf/reference-state-log"))
 	assert.Equal(t, "unchanged", refreshStatuses(t, updated.stdout)["refs/gittuf/policy"])
 }
@@ -64,6 +82,7 @@ func TestRefreshLeavesDivergedRefsAlone(t *testing.T) {
 
 	assert.Equal(t, ExitFailure, res.code)
 	assert.Contains(t, res.stdout, "diverged")
+	assert.Contains(t, res.stdout, "remote +1, local +1")
 	assert.Contains(t, res.stderr, "Warning: refs/gittuf/reference-state-log was left at "+localTip)
 	assert.Equal(t, localTip, gitOut(t, clone, "rev-parse", "refs/gittuf/reference-state-log"))
 }
@@ -140,4 +159,41 @@ func TestRefreshIgnoresReplacementObjects(t *testing.T) {
 	assert.Equal(t, ExitFailure, res.code, res.stderr)
 	assert.Equal(t, "diverged", refreshStatuses(t, res.stdout)["refs/gittuf/reference-state-log"])
 	assert.Equal(t, localTip, gitOut(t, clone, "rev-parse", "refs/gittuf/reference-state-log"))
+}
+
+func TestRefreshTextGolden(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	clone := sc.Clone(t, "origin")
+
+	created := execute(t, inRepo(clone), "refresh")
+	require.Equal(t, ExitOK, created.code, created.stderr)
+	golden(t, "refresh_created.txt", created.stdout)
+
+	sc.Commit("refs/heads/main", "pushed later")
+	sc.Record(sc.Cluster, "refs/heads/main", nil)
+	sc.Commit("refs/heads/main", "pushed even later")
+	sc.Record(sc.Cluster, "refs/heads/main", nil)
+
+	updated := execute(t, inRepo(clone), "refresh")
+	require.Equal(t, ExitOK, updated.code, updated.stderr)
+	golden(t, "refresh_updated.txt", updated.stdout)
+}
+
+func TestPickerListsOriginFirst(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	clone := sc.Clone(t, "origin")
+	testutil.AddRemote(t, clone, "aaa", sc.Dir)
+	testutil.AddRemote(t, clone, "zzz", sc.Dir)
+
+	res := executeInteractive(t, inRepo(clone), true, "1\n", "refresh", "--json")
+
+	require.Equal(t, ExitOK, res.code, res.stderr)
+	assert.Contains(t, res.stderr, "1) origin")
+	assert.Contains(t, res.stderr, "2) aaa")
+	assert.Contains(t, res.stderr, "3) zzz")
+	assert.Contains(t, res.stdout, `"remote": "origin"`)
 }

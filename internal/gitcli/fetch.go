@@ -10,6 +10,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"slices"
+	"strconv"
 	"strings"
 	"time"
 
@@ -87,6 +88,13 @@ type RefUpdate struct {
 	Old    string
 	New    string
 	Status string
+	// Commits counts the commits in the remote's ref that the local one did
+	// not have: all of them for a created ref, the fast-forward for an
+	// updated one, the remote's side for a diverged one.
+	Commits int
+	// LocalCommits counts, for a diverged ref, the commits only the local
+	// ref has.
+	LocalCommits int
 }
 
 // SyncGittufRefs fetches the remote's gittuf refs into
@@ -154,6 +162,9 @@ func (g *Git) SyncGittufRefs(ctx context.Context, root, remote string, fastForwa
 		switch {
 		case u.Old == "":
 			u.Status = RefCreated
+			if u.Commits, err = g.countCommits(ctx, root, "", id); err != nil {
+				return nil, err
+			}
 			fmt.Fprintf(&tx, "create %s %s\n", localName, id)
 			changes++
 		case symbolic[localName]:
@@ -167,8 +178,14 @@ func (g *Git) SyncGittufRefs(ctx context.Context, root, remote string, fastForwa
 			if err != nil {
 				return nil, err
 			}
+			if u.Commits, err = g.countCommits(ctx, root, u.Old, id); err != nil {
+				return nil, err
+			}
 			if !ff {
 				u.Status = RefDiverged
+				if u.LocalCommits, err = g.countCommits(ctx, root, id, u.Old); err != nil {
+					return nil, err
+				}
 				break
 			}
 			u.Status = RefUpdated
@@ -185,6 +202,24 @@ func (g *Git) SyncGittufRefs(ctx context.Context, root, remote string, fastForwa
 		}
 	}
 	return updates, nil
+}
+
+// countCommits counts the commits reachable from to and not from from, or
+// all commits reachable from to when from is empty.
+func (g *Git) countCommits(ctx context.Context, root, from, to string) (int, error) {
+	rng := to
+	if from != "" {
+		rng = from + ".." + to
+	}
+	out, err := g.run(ctx, root, "rev-list", "--count", rng, "--")
+	if err != nil {
+		return 0, fmt.Errorf("count commits in %s: %w", rng, err)
+	}
+	n, err := strconv.Atoi(strings.TrimSpace(string(out)))
+	if err != nil {
+		return 0, fmt.Errorf("count commits in %s: %w", rng, err)
+	}
+	return n, nil
 }
 
 // isAncestor reports whether ancestor is new or one of its ancestors.

@@ -1,0 +1,4 @@
+REF                              STATUS   LOCAL  REMOTE        COMMITS
+refs/gittuf/policy               created  -      64af4e1b8af1  1 commit
+refs/gittuf/policy-staging       created  -      64af4e1b8af1  1 commit
+refs/gittuf/reference-state-log  created  -      1eab2edb244f  14 commits (entry #14)

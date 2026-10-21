@@ -193,3 +193,6 @@ The exit code carries the state: 0 `verified`, 3 `failed` or `unprotected`,
 | `refs[].status` | string | `created`, `updated` (fast-forwarded), `unchanged` or `diverged` (left alone, exit 1). |
 | `refs[].old` | string | The local ref's value before the refresh. Absent for `created`. |
 | `refs[].new` | string | The remote's value. |
+| `refs[].commits` | integer | Commits the remote's ref has that the local one did not: all of them for `created`, the fast-forward for `updated`, the remote's side for `diverged`. 0 for `unchanged`. |
+| `refs[].local_commits` | integer | For `diverged`, the commits only the local ref has. |
+| `refs[].rsl_entries` | object | For the RSL ref when it changed: `old` and `new` entry numbers. `old` is absent when the RSL was created. |

@@ -178,3 +178,12 @@ func TestFetchRefusesUnsafeRepositoryConfig(t *testing.T) {
 		})
 	}
 }
+
+func TestSortRemotesPutsOriginFirst(t *testing.T) {
+	t.Parallel()
+
+	names := []string{"zzz", "upstream", "origin", "aaa"}
+	sortRemotes(names)
+
+	assert.Equal(t, []string{"origin", "aaa", "upstream", "zzz"}, names)
+}

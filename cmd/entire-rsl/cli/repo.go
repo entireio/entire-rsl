@@ -84,8 +84,27 @@ func remotes(r *repo.Repo) ([]string, map[string]string, error) {
 			urls[cfg.Name] = cfg.URLs[0]
 		}
 	}
-	slices.Sort(names)
+	sortRemotes(names)
 	return names, urls, nil
+}
+
+// defaultRemote is the remote git clone creates, listed first.
+const defaultRemote = "origin"
+
+// sortRemotes orders remotes by name with origin, usually the default, first.
+func sortRemotes(names []string) {
+	slices.SortFunc(names, func(a, b string) int {
+		switch {
+		case a == b:
+			return 0
+		case a == defaultRemote:
+			return -1
+		case b == defaultRemote:
+			return 1
+		default:
+			return strings.Compare(a, b)
+		}
+	})
 }
 
 // remoteChoice is how a remote was chosen.

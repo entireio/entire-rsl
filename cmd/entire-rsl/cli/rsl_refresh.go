@@ -1,12 +1,17 @@
 package cli
 
 import (
+	"context"
 	"errors"
 	"fmt"
+	"log/slog"
+	"slices"
 	"text/tabwriter"
 
 	"github.com/entireio/entire-rsl/internal/gitcli"
 	"github.com/entireio/entire-rsl/internal/sanitize"
+	"github.com/gittuf/gittuf/pkg/githash"
+	pkgrsl "github.com/gittuf/gittuf/pkg/rsl"
 	"github.com/spf13/cobra"
 )
 
@@ -14,11 +19,25 @@ import (
 // remote's does not descend from it.
 var errDiverged = errors.New("some local gittuf refs have diverged from the remote and were left unchanged")
 
+type rslEntriesJSON struct {
+	Old uint64 `json:"old,omitempty"`
+	New uint64 `json:"new"`
+}
+
 type refreshRefJSON struct {
-	Ref    string `json:"ref"`
-	Status string `json:"status"`
-	Old    string `json:"old,omitempty"`
-	New    string `json:"new"`
+	RSLEntries   *rslEntriesJSON `json:"rsl_entries,omitempty"`
+	Ref          string          `json:"ref"`
+	Status       string          `json:"status"`
+	Old          string          `json:"old,omitempty"`
+	New          string          `json:"new"`
+	Commits      int             `json:"commits"`
+	LocalCommits int             `json:"local_commits,omitempty"`
+}
+
+// rslEntries are the RSL entry numbers before and after a refresh. Old is 0
+// when the RSL was created.
+type rslEntries struct {
+	old, new uint64
 }
 
 type refreshJSON struct {
@@ -70,6 +89,7 @@ terminal.`,
 			if err != nil {
 				return err
 			}
+			entries := a.rslEntryNumbers(cmd.Context(), updates)
 
 			diverged := false
 			for _, u := range updates {
@@ -79,12 +99,16 @@ terminal.`,
 			if asJSON {
 				out := refreshJSON{SchemaVersion: schemaVersion, Remote: choice.name, Refs: make([]refreshRefJSON, 0, len(updates))}
 				for _, u := range updates {
-					out.Refs = append(out.Refs, refreshRefJSON{Ref: u.Ref, Status: u.Status, Old: u.Old, New: u.New})
+					ref := refreshRefJSON{Ref: u.Ref, Status: u.Status, Old: u.Old, New: u.New, Commits: u.Commits, LocalCommits: u.LocalCommits}
+					if e, ok := entries[u.Ref]; ok {
+						ref.RSLEntries = &rslEntriesJSON{Old: e.old, New: e.new}
+					}
+					out.Refs = append(out.Refs, ref)
 				}
 				if err := writeJSON(cmd.OutOrStdout(), out); err != nil {
 					return err
 				}
-			} else if err := writeRefreshTable(cmd, a.styles(), updates); err != nil {
+			} else if err := writeRefreshTable(cmd, a.styles(), updates, entries); err != nil {
 				return err
 			}
 
@@ -99,7 +123,76 @@ terminal.`,
 	return cmd
 }
 
-func writeRefreshTable(cmd *cobra.Command, st styles, updates []gitcli.RefUpdate) error {
+// rslEntryNumbers reads the RSL entry numbers before and after the refresh
+// for the RSL ref, from a repository opened afresh to see the fetched
+// objects. A number that cannot be read is left out: it only labels the
+// change.
+func (a *app) rslEntryNumbers(ctx context.Context, updates []gitcli.RefUpdate) map[string]rslEntries {
+	out := map[string]rslEntries{}
+	idx := slices.IndexFunc(updates, func(u gitcli.RefUpdate) bool { return u.Ref == pkgrsl.Ref })
+	if idx < 0 || updates[idx].Status == gitcli.RefUnchanged {
+		return out
+	}
+	u := updates[idx]
+
+	r, err := a.openRepo(ctx)
+	if err != nil {
+		a.logger.DebugContext(ctx, "reopen repository for RSL entry numbers", slog.String("error", err.Error()))
+		return out
+	}
+	number := func(id string) (uint64, bool) {
+		h, err := githash.NewHash(id)
+		if err != nil {
+			return 0, false
+		}
+		entry, err := pkgrsl.GetEntry(r.Store, h)
+		if err != nil {
+			a.logger.DebugContext(ctx, "read RSL entry number", slog.String("entry", id), slog.String("error", err.Error()))
+			return 0, false
+		}
+		return entry.GetNumber(), true
+	}
+
+	var e rslEntries
+	var ok bool
+	if e.new, ok = number(u.New); !ok {
+		return out
+	}
+	if u.Old != "" {
+		if e.old, ok = number(u.Old); !ok {
+			return out
+		}
+	}
+	out[u.Ref] = e
+	return out
+}
+
+// commitsText describes how many commits a refresh brought, with the RSL
+// entry numbers for the RSL.
+func commitsText(u gitcli.RefUpdate, entries map[string]rslEntries) string {
+	var text string
+	switch u.Status {
+	case gitcli.RefCreated:
+		text = plural(u.Commits, "commit", "commits")
+	case gitcli.RefUpdated:
+		text = "+" + plural(u.Commits, "commit", "commits")
+	case gitcli.RefDiverged:
+		text = fmt.Sprintf("remote +%d, local +%d", u.Commits, u.LocalCommits)
+	default:
+		return none
+	}
+
+	if e, ok := entries[u.Ref]; ok {
+		if e.old == 0 {
+			text += fmt.Sprintf(" (entry #%d)", e.new)
+		} else {
+			text += fmt.Sprintf(" (entry #%d \u2192 #%d)", e.old, e.new)
+		}
+	}
+	return text
+}
+
+func writeRefreshTable(cmd *cobra.Command, st styles, updates []gitcli.RefUpdate, entries map[string]rslEntries) error {
 	w := cmd.OutOrStdout()
 	if len(updates) == 0 {
 		fmt.Fprintln(w, "The remote has no gittuf refs.")
@@ -107,7 +200,7 @@ func writeRefreshTable(cmd *cobra.Command, st styles, updates []gitcli.RefUpdate
 	}
 
 	tw := tabwriter.NewWriter(w, 0, 4, 2, ' ', 0)
-	fmt.Fprintln(tw, "REF\t"+st.plain("STATUS")+"\tLOCAL\tREMOTE")
+	fmt.Fprintln(tw, "REF\t"+st.plain("STATUS")+"\tLOCAL\tREMOTE\tCOMMITS")
 	for _, u := range updates {
 		old := none
 		if u.Old != "" {
@@ -122,7 +215,7 @@ func writeRefreshTable(cmd *cobra.Command, st styles, updates []gitcli.RefUpdate
 		default:
 			status = st.plain(status)
 		}
-		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\n", sanitize.Line(u.Ref), status, old, u.New[:min(shortIDLen, len(u.New))])
+		fmt.Fprintf(tw, "%s\t%s\t%s\t%s\t%s\n", sanitize.Line(u.Ref), status, old, u.New[:min(shortIDLen, len(u.New))], commitsText(u, entries))
 	}
 	if err := tw.Flush(); err != nil {
 		return fmt.Errorf("write table: %w", err)
