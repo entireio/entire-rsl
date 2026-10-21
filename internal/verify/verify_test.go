@@ -468,3 +468,33 @@ func TestBehindWithAMissingObjectIsAnError(t *testing.T) {
 
 	assert.Equal(t, Error, res.State, "%s: %v", res.Reason, res.Err)
 }
+
+func TestEntriesCheckedOnlyWhenGittufVerified(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+
+	verified := run(t.Context(), t, sc.Dir, "refs/heads/main", time.Minute)
+	require.Equal(t, Verified, verified.State)
+	require.NotNil(t, verified.Checked)
+	assert.Equal(t, uint64(3), verified.Checked.First.Number)
+	assert.Equal(t, uint64(9), verified.Checked.Last.Number)
+	assert.Equal(t, 3, verified.Checked.Count)
+
+	failed := run(t.Context(), t, sc.Dir, "refs/heads/rogue", time.Minute)
+	require.Equal(t, Failed, failed.State)
+	assert.Nil(t, failed.Checked, "gittuf stops at the first violation, so no range was checked")
+
+	r := testutil.NewRepo(t)
+	r.Bootstrap("git:refs/heads/main")
+	r.Commit("refs/heads/other", "uncovered")
+	r.Record(r.Cluster, "refs/heads/other", nil)
+	uncovered := run(t.Context(), t, r.Dir, "refs/heads/other", time.Minute)
+	require.Equal(t, Unprotected, uncovered.State)
+	assert.Nil(t, uncovered.Checked)
+
+	sc.Commit("refs/heads/main", "not pushed")
+	checkFailed := run(t.Context(), t, sc.Dir, "refs/heads/main", time.Minute)
+	require.Equal(t, Failed, checkFailed.State)
+	assert.NotNil(t, checkFailed.Checked, "gittuf verified the range even though the tip check failed")
+}

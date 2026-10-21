@@ -6,7 +6,6 @@ Time                 1995-10-26T09:00:00Z (asserted by the signer)
 Signer               SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE, signature valid
 Verification         failed: gittuf verification failed
 Detail               verifying tag entry failed, gittuf policy verification failed: verifying tag object's signature failed
-RSL entries checked  #6 60a5dd3f63e2 → #7 e1188d6637f0 (2 entries)
 Rules                authorize-rsl-signers
 Check tip            pass: the local ref matches the tip the RSL records (732924be9ec6dad0a148a35536c2ac65cc345a67, entry #7)
 Check root_of_trust  pass: anchored to Entire test root (SHA256:XoKzzUGnLJ4GK8IPQ+7CYaXXU5HjoVZaneZsu6w4Mtw), root version 1

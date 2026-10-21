@@ -7,18 +7,6 @@
     "error": "verifying Git namespace policies failed, gittuf policy verification failed",
     "from_entry": "6ca19a5f51c2464b742b1215005891fe9295fc54",
     "from_entry_number": 10,
-    "entries_checked": {
-      "first": {
-        "number": 10,
-        "id": "6ca19a5f51c2464b742b1215005891fe9295fc54"
-      },
-      "last": {
-        "number": 10,
-        "id": "6ca19a5f51c2464b742b1215005891fe9295fc54"
-      },
-      "count": 1,
-      "skipped": 0
-    },
     "rules": [
       "authorize-rsl-signers"
     ],

@@ -53,9 +53,9 @@ type Result struct {
 	FromEntry githash.Hash
 	// FromNumber is FromEntry's number, 0 for an unnumbered entry.
 	FromNumber uint64
-	// Checked describes the RSL entries for the ref that verification
-	// covers, from FromEntry to the latest. Nil when verification did not
-	// reach the ref's entries.
+	// Checked describes the RSL entries for the ref gittuf verified, from
+	// FromEntry to the latest. Set only when gittuf's verification passed,
+	// even if an Entire check then failed.
 	Checked *Checked
 	State   State
 	Ref     string
@@ -75,6 +75,20 @@ type Checked struct {
 	// Count counts the ref's entries in the range, Skipped those an
 	// annotation revokes.
 	Count, Skipped int
+}
+
+// checkedRange summarises the ref's entries, newest first.
+func checkedRange(targets []rslread.Target) *Checked {
+	if len(targets) == 0 {
+		return nil
+	}
+	c := &Checked{First: targets[len(targets)-1], Last: targets[0], Count: len(targets)}
+	for _, t := range targets {
+		if t.Skipped {
+			c.Skipped++
+		}
+	}
+	return c
 }
 
 // Options configure Verify.
@@ -149,15 +163,6 @@ func Verify(ctx context.Context, st *store.Store, ref string, opts Options) (res
 	if err != nil {
 		return errorResult(ctx, ref, "could not read the ref's RSL entries", err)
 	}
-	if len(targets) > 0 {
-		checked := &Checked{First: targets[len(targets)-1], Last: targets[0], Count: len(targets)}
-		for _, t := range targets {
-			if t.Skipped {
-				checked.Skipped++
-			}
-		}
-		res.Checked = checked
-	}
 
 	res.Rules, err = coveringRules(ctx, opts.RepoPath, ref)
 	if err != nil {
@@ -180,6 +185,9 @@ func Verify(ctx context.Context, st *store.Store, ref string, opts Options) (res
 	} else {
 		res.State, res.ExpectedTip = Verified, tip
 		res.Reason = "gittuf verified every RSL entry for the ref against the policy, and every check passed"
+		// gittuf stops at the first unrevoked violation, so the range is
+		// only known to have been checked when it passed.
+		res.Checked = checkedRange(targets)
 	}
 
 	res.Checks, err = runChecks(ctx, st, reader, ref, res.State == Verified, opts)
