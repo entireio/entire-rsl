@@ -1,0 +1,12 @@
+Checkpoint   01JC0FFEE0BADC0DE00000007Z
+From commit  8c9626aa9daaf78041a7db7045b058738597e154 (Entire-Checkpoint trailer)
+Ref          refs/entire/checkpoints/7Z/01JC0FFEE0BADC0DE00000007Z
+Local tip    fe16799c32d2f19aeba4d415f9b42f37799acc3e
+RSL tip      fe16799c32d2f19aeba4d415f9b42f37799acc3e (entry #8)
+Pushed by    jane, as recorded by Entire
+Time         1995-10-26T09:00:00Z (asserted by the signer)
+Signer       SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE, signature valid
+
+History (1 of 1 entries, newest first)
+NUMBER  ENTRY         TARGET        TIME                  BY    SIGNER                SKIPPED
+8       e0ff9ff266d4  fe16799c32d2  1995-10-26T09:00:00Z  jane  SHA256:gcwUs7YXVhN2…  -

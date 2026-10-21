@@ -75,6 +75,7 @@ Exit codes:
 	root.AddCommand(
 		newBranchCmd(a),
 		newTagCmd(a),
+		newCheckpointCmd(a),
 		newLogCmd(a),
 		newEntryCmd(a),
 		newVersionCmd(),

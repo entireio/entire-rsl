@@ -128,3 +128,24 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   five million entries.
 - **Rejected:** `rsl.GetEntry` on the named ID, which would accept commits that
   are not in the log.
+
+## 2026-10-21: Checkpoints resolve through the git-refs backend only
+
+- **Context:** Phase 0 answer 3 limits checkpoints to the git-refs backend.
+  entireio/cli names checkpoint refs `refs/entire/checkpoints/<shard>/<id>`,
+  the shard being the ID's last two characters
+  (`cmd/entire/cli/checkpoint/refs_naming.go:36`, `id/id.go:134`), and accepts
+  a shard whose case differs because case-insensitive file systems may fold a
+  ULID's shard into an existing legacy one (`refs_naming.go:58`).
+- **Decision:** IDs are 12 lowercase hex characters or a canonical ULID,
+  matching `ulid.ParseStrict` plus the canonical round trip in `id/id.go:84`
+  without a ULID dependency. The RSL is read under the canonical ref, which is
+  what Entire's server records. The local ref falls back to a
+  case-insensitive shard match. A checkpoint with neither a local ref nor RSL
+  entries is an error.
+- **Trailer:** a commit ID resolves through `Entire-Checkpoint` trailer lines.
+  The match is anchored to whole lines, stricter than entireio/cli's
+  `CheckpointTrailerRegex` (`trailers/trailers.go:54`), so an ID quoted in the
+  body does not count. Repeated identical IDs count once, distinct IDs are an
+  error listing them.
+- **Rejected:** the legacy `entire/checkpoints/v1` branch, per the answer.

@@ -129,3 +129,17 @@ Warning codes:
 | `local_ref_missing` | The ref does not exist locally. |
 | `local_drift` | The local ref differs from `rsl_tip`. |
 | `tag_moved` | A tag has more than one unskipped entry. |
+
+## `checkpoint`
+
+The `branch` document for the checkpoint's ref, plus:
+
+```json
+"checkpoint": {"id": "01JC0FFEE0BADC0DE00000007Z", "resolved_from": "commit", "commit": "..."}
+```
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `checkpoint.id` | string | The checkpoint ID. |
+| `checkpoint.resolved_from` | string | `id` when given directly, `commit` when read from a commit's `Entire-Checkpoint` trailer. |
+| `checkpoint.commit` | string | The commit the ID was read from, for `resolved_from: commit`. |

@@ -1,0 +1,75 @@
+{
+  "schema_version": 1,
+  "ref": "refs/entire/checkpoints/7Z/01JC0FFEE0BADC0DE00000007Z",
+  "local_tip": "fe16799c32d2f19aeba4d415f9b42f37799acc3e",
+  "rsl_tip": "fe16799c32d2f19aeba4d415f9b42f37799acc3e",
+  "current_entry": {
+    "number": 8,
+    "id": "e0ff9ff266d46ca738826fd52b1db5dab6f46271",
+    "type": "reference",
+    "ref": "refs/entire/checkpoints/7Z/01JC0FFEE0BADC0DE00000007Z",
+    "target": "fe16799c32d2f19aeba4d415f9b42f37799acc3e",
+    "time": "1995-10-26T09:00:00Z",
+    "signer": {
+      "method": "ssh",
+      "signature_valid": true,
+      "key_id": "SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE"
+    },
+    "committer_unverified": {
+      "name": "Jane Doe",
+      "email": "jane.doe@example.com"
+    },
+    "skipped": false,
+    "entire": {
+      "pusher": {
+        "account_id": "01J9ZACCT000000000000000JD",
+        "handle": "jane",
+        "raw": "01J9ZACCT000000000000000JD (jane)"
+      },
+      "repository": "01J9ZREPQ0000000000000000R"
+    },
+    "custom_fields": {
+      "custom.entire.io/pusher": "01J9ZACCT000000000000000JD (jane)",
+      "custom.entire.io/repository": "01J9ZREPQ0000000000000000R"
+    }
+  },
+  "history": [
+    {
+      "number": 8,
+      "id": "e0ff9ff266d46ca738826fd52b1db5dab6f46271",
+      "type": "reference",
+      "ref": "refs/entire/checkpoints/7Z/01JC0FFEE0BADC0DE00000007Z",
+      "target": "fe16799c32d2f19aeba4d415f9b42f37799acc3e",
+      "time": "1995-10-26T09:00:00Z",
+      "signer": {
+        "method": "ssh",
+        "signature_valid": true,
+        "key_id": "SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE"
+      },
+      "committer_unverified": {
+        "name": "Jane Doe",
+        "email": "jane.doe@example.com"
+      },
+      "skipped": false,
+      "entire": {
+        "pusher": {
+          "account_id": "01J9ZACCT000000000000000JD",
+          "handle": "jane",
+          "raw": "01J9ZACCT000000000000000JD (jane)"
+        },
+        "repository": "01J9ZREPQ0000000000000000R"
+      },
+      "custom_fields": {
+        "custom.entire.io/pusher": "01J9ZACCT000000000000000JD (jane)",
+        "custom.entire.io/repository": "01J9ZREPQ0000000000000000R"
+      }
+    }
+  ],
+  "history_total": 1,
+  "warnings": [],
+  "checkpoint": {
+    "id": "01JC0FFEE0BADC0DE00000007Z",
+    "resolved_from": "commit",
+    "commit": "8c9626aa9daaf78041a7db7045b058738597e154"
+  }
+}

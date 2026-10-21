@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"slices"
 	"strings"
 	"text/tabwriter"
 
@@ -94,17 +95,30 @@ func (r refReport) toJSON() refReportJSON {
 	return j
 }
 
-// buildRefReport reads what the RSL and the local repository hold for ref.
-func buildRefReport(ctx context.Context, s *session, ref string, historyLimit int) (refReport, error) {
-	r := refReport{Ref: ref}
+// localTip returns the local value of a ref, nil when it does not exist.
+type localTip func(ref string) (githash.Hash, error)
 
-	local, err := s.repo.Store.GetReference(ref)
+// localRef reads ref from the repository.
+func (s *session) localRef(ref string) (githash.Hash, error) {
+	tip, err := s.repo.Store.GetReference(ref)
 	switch {
 	case err == nil:
-		r.LocalTip = local
+		return tip, nil
 	case errors.Is(err, gitstore.ErrReferenceNotFound):
+		return nil, nil
 	default:
-		return refReport{}, fmt.Errorf("read local %s: %w", ref, err)
+		return nil, fmt.Errorf("read local %s: %w", ref, err)
+	}
+}
+
+// buildRefReport reads what the RSL and the local repository hold for ref.
+func buildRefReport(ctx context.Context, s *session, ref string, historyLimit int, local localTip) (refReport, error) {
+	r := refReport{Ref: ref}
+
+	var err error
+	r.LocalTip, err = local(ref)
+	if err != nil {
+		return refReport{}, err
 	}
 
 	r.History, err = s.reader.History(ctx, ref, historyLimit)
@@ -141,16 +155,17 @@ func refWarnings(r refReport) []warning {
 	return ws
 }
 
-func writeRefReport(w io.Writer, r refReport) error {
+// writeRefReport prints r, with lead fields first in the same columns.
+func writeRefReport(w io.Writer, r refReport, lead ...field) error {
 	local := "absent"
 	if len(r.LocalTip) != 0 {
 		local = r.LocalTip.String()
 	}
 
-	fields := []field{
+	fields := slices.Concat(lead, []field{
 		{"Ref", sanitize.Line(r.Ref)},
 		{"Local tip", local},
-	}
+	})
 
 	if c := r.History.Current; c != nil {
 		fields = append(fields, field{"RSL tip", fmt.Sprintf("%s (entry #%d)", c.TargetID.String(), c.Number)})
@@ -225,7 +240,7 @@ func (a *app) runRefReport(cmd *cobra.Command, flags *refCommandFlags, ref strin
 		return err
 	}
 
-	report, err := buildRefReport(cmd.Context(), s, ref, flags.history)
+	report, err := buildRefReport(cmd.Context(), s, ref, flags.history, s.localRef)
 	if err != nil {
 		return err
 	}
