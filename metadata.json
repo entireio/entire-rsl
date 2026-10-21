@@ -1,0 +1,35 @@
+{
+  "cli_version": "0.11.5-nightly.202610140625.065c76361",
+  "checkpoint_id": "01M5G6TXP369A6GXNP8CTD3ANZ",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "README.md",
+    "cmd/entire-rsl/cli/rsl_branch_test.go",
+    "docs/decisions.md",
+    "docs/reviews/0007.md",
+    "internal/rslread/rslread.go",
+    "internal/store/read.go",
+    "internal/tipstate/tipstate.go",
+    "internal/verify/checks.go",
+    "internal/verify/verify.go",
+    "internal/verify/verify_test.go"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 10,
+    "cache_creation_tokens": 12785,
+    "cache_read_tokens": 4133609,
+    "output_tokens": 12075,
+    "api_call_count": 5
+  }
+}
