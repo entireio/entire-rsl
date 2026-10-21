@@ -9,6 +9,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"slices"
 	"strings"
 	"time"
 
@@ -44,19 +45,58 @@ func Find() (*Git, error) {
 	return &Git{path: abs}, nil
 }
 
+// RunError is a git process that exited unsuccessfully.
+type RunError struct {
+	Err    error
+	Args   string
+	Stderr string
+}
+
+func (e *RunError) Error() string {
+	if e.Stderr == "" {
+		return fmt.Sprintf("git %s: %v", e.Args, e.Err)
+	}
+	return fmt.Sprintf("git %s: %v: %s", e.Args, e.Err, e.Stderr)
+}
+
+func (e *RunError) Unwrap() error { return e.Err }
+
 // TrackingPrefix is where a remote's gittuf refs are fetched to, gittuf's own
 // remote-tracking layout (pkg/rsl remoteTrackerRef).
 func TrackingPrefix(remote string) string {
 	return "refs/remotes/" + remote + "/gittuf/"
 }
 
-// FetchGittufRefs fetches the remote's gittuf refs into
-// refs/remotes/<remote>/gittuf/*, then creates each local refs/gittuf/* ref
-// that does not exist yet from its tracking ref, in one transaction that
-// fails if any of them appeared meanwhile. Existing local refs are never
-// changed. It returns the local refs it created. It is entire-rsl's only
-// write path.
-func (g *Git) FetchGittufRefs(ctx context.Context, root, remote string) ([]string, error) {
+// Sync statuses of a local gittuf ref.
+const (
+	// RefCreated: the ref did not exist locally and was created.
+	RefCreated = "created"
+	// RefUpdated: the remote's ref fast-forwarded the local one.
+	RefUpdated = "updated"
+	// RefUnchanged: the local ref already matched, or a fast-forward was not
+	// requested.
+	RefUnchanged = "unchanged"
+	// RefDiverged: the remote's ref does not descend from the local one, so
+	// the local ref was left as it was.
+	RefDiverged = "diverged"
+)
+
+// RefUpdate is what a sync did to one local gittuf ref.
+type RefUpdate struct {
+	Ref    string
+	Old    string
+	New    string
+	Status string
+}
+
+// SyncGittufRefs fetches the remote's gittuf refs into
+// refs/remotes/<remote>/gittuf/*, then brings the local refs/gittuf/* refs
+// in line: missing refs are created and, when fastForward is set, existing
+// refs the remote's descend from are updated. A local ref the remote's does
+// not descend from is never changed and is reported as diverged. Every
+// change happens in one update-ref transaction that checks each ref still
+// holds the value it was read with. It is entire-rsl's only write path.
+func (g *Git) SyncGittufRefs(ctx context.Context, root, remote string, fastForward bool) ([]RefUpdate, error) {
 	if err := refname.Validate(remote); err != nil {
 		return nil, fmt.Errorf("remote name: %w", err)
 	}
@@ -91,29 +131,69 @@ func (g *Git) FetchGittufRefs(ctx context.Context, root, remote string) ([]strin
 		return nil, err
 	}
 
-	var tx strings.Builder
-	var created []string
+	names := make([]string, 0, len(fetched))
+	for name := range fetched {
+		names = append(names, name)
+	}
+	slices.Sort(names)
+
+	var (
+		updates []RefUpdate
+		tx      strings.Builder
+		changes int
+	)
 	tx.WriteString("start\n")
-	for name, id := range fetched {
+	for _, name := range names {
+		id := fetched[name]
 		localName := gittufPrefix + strings.TrimPrefix(name, tracking)
 		if err := refname.Validate(localName); err != nil {
 			return nil, fmt.Errorf("fetched ref: %w", err)
 		}
-		if _, exists := local[localName]; exists {
-			continue
+
+		u := RefUpdate{Ref: localName, Old: local[localName], New: id}
+		switch {
+		case u.Old == "":
+			u.Status = RefCreated
+			fmt.Fprintf(&tx, "create %s %s\n", localName, id)
+			changes++
+		case u.Old == id || !fastForward:
+			u.Status = RefUnchanged
+		default:
+			ff, err := g.isAncestor(ctx, root, u.Old, id)
+			if err != nil {
+				return nil, err
+			}
+			if !ff {
+				u.Status = RefDiverged
+				break
+			}
+			u.Status = RefUpdated
+			fmt.Fprintf(&tx, "update %s %s %s\n", localName, id, u.Old)
+			changes++
 		}
-		fmt.Fprintf(&tx, "create %s %s\n", localName, id)
-		created = append(created, localName)
+		updates = append(updates, u)
 	}
 	tx.WriteString("commit\n")
 
-	if len(created) == 0 {
-		return nil, nil
+	if changes > 0 {
+		if _, err := g.runInput(ctx, root, tx.String(), "update-ref", "--stdin"); err != nil {
+			return nil, fmt.Errorf("update local gittuf refs: %w", err)
+		}
 	}
-	if _, err := g.runInput(ctx, root, tx.String(), "update-ref", "--stdin"); err != nil {
-		return nil, fmt.Errorf("create local gittuf refs: %w", err)
+	return updates, nil
+}
+
+// isAncestor reports whether ancestor is new or one of its ancestors.
+func (g *Git) isAncestor(ctx context.Context, root, ancestor, commit string) (bool, error) {
+	_, err := g.run(ctx, root, "merge-base", "--is-ancestor", ancestor, commit)
+	if err == nil {
+		return true, nil
 	}
-	return created, nil
+	var exitErr *exec.ExitError
+	if errors.As(err, &exitErr) && exitErr.ExitCode() == 1 {
+		return false, nil
+	}
+	return false, fmt.Errorf("compare %s with %s: %w", ancestor, commit, err)
 }
 
 // refs lists the refs under prefix and their object IDs.
@@ -166,7 +246,7 @@ func (g *Git) runInput(ctx context.Context, root, stdin string, args ...string) 
 		if ctx.Err() != nil {
 			return nil, fmt.Errorf("git %s: %w", args[0], ctx.Err())
 		}
-		return nil, fmt.Errorf("git %s: %w: %s", args[0], err, redact.URLs(strings.TrimSpace(stderr.String())))
+		return nil, &RunError{Args: args[0], Err: err, Stderr: redact.URLs(strings.TrimSpace(stderr.String()))}
 	}
 	return stdout.Bytes(), nil
 }

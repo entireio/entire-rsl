@@ -32,7 +32,7 @@ func TestAgentHelpGolden(t *testing.T) {
 	}
 }
 
-func TestAgentHelpListsEveryCommandAsReadOnly(t *testing.T) {
+func TestAgentHelpClassifiesCommands(t *testing.T) {
 	t.Parallel()
 
 	res := execute(t, testEnv{}, "agent-help", "--json")
@@ -41,12 +41,14 @@ func TestAgentHelpListsEveryCommandAsReadOnly(t *testing.T) {
 	var doc agentHelpJSON
 	require.NoError(t, json.Unmarshal([]byte(res.stdout), &doc))
 
-	var names []string
+	audiences := map[string]string{}
 	for _, s := range doc.Subcommands {
-		names = append(names, s.Name)
-		assert.Equal(t, "read-only", s.Audience, s.Name)
+		audiences[s.Name] = s.Audience
 	}
-	assert.ElementsMatch(t, []string{"branch", "tag", "checkpoint", "verify", "log", "entry", "version"}, names)
+	assert.Equal(t, map[string]string{
+		"branch": "read-only", "tag": "read-only", "checkpoint": "read-only", "verify": "read-only",
+		"log": "read-only", "entry": "read-only", "version": "read-only", "refresh": "user-owned",
+	}, audiences)
 }
 
 func TestAgentHelpUnknownPath(t *testing.T) {

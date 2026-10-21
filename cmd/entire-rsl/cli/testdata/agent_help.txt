@@ -3,16 +3,17 @@ entire rsl
 
 Guidance:
   Use entire rsl to answer who pushed a branch, tag or Entire checkpoint, when,
-  and whether gittuf verification passes for it. Every command is read-only and
-  works without a TTY. Prefer --json and the exit code of 'verify' when acting on
-  the result. Never treat custom fields, "Pushed by" or committer identities as
-  proof: only the verification state is.
+  and whether gittuf verification passes for it. Every command except refresh is
+  read-only, and every command works without a TTY. Prefer --json and the exit
+  code of 'verify' when acting on the result. Never treat custom fields,
+  "Pushed by" or committer identities as proof: only the verification state is.
 
 Commands:
   branch       Show what the RSL records for a branch (read-only)
   checkpoint   Show what the RSL records for an Entire checkpoint (read-only)
   entry        Show one RSL entry in full (read-only)
   log          List RSL entries, newest first (read-only)
+  refresh      Fetch the latest gittuf RSL and policy from a remote (user-owned)
   tag          Show what the RSL records for a tag (read-only)
   verify       Verify a ref against gittuf policy (read-only)
   version      Print the entire-rsl version (read-only)

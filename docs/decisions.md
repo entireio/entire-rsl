@@ -325,3 +325,35 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   in-toto/in-toto-golang and cyberphone/json-canonicalization to Apache-2.0
   in `.license-overrides` after reading their LICENSE files.
 - **Rejected:** dropping go-git or gittuf, which the Phase 0 answers require.
+
+## 2026-10-21: refresh fast-forwards local gittuf refs only
+
+- **Context:** the user asked for a command to get the latest RSL from a
+  remote. Unlike fetching a missing RSL, it must update local refs that exist.
+- **Decision:** `refresh [remote]` shares the sync routine with the missing-RSL
+  fetch (`gitcli.SyncGittufRefs`): fetch `+refs/gittuf/*` into
+  `refs/remotes/<remote>/gittuf/*`, then one `update-ref --stdin` transaction
+  that `create`s missing local refs and `update`s existing ones only when
+  `git merge-base --is-ancestor` shows the remote's descends from the local
+  value, each update checked against the value read. Diverged refs are left
+  alone, reported, and make the command exit 1. Running the command is the
+  consent, so it does not prompt, and it applies the same repository config
+  checks as the fetch. It is `user-owned` in agent-help, Entire's convention
+  for commands that change state. Branches, tags and checkpoint refs are not
+  fetched: writing them would reach well beyond gittuf state.
+- **Rejected:** force-updating local gittuf refs to the remote's, which could
+  replace a local policy, and fetching all refs.
+
+## 2026-10-21: Colour marks verification outcomes on a terminal
+
+- **Context:** the user asked for green and red on verification and on data
+  that was verified, such as the root of trust and the RSL signer.
+- **Decision:** verification states (verified green, failed and error red,
+  unprotected yellow), check results (pass green, fail red, skip plain), entry
+  signers (valid green, invalid or unsigned red) and refresh statuses are
+  coloured. Only stdout on a terminal is coloured, and `NO_COLOR`, `TERM=dumb`
+  and the Entire CLI's `ACCESSIBLE` mode turn it off. JSON is never coloured.
+  The words stay, so colour never carries meaning alone. Colour codes all have
+  the same length and every cell of a coloured table column, header included,
+  is styled, so tabwriter's alignment survives. A test strips colour and
+  compares with plain output.

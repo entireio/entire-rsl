@@ -14,20 +14,36 @@ import (
 // Long help.
 var agentGuidance = map[string]string{
 	"": `Use entire rsl to answer who pushed a branch, tag or Entire checkpoint, when,
-and whether gittuf verification passes for it. Every command is read-only and
-works without a TTY. Prefer --json and the exit code of 'verify' when acting on
-the result. Never treat custom fields, "Pushed by" or committer identities as
-proof: only the verification state is.`,
+and whether gittuf verification passes for it. Every command except refresh is
+read-only, and every command works without a TTY. Prefer --json and the exit
+code of 'verify' when acting on the result. Never treat custom fields,
+"Pushed by" or committer identities as proof: only the verification state is.`,
 	"verify":     "Use to decide whether a ref can be trusted. Exit 0 only for verified. Treat failed, unprotected and error as untrusted.",
 	"branch":     "Use to see the RSL record of a branch next to the local tip, with verification. Check warnings for local drift.",
 	"tag":        "Use for tags. A tag_moved warning means the tag was re-pointed after it was first pushed.",
 	"checkpoint": "Use with a checkpoint ID or a commit that carries an Entire-Checkpoint trailer.",
 	"log":        "Use to list raw RSL entries. Page with --before and --limit.",
 	"entry":      "Use to inspect one RSL entry in full, including annotations and custom fields.",
+	"refresh":    "Writes local gittuf refs. Run it only when the user asks for the latest RSL from a remote.",
 }
 
-// agentAudience classifies commands the way the Entire CLI's agent-help does.
-const agentAudience = "read-only"
+// Audiences classify commands the way the Entire CLI's agent-help does:
+// read-only commands are safe to run unprompted, user-owned ones change
+// state and wait for the user to ask.
+const (
+	audienceReadOnly  = "read-only"
+	audienceUserOwned = "user-owned"
+)
+
+// userOwned lists the commands that write.
+var userOwned = map[string]bool{"refresh": true}
+
+func audienceOf(name string) string {
+	if userOwned[name] {
+		return audienceUserOwned
+	}
+	return audienceReadOnly
+}
 
 type agentFlagJSON struct {
 	Name      string `json:"name"`
@@ -134,7 +150,7 @@ func agentHelpFor(cmd *cobra.Command) agentHelpJSON {
 	})
 
 	for _, c := range advertised(cmd) {
-		doc.Subcommands = append(doc.Subcommands, agentSubcommandJSON{Name: c.Name(), Short: c.Short, Audience: agentAudience})
+		doc.Subcommands = append(doc.Subcommands, agentSubcommandJSON{Name: c.Name(), Short: c.Short, Audience: audienceOf(c.Name())})
 	}
 	return doc
 }

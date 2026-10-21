@@ -179,3 +179,17 @@ returned no error and no check failed.
 
 The exit code carries the state: 0 `verified`, 3 `failed` or `unprotected`,
 1 `error`.
+
+## `refresh`
+
+```json
+{"schema_version": 1, "remote": "origin", "refs": [{"ref": "refs/gittuf/reference-state-log", "status": "updated", "old": "...", "new": "..."}]}
+```
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `remote` | string | The remote fetched from. |
+| `refs[].ref` | string | The local gittuf ref. |
+| `refs[].status` | string | `created`, `updated` (fast-forwarded), `unchanged` or `diverged` (left alone, exit 1). |
+| `refs[].old` | string | The local ref's value before the refresh. Absent for `created`. |
+| `refs[].new` | string | The remote's value. |

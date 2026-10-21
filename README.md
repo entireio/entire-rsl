@@ -6,10 +6,8 @@ when, and whether gittuf verification passes. It is a plugin for the
 [Entire CLI](https://github.com/entireio/cli) and also runs standalone as
 `entire-rsl`.
 
-entire-rsl is read-only. The one exception is when the repository has no
-local RSL and you agree to fetch it: then it creates the missing
-`refs/gittuf/*` refs (never changing existing ones) and updates
-`refs/remotes/<remote>/gittuf/*`.
+entire-rsl is read-only, with two exceptions that only touch gittuf refs:
+`entire rsl refresh`, and fetching a missing RSL when you agree to it.
 
 ## Install
 
@@ -36,6 +34,7 @@ entire rsl checkpoint 01JC0FFEE0BADC0DE00000007Z
 entire rsl checkpoint <commit-sha>     # through its Entire-Checkpoint trailer
 entire rsl log --ref refs/heads/main --limit 20
 entire rsl entry 42                    # one entry by number or ID
+entire rsl refresh [remote]            # fetch the latest RSL and policy
 entire rsl version
 entire agent-help rsl                  # documentation for AI agents
 ```
@@ -72,12 +71,28 @@ Exit code 2 means a usage error.
 are shown as recorded. They never affect the state: only the signature and
 gittuf policy do.
 
+### Refreshing from a remote
+
+`entire rsl refresh [remote]` fetches the remote's gittuf refs into
+`refs/remotes/<remote>/gittuf/*` and updates the local `refs/gittuf/*` refs:
+missing ones are created and existing ones are fast-forwarded. A local ref
+the remote's does not descend from is left alone and reported as `diverged`,
+with exit code 1. Branches, tags and checkpoint refs are not fetched, so fetch
+them with git before comparing them with the RSL.
+
 ### Fetching a missing RSL
 
 Clones made with plain git have no gittuf refs. entire-rsl then offers to
 fetch them, asking first, and asking which remote when there are several.
 Pass `--fetch` (or `--fetch=<remote>`) to fetch without a prompt, which is
 required without a terminal.
+
+### Colour
+
+On a terminal, verification states, check results and signatures are
+coloured: green for verified, passing or valid, red for failed, in error or
+invalid, yellow for unprotected. `NO_COLOR`, `TERM=dumb`, `ACCESSIBLE` and
+`--json` turn colour off, and output to a pipe or file is never coloured.
 
 ### Debugging
 

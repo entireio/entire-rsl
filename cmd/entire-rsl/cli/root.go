@@ -94,6 +94,7 @@ Exit codes:
 		newBranchCmd(a),
 		newTagCmd(a),
 		newCheckpointCmd(a),
+		newRefreshCmd(a),
 		newVerifyCmd(a),
 		newLogCmd(a),
 		newEntryCmd(a),
