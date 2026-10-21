@@ -20,6 +20,7 @@ type Options struct {
 	Stdout io.Writer
 	Stderr io.Writer
 	Getenv func(key string) string
+	Getwd  func() (string, error)
 
 	// SetDefaultLogger installs the debug logger as the process default so
 	// gittuf's own slog output reaches it. Nil leaves the default alone.
@@ -71,7 +72,11 @@ Exit codes:
 	})
 	root.PersistentFlags().BoolVar(&a.debug, "debug", false, "print diagnostics to stderr (also ENTIRE_LOG_LEVEL=debug)")
 
-	root.AddCommand(newVersionCmd())
+	root.AddCommand(
+		newLogCmd(a),
+		newEntryCmd(a),
+		newVersionCmd(),
+	)
 
 	return root
 }

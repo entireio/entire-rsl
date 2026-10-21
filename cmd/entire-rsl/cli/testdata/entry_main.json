@@ -1,0 +1,33 @@
+{
+  "schema_version": 1,
+  "entry": {
+    "number": 9,
+    "id": "2f3106dcfec619b4807b8fc24927c954cf17565e",
+    "type": "reference",
+    "ref": "refs/heads/main",
+    "target": "8c9626aa9daaf78041a7db7045b058738597e154",
+    "time": "1995-10-26T09:00:00Z",
+    "signer": {
+      "method": "ssh",
+      "signature_valid": true,
+      "key_id": "SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE"
+    },
+    "committer_unverified": {
+      "name": "Jane Doe",
+      "email": "jane.doe@example.com"
+    },
+    "skipped": false,
+    "entire": {
+      "pusher": {
+        "account_id": "01J9ZACCT000000000000000JD",
+        "handle": "jane",
+        "raw": "01J9ZACCT000000000000000JD (jane)"
+      },
+      "repository": "01J9ZREPQ0000000000000000R"
+    },
+    "custom_fields": {
+      "custom.entire.io/pusher": "01J9ZACCT000000000000000JD (jane)",
+      "custom.entire.io/repository": "01J9ZREPQ0000000000000000R"
+    }
+  }
+}

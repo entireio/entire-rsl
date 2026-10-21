@@ -1,0 +1,4 @@
+NUMBER  ENTRY         TYPE       REF              TARGET        TIME                  SIGNER                SKIPPED
+9       2f3106dcfec6  reference  refs/heads/main  8c9626aa9daa  1995-10-26T09:00:00Z  SHA256:gcwUs7YXVhN2…  -
+4       5e3963e1c33e  reference  refs/heads/main  732924be9ec6  1995-10-26T09:00:00Z  SHA256:gcwUs7YXVhN2…  -
+3       d424aa2b5963  reference  refs/heads/main  67b438c76d82  1995-10-26T09:00:00Z  SHA256:gcwUs7YXVhN2…  -

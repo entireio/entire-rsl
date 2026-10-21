@@ -2,12 +2,31 @@ package cli
 
 import (
 	"bytes"
+	"flag"
+	"os"
+	"path/filepath"
 	"testing"
+
+	"github.com/entireio/entire-rsl/internal/testutil"
+	"github.com/stretchr/testify/assert"
+	"github.com/stretchr/testify/require"
 )
+
+var update = flag.Bool("update", false, "rewrite golden files")
+
+func TestMain(m *testing.M) {
+	testutil.IsolateGitConfig()
+	os.Exit(m.Run())
+}
 
 type testEnv map[string]string
 
 func (e testEnv) get(key string) string { return e[key] }
+
+// inRepo is the environment of a command run by the Entire CLI inside dir.
+func inRepo(dir string) testEnv {
+	return testEnv{"ENTIRE_REPO_ROOT": dir, "ENTIRE_CLI_VERSION": "0.42.0"}
+}
 
 type result struct {
 	stdout string
@@ -21,15 +40,32 @@ func execute(t *testing.T, env testEnv, args ...string) result {
 	t.Helper()
 
 	var stdout, stderr bytes.Buffer
+	cwd := t.TempDir()
 	root := NewRootCmd(Options{
 		Stdin:  &bytes.Buffer{},
 		Stdout: &stdout,
 		Stderr: &stderr,
 		Getenv: env.get,
+		Getwd:  func() (string, error) { return cwd, nil },
 	})
 	root.SetArgs(args)
 
 	code := Report(&stderr, root.ExecuteContext(t.Context()))
 
 	return result{stdout: stdout.String(), stderr: stderr.String(), code: code}
+}
+
+// golden compares got with testdata/<name>, rewriting it under -update.
+func golden(t *testing.T, name, got string) {
+	t.Helper()
+
+	path := filepath.Join("testdata", name)
+	if *update {
+		require.NoError(t, os.MkdirAll(filepath.Dir(path), 0o750))
+		require.NoError(t, os.WriteFile(path, []byte(got), 0o600))
+	}
+
+	want, err := os.ReadFile(path)
+	require.NoError(t, err, "missing golden file, run go test ./cmd/entire-rsl/cli -update")
+	assert.Equal(t, string(want), got)
 }

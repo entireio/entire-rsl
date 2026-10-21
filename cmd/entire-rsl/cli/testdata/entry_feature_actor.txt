@@ -1,0 +1,12 @@
+Entry          #5 09773fcb2d3c618ff6177b5aa24beb8751d8780b
+Type           reference
+Ref            refs/heads/feature
+Target         ef6a417e0bf7787dfd8c5f7c551922fe261baca8
+Time           1995-10-26T09:00:00Z (asserted by the signer)
+Signer         SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE, signature valid
+Committer      Jane Doe <jane.doe@example.com> (unverified)
+Written by     Entire mirror service (repository mirroring), as recorded by Entire
+Repository     01J9ZREPQ0000000000000000R
+Custom fields  custom.entire.io/actor = entire-mirror-service
+               custom.entire.io/repository = 01J9ZREPQ0000000000000000R
+               (signed with the entry, asserted by the signer, unverified by entire-rsl)

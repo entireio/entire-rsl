@@ -1,0 +1,9 @@
+Entry         #11 2db61b8ed6bec7f9f868604a1749821c8d4965a9
+Type          reference
+Ref           refs/heads/fixed
+Target        6e0e1b046eb7ae06b070ba9d43a9a223bdbdc44b
+Time          1995-10-26T09:00:00Z (asserted by the signer)
+Signer        SHA256:ffaIKVVFWP8bX32cTwbiF9RI09A3/JD4U1fRkT897+Y, signature valid
+Committer     Jane Doe <jane.doe@example.com> (unverified)
+Skipped       yes, by 09ce3ff1bd7666fbfc27b695299a43ec098dfb45
+Annotated by  09ce3ff1bd7666fbfc27b695299a43ec098dfb45

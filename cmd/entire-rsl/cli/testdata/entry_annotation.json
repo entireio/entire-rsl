@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "entry": {
+    "number": 12,
+    "id": "09ce3ff1bd7666fbfc27b695299a43ec098dfb45",
+    "type": "annotation",
+    "time": "1995-10-26T09:00:00Z",
+    "signer": {
+      "method": "ssh",
+      "signature_valid": true,
+      "key_id": "SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE"
+    },
+    "committer_unverified": {
+      "name": "Jane Doe",
+      "email": "jane.doe@example.com"
+    },
+    "skipped": false,
+    "skip": true,
+    "annotates": [
+      "2db61b8ed6bec7f9f868604a1749821c8d4965a9"
+    ],
+    "message": "revoked: signed by an unknown key"
+  }
+}

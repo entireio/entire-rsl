@@ -11,6 +11,7 @@ import (
 	"syscall"
 
 	"github.com/entireio/entire-rsl/cmd/entire-rsl/cli"
+	"github.com/entireio/entire-rsl/internal/repo"
 )
 
 func main() {
@@ -29,11 +30,13 @@ func run() int {
 		stop()
 	}()
 
+	env := repo.ProcessEnv(os.Getenv)
 	root := cli.NewRootCmd(cli.Options{
 		Stdin:  os.Stdin,
 		Stdout: os.Stdout,
 		Stderr: os.Stderr,
-		Getenv: os.Getenv,
+		Getenv: env.Getenv,
+		Getwd:  env.Getwd,
 
 		SetDefaultLogger: slog.SetDefault,
 	})

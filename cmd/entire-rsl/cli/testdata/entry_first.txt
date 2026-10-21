@@ -1,0 +1,7 @@
+Entry      #1 7df054836a15f3be91d48652dc82a158acf845f5
+Type       reference
+Ref        refs/gittuf/policy-staging
+Target     64af4e1b8af185ed6d83b76e0c251d3fef2f9b85
+Time       1995-10-26T09:00:00Z (asserted by the signer)
+Signer     none: unsigned
+Committer  Jane Doe <jane.doe@example.com> (unverified)

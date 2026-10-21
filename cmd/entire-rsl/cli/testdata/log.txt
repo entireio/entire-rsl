@@ -1,0 +1,14 @@
+NUMBER  ENTRY         TYPE        REF                                                    TARGET        TIME                  SIGNER                SKIPPED
+13      61abc6aed752  reference   refs/heads/fixed                                       6e0e1b046eb7  1995-10-26T09:00:00Z  SHA256:gcwUs7YXVhN2…  -
+12      09ce3ff1bd76  annotation  skip 1 entry                                           -             1995-10-26T09:00:00Z  SHA256:gcwUs7YXVhN2…  -
+11      2db61b8ed6be  reference   refs/heads/fixed                                       6e0e1b046eb7  1995-10-26T09:00:00Z  SHA256:ffaIKVVFWP8b…  yes, by 09ce3ff1bd76
+10      6ca19a5f51c2  reference   refs/heads/rogue                                       f390a5b0152b  1995-10-26T09:00:00Z  SHA256:ffaIKVVFWP8b…  -
+9       2f3106dcfec6  reference   refs/heads/main                                        8c9626aa9daa  1995-10-26T09:00:00Z  SHA256:gcwUs7YXVhN2…  -
+8       e0ff9ff266d4  reference   refs/entire/checkpoints/7Z/01JC0FFEE0BADC0DE00000007Z  fe16799c32d2  1995-10-26T09:00:00Z  SHA256:gcwUs7YXVhN2…  -
+7       e1188d6637f0  reference   refs/tags/v1.0.0                                       732924be9ec6  1995-10-26T09:00:00Z  SHA256:gcwUs7YXVhN2…  -
+6       60a5dd3f63e2  reference   refs/tags/v1.0.0                                       67b438c76d82  1995-10-26T09:00:00Z  SHA256:gcwUs7YXVhN2…  -
+5       09773fcb2d3c  reference   refs/heads/feature                                     ef6a417e0bf7  1995-10-26T09:00:00Z  SHA256:gcwUs7YXVhN2…  -
+4       5e3963e1c33e  reference   refs/heads/main                                        732924be9ec6  1995-10-26T09:00:00Z  SHA256:gcwUs7YXVhN2…  -
+3       d424aa2b5963  reference   refs/heads/main                                        67b438c76d82  1995-10-26T09:00:00Z  SHA256:gcwUs7YXVhN2…  -
+2       c3ce20797e50  reference   refs/gittuf/policy                                     64af4e1b8af1  1995-10-26T09:00:00Z  unsigned              -
+1       7df054836a15  reference   refs/gittuf/policy-staging                             64af4e1b8af1  1995-10-26T09:00:00Z  unsigned              -
