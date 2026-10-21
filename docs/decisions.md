@@ -52,3 +52,39 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   go.sum.
 - **Rejected:** excluding genproto versions (gittuf's requirement sets the
   floor, so no older version can be selected), and dropping the tidy check.
+
+## 2026-10-21: A read-only go-git store of our own
+
+- **Context:** Phase 0 asks for a go-git backed store. gittuf's own go-git
+  backend (`internal/gogitstore`) is internal, delegates several reads to the
+  git binary, and is reachable only in developer mode
+  (`experimental/gittuf/storer.go:83`).
+- **Decision:** `internal/store` implements `gitstore.Storer` over go-git
+  entirely in-process. Object reads follow `internal/gogitstore`, and the
+  remaining reads (`GetCommitsBetweenRange`, `GetFilePathsChangedByCommit`,
+  `KnowsCommit`, `LookupConfig`) mirror `pkg/gitinterface` (`log.go:14`,
+  `changes.go:17`, `commit.go:239`, `config.go:20`). Every write method,
+  including `GetMergeTree`, returns `ErrReadOnly`, which makes the read-only
+  guarantee structural for anything gittuf does through the store.
+  `GetMergeTree` is only used by `VerifyMergeable`
+  (`internal/policy/verify.go:210`), never by `VerifyRef`.
+- **Verification:** differential tests run every read, plus `VerifyRef` and
+  `VerifyRefFromEntry`, against `gitinterface.Repository` on the fixture
+  repositories and require identical results.
+- **Hardening:** objects are size-checked before decoding (1 MiB commits and
+  tags, 16 MiB trees and blobs). `GetReference` accepts only `HEAD` and full
+  `refs/` names. gitinterface would pass revision expressions to `rev-parse`.
+  `LookupConfig` reads the repository's own config only.
+- **Rejected:** `gitinterface.Repository` (shells out to git for every read)
+  and enabling gittuf's backend through developer mode.
+
+## 2026-10-21: Fixtures isolate git config in TestMain
+
+- **Context:** fixtures are written by gittuf's git binary backed store, which
+  inherits the process environment, so a developer's `commit.gpgsign` or other
+  global config would change fixture commits.
+- **Decision:** test binaries that build fixtures call
+  `testutil.IsolateGitConfig` from `TestMain`, setting `GIT_CONFIG_GLOBAL` to
+  the null device and `GIT_CONFIG_NOSYSTEM=1` before any test runs. Tests stay
+  parallel because nothing changes the environment afterwards.
+- **Rejected:** `t.Setenv`, which forbids `t.Parallel()`.
