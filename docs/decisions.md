@@ -278,9 +278,10 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
 - **Context:** profiling a 100,000-entry RSL walk showed each entry commit
   decoded three times (parents, gittuf's parent check, message) and the
   shallow file read twice per entry.
-- **Decision:** the store keeps a bounded FIFO of 4,096 decoded commits and
-  reads the shallow list once, both shared by the context-bound copies of one
-  store. Decoded commits are never mutated. A fetch adds refs and objects but
+- **Decision:** the store keeps a bounded FIFO of decoded commits, at most
+  4,096 entries and 64 MiB, never caching a commit over 64 KiB (review 0004),
+  and reads the shallow list once, both shared by the context-bound copies of
+  one store. Decoded commits are never mutated. A fetch adds refs and objects but
   no shallow boundaries, so the cached list stays valid for the invocation.
 - **Result:** see docs/benchmarks.md.
 
@@ -288,11 +289,11 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
 
 - **Context:** SPEC.md section 5 asks for a test that fails when write APIs
   appear outside an allowlist that is empty except for the fetch.
-- **Decision:** `internal/guard` scans every non-test Go file, comments and
-  declarations removed, for calls that write refs, objects, config, the RSL
-  or files (gittuf's `Record*`, `Push*`, `Pull*`, `Commit`, store setters,
+- **Decision:** `internal/guard` parses every non-test Go file with
+  `go/parser` (review 0004) and inspects its call expressions for calls that
+  write refs, objects, config, the RSL or files (gittuf's `Record*`, `Push*`, `Pull*`, `Commit`, store setters,
   go-git object and reference setters, `os` file writers) and, in files that
-  import `os/exec`, for git subcommands that write. The allowlist holds
+  import `os/exec`, string literals naming git subcommands that write. The allowlist holds
   `"fetch"` and `"update-ref"` in `internal/gitcli/fetch.go`, and go-git's
   `Worktree()` in `internal/repo/repo.go`, used only to locate the root.
   `internal/testutil` writes fixtures and is exempt, and a second check fails

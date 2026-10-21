@@ -116,7 +116,7 @@ func New(repo *gogit.Repository) (*Store, error) {
 	return &Store{
 		ctx:    context.Background(),
 		repo:   repo,
-		cache:  newCache(commitCacheSize),
+		cache:  newCache(commitCacheSize, commitCacheBudget),
 		limits: defaultLimits,
 		sha256: cfg.Extensions.ObjectFormat == "sha256",
 	}, nil
@@ -756,7 +756,7 @@ func (s *Store) commitObject(h plumbing.Hash) (*object.Commit, error) {
 	if err != nil {
 		return nil, &ObjectError{Op: "decode commit", ID: h.String(), Err: err}
 	}
-	s.cache.addCommit(h, commit)
+	s.cache.addCommit(h, commit, obj.Size())
 	return commit, nil
 }
 
