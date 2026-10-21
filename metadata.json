@@ -1,0 +1,35 @@
+{
+  "cli_version": "0.11.5-nightly.202610140625.065c76361",
+  "checkpoint_id": "01M5G0MC31NHG8RXTN76N4AVPM",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "cmd/entire-rsl/acceptance_test.go",
+    "cmd/entire-rsl/cli/root.go",
+    "cmd/entire-rsl/cli/rsl_agent_help.go",
+    "cmd/entire-rsl/cli/rsl_agent_help_test.go",
+    "cmd/entire-rsl/cli/testdata/agent_help.json",
+    "cmd/entire-rsl/cli/testdata/agent_help.txt",
+    "cmd/entire-rsl/cli/testdata/agent_help_verify.json",
+    "docs/decisions.md",
+    "entire-plugin.yml",
+    "go.mod"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 18,
+    "cache_creation_tokens": 22988,
+    "cache_read_tokens": 5311404,
+    "output_tokens": 18002,
+    "api_call_count": 9
+  }
+}
