@@ -1,0 +1,54 @@
+{
+  "cli_version": "0.11.5-nightly.202610140625.065c76361",
+  "checkpoint_id": "01M5G6M553151EDA7YVTFRZF2C",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "README.md",
+    "cmd/entire-rsl/cli/refreport.go",
+    "cmd/entire-rsl/cli/rsl_branch_test.go",
+    "cmd/entire-rsl/cli/testdata/branch_fixed.txt",
+    "cmd/entire-rsl/cli/testdata/branch_main.json",
+    "cmd/entire-rsl/cli/testdata/branch_main.txt",
+    "cmd/entire-rsl/cli/testdata/branch_main_history1.txt",
+    "cmd/entire-rsl/cli/testdata/checkpoint_from_commit.json",
+    "cmd/entire-rsl/cli/testdata/checkpoint_from_commit.txt",
+    "cmd/entire-rsl/cli/testdata/checkpoint_ulid.json",
+    "cmd/entire-rsl/cli/testdata/checkpoint_ulid.txt",
+    "cmd/entire-rsl/cli/testdata/tag_moved.json",
+    "cmd/entire-rsl/cli/testdata/tag_moved.txt",
+    "cmd/entire-rsl/cli/testdata/verify_checkpoint.txt",
+    "cmd/entire-rsl/cli/testdata/verify_checkpoint_commit.txt",
+    "cmd/entire-rsl/cli/testdata/verify_fixed.txt",
+    "cmd/entire-rsl/cli/testdata/verify_main.json",
+    "cmd/entire-rsl/cli/testdata/verify_main.txt",
+    "cmd/entire-rsl/cli/testdata/verify_rogue.json",
+    "cmd/entire-rsl/cli/testdata/verify_rogue.txt",
+    "cmd/entire-rsl/cli/testdata/verify_tag_moved.txt",
+    "cmd/entire-rsl/cli/verification.go",
+    "docs/decisions.md",
+    "docs/json-schema.md",
+    "internal/rslread/rslread.go",
+    "internal/tipstate/tipstate.go",
+    "internal/verify/checks.go",
+    "internal/verify/verify.go",
+    "internal/verify/verify_test.go"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 18,
+    "cache_creation_tokens": 18261,
+    "cache_read_tokens": 7296488,
+    "output_tokens": 15819,
+    "api_call_count": 9
+  }
+}

@@ -1,0 +1,1 @@
+when doing a rsl verify sometimes the given ref may be behind the rsl entry. If that is the case, we should still be able to validate (and info the user accordingly)
