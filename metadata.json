@@ -1,0 +1,34 @@
+{
+  "cli_version": "0.11.5-nightly.202610140625.065c76361",
+  "checkpoint_id": "01M5G8AW9XG8XP2T3NEPZS9QFS",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 2,
+  "files_touched": [
+    "cmd/entire-rsl/cli/testdata/tag_moved.json",
+    "cmd/entire-rsl/cli/testdata/tag_moved.txt",
+    "cmd/entire-rsl/cli/testdata/verify_rogue.json",
+    "cmd/entire-rsl/cli/testdata/verify_rogue.txt",
+    "cmd/entire-rsl/cli/testdata/verify_tag_moved.txt",
+    "docs/json-schema.md",
+    "docs/reviews/0009.md",
+    "internal/verify/verify.go",
+    "internal/verify/verify_test.go"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 4,
+    "cache_creation_tokens": 4658,
+    "cache_read_tokens": 1694472,
+    "output_tokens": 2990,
+    "api_call_count": 2
+  }
+}
