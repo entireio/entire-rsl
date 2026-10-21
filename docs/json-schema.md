@@ -119,6 +119,7 @@ Entries are newest first. `entries` is an empty array when nothing matches.
 | `history` | array of Entry | Newest entries for the ref, newest first, up to `--history`, skipped ones included. |
 | `history_total` | integer | Number of entries the RSL holds for the ref. |
 | `warnings` | array | Each with a stable `code` and a human `message`. |
+| `verification` | object or null | See [Verification](#verification). Null when `--no-verify` skipped it. |
 
 Warning codes:
 
@@ -143,3 +144,30 @@ The `branch` document for the checkpoint's ref, plus:
 | `checkpoint.id` | string | The checkpoint ID. |
 | `checkpoint.resolved_from` | string | `id` when given directly, `commit` when read from a commit's `Entire-Checkpoint` trailer. |
 | `checkpoint.commit` | string | The commit the ID was read from, for `resolved_from: commit`. |
+
+## Verification
+
+Used by `verify`, and by `branch`, `tag` and `checkpoint` unless `--no-verify`
+is given.
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `state` | string | `verified`, `failed`, `unprotected` or `error`. Only `verified` is a pass. |
+| `reason` | string | The state explained in a sentence. |
+| `error` | string | The underlying error, for `failed` and `error`. |
+| `verified_tip` | string | For `verified`: the target of the latest RSL entry, which gittuf verified. |
+| `from_entry` | string | The ref's first RSL entry, where full verification starts. |
+| `rules` | array of string | Policy rules covering the ref. Global rules carry a `global:` prefix. |
+
+`verified` means gittuf's full verification of every RSL entry for the ref
+returned no error. It says nothing about the local ref, which `branch` and
+`tag` compare separately (`local_drift`).
+
+## `verify`
+
+```json
+{"schema_version": 1, "ref": "refs/heads/main", "verification": Verification}
+```
+
+The exit code carries the state: 0 `verified`, 3 `failed` or `unprotected`,
+1 `error`.

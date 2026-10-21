@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "ref": "refs/heads/main",
+  "verification": {
+    "state": "verified",
+    "reason": "gittuf verified every RSL entry for the ref against the policy",
+    "verified_tip": "8c9626aa9daaf78041a7db7045b058738597e154",
+    "from_entry": "d424aa2b5963fed76767d1335a83938adc61a300",
+    "rules": [
+      "authorize-rsl-signers"
+    ]
+  }
+}

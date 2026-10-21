@@ -1,0 +1,5 @@
+Ref           refs/entire/checkpoints/7Z/01JC0FFEE0BADC0DE00000007Z
+Verification  verified: gittuf verified every RSL entry for the ref against the policy
+Verified tip  fe16799c32d2f19aeba4d415f9b42f37799acc3e
+Checked from  e0ff9ff266d46ca738826fd52b1db5dab6f46271
+Rules         authorize-rsl-signers

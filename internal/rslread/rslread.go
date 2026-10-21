@@ -188,6 +188,30 @@ func (r *Reader) parent(entry rsl.Entry) (rsl.Entry, bool, error) {
 	return parent, true, nil
 }
 
+// RefNames returns every ref the RSL holds a reference or propagation entry
+// for.
+func (r *Reader) RefNames(ctx context.Context) (map[string]bool, error) {
+	refs := map[string]bool{}
+	err := r.walk(ctx, func(w raw) (bool, error) {
+		if name := w.refName(); name != "" {
+			refs[name] = true
+		}
+		return true, nil
+	})
+	if err != nil {
+		return nil, err
+	}
+	return refs, nil
+}
+
+// CheckComplete walks the whole RSL and fails if any entry cannot be read or
+// the history stops at a shallow boundary. gittuf's own walks read an
+// unreadable parent as the first entry, so a verification that starts at the
+// "first" entry is only full once this passes.
+func (r *Reader) CheckComplete(ctx context.Context) error {
+	return r.walk(ctx, func(raw) (bool, error) { return true, nil })
+}
+
 // Walk visits complete entries newest first from the tip until visit returns
 // false.
 func (r *Reader) Walk(ctx context.Context, visit func(Entry) (bool, error)) error {

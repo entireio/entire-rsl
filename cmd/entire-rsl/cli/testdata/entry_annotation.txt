@@ -1,7 +1,7 @@
-Entry      #12 09ce3ff1bd7666fbfc27b695299a43ec098dfb45
+Entry      #13 f20a70c9876bb10b5906582c0aa2ec2879e42269
 Type       annotation
 Action     skip (revokes the annotated entries)
-Annotates  2db61b8ed6bec7f9f868604a1749821c8d4965a9
+Annotates  8c707461c74c1e70fa82427a52a3f18bc129b168
 Message    revoked: signed by an unknown key
 Time       1995-10-26T09:00:00Z (asserted by the signer)
 Signer     SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE, signature valid

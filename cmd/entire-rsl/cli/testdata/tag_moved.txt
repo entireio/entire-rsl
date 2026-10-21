@@ -1,9 +1,13 @@
-Ref        refs/tags/v1.0.0
-Local tip  732924be9ec6dad0a148a35536c2ac65cc345a67
-RSL tip    732924be9ec6dad0a148a35536c2ac65cc345a67 (entry #7)
-Pushed by  jane, as recorded by Entire
-Time       1995-10-26T09:00:00Z (asserted by the signer)
-Signer     SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE, signature valid
+Ref           refs/tags/v1.0.0
+Local tip     732924be9ec6dad0a148a35536c2ac65cc345a67
+RSL tip       732924be9ec6dad0a148a35536c2ac65cc345a67 (entry #7)
+Pushed by     jane, as recorded by Entire
+Time          1995-10-26T09:00:00Z (asserted by the signer)
+Signer        SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE, signature valid
+Verification  failed: gittuf verification failed
+Detail        verifying tag entry failed, gittuf policy verification failed: verifying tag object's signature failed
+Checked from  60a5dd3f63e2269021e4722105a9602909d55ecf
+Rules         authorize-rsl-signers
 
 Warning: tag refs/tags/v1.0.0 has 2 unskipped RSL entries, so it was moved after it was first pushed
 

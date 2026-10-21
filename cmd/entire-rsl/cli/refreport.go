@@ -14,6 +14,7 @@ import (
 	"github.com/entireio/entire-rsl/internal/refresolve"
 	"github.com/entireio/entire-rsl/internal/rslread"
 	"github.com/entireio/entire-rsl/internal/sanitize"
+	"github.com/entireio/entire-rsl/internal/verify"
 	"github.com/gittuf/gittuf/pkg/githash"
 	"github.com/gittuf/gittuf/pkg/gitstore"
 	"github.com/spf13/cobra"
@@ -41,9 +42,11 @@ type warning struct {
 // refReport is what the RSL records for one ref, next to the local ref.
 type refReport struct {
 	LocalTip githash.Hash
-	History  rslread.History
-	Ref      string
-	Warnings []warning
+	// Verification is nil when verification was skipped.
+	Verification *verify.Result
+	History      rslread.History
+	Ref          string
+	Warnings     []warning
 }
 
 // rslTip is the target the newest unskipped entry records.
@@ -63,6 +66,8 @@ type refReportJSON struct {
 	History       []entryJSON `json:"history"`
 	HistoryTotal  int         `json:"history_total"`
 	Warnings      []warning   `json:"warnings"`
+	// Verification is null when --no-verify skipped it.
+	Verification *verificationJSON `json:"verification"`
 }
 
 func optionalHash(h githash.Hash) *string {
@@ -92,6 +97,10 @@ func (r refReport) toJSON() refReportJSON {
 	}
 	for _, e := range r.History.Entries {
 		j.History = append(j.History, toEntryJSON(e))
+	}
+	if r.Verification != nil {
+		v := toVerificationJSON(*r.Verification)
+		j.Verification = &v
 	}
 	return j
 }
@@ -164,7 +173,7 @@ func writeRefReport(w io.Writer, r refReport, lead ...field) error {
 	}
 
 	fields := slices.Concat(lead, []field{
-		{"Ref", sanitize.Line(r.Ref)},
+		{labelRef, sanitize.Line(r.Ref)},
 		{"Local tip", local},
 	})
 
@@ -179,6 +188,12 @@ func writeRefReport(w io.Writer, r refReport, lead ...field) error {
 		)
 	} else {
 		fields = append(fields, field{"RSL tip", "none"})
+	}
+
+	if r.Verification != nil {
+		fields = append(fields, verificationFields(*r.Verification)...)
+	} else {
+		fields = append(fields, field{"Verification", "skipped (--no-verify)"})
 	}
 
 	if err := writeFields(w, fields); err != nil {
@@ -218,20 +233,31 @@ func writeRefReport(w io.Writer, r refReport, lead ...field) error {
 
 // refCommandFlags are the flags shared by branch, tag and checkpoint.
 type refCommandFlags struct {
-	asJSON  bool
+	verify  verifyFlags
 	history int
+	asJSON  bool
 }
 
 func (f *refCommandFlags) register(cmd *cobra.Command) {
 	cmd.Flags().BoolVar(&f.asJSON, "json", false, "print JSON")
 	cmd.Flags().IntVar(&f.history, "history", defaultHistory, "number of RSL entries to list")
+	f.verify.register(cmd, true)
 }
 
 func (f *refCommandFlags) validate() error {
 	if f.history < 0 || f.history > maxHistory {
 		return usageError(fmt.Errorf("--history must be between 0 and %d", maxHistory))
 	}
-	return nil
+	return f.verify.validate()
+}
+
+// addVerification runs verification for the report unless it was skipped.
+func (a *app) addVerification(ctx context.Context, s *session, r *refReport, flags verifyFlags) {
+	if flags.noVerify {
+		return
+	}
+	res := a.verify(ctx, s, r.Ref, flags)
+	r.Verification = &res
 }
 
 // runRefReport resolves nothing: ref is already a full name.
@@ -245,6 +271,7 @@ func (a *app) runRefReport(cmd *cobra.Command, flags *refCommandFlags, ref strin
 	if err != nil {
 		return err
 	}
+	a.addVerification(cmd.Context(), s, &report, flags.verify)
 
 	if flags.asJSON {
 		return writeJSON(cmd.OutOrStdout(), report.toJSON())

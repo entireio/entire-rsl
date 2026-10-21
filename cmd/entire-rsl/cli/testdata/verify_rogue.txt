@@ -1,0 +1,5 @@
+Ref           refs/heads/rogue
+Verification  failed: gittuf verification failed
+Detail        verifying Git namespace policies failed, gittuf policy verification failed
+Checked from  6ca19a5f51c2464b742b1215005891fe9295fc54
+Rules         authorize-rsl-signers

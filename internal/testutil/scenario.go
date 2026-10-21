@@ -30,8 +30,9 @@ type Scenario struct {
 	TagFirstEntry, TagMovedEntry  githash.Hash // v1.0.0 recorded twice
 	CheckpointEntry               githash.Hash // refs/entire/checkpoints/7Z/<ULID>
 	RogueEntry                    githash.Hash // refs/heads/rogue, signed by Rogue
-	RevokedEntry, RevokeAnnot     githash.Hash // refs/heads/fixed, skipped
-	FixedEntry                    githash.Hash // refs/heads/fixed, re-recorded
+	FixedGoodEntry                githash.Hash // refs/heads/fixed, first and valid
+	RevokedEntry, RevokeAnnot     githash.Hash // refs/heads/fixed, rogue and skipped
+	FixedEntry                    githash.Hash // refs/heads/fixed, the fix back to the good state
 }
 
 // CheckpointRef returns the git-refs backend ref for a checkpoint ID.
@@ -82,9 +83,15 @@ func NewScenario(t *testing.T) *Scenario {
 	s.Commit("refs/heads/rogue", "rogue work")
 	s.RogueEntry = s.Record(s.Rogue, "refs/heads/rogue", pushedBy(PusherJane))
 
-	s.Commit("refs/heads/fixed", "fixed work")
+	// gittuf recovers from a skipped violation by finding a later entry that
+	// is tree-same with the last good one (internal/policy/verify.go), so the
+	// fix resets the branch to the good commit.
+	good := s.Commit("refs/heads/fixed", "good work")
+	s.FixedGoodEntry = s.Record(s.Cluster, "refs/heads/fixed", pushedBy(PusherBob))
+	s.Commit("refs/heads/fixed", "rogue work")
 	s.RevokedEntry = s.Record(s.Rogue, "refs/heads/fixed", nil)
 	s.RevokeAnnot = s.Annotate(s.Cluster, true, "revoked: signed by an unknown key", s.RevokedEntry)
+	s.SetRef("refs/heads/fixed", good)
 	s.FixedEntry = s.Record(s.Cluster, "refs/heads/fixed", pushedBy(PusherBob))
 
 	return s

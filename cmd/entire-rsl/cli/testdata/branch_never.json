@@ -11,5 +11,9 @@
       "code": "no_rsl_entries",
       "message": "the RSL has no entries for refs/heads/never. The repository's RSL coverage may exclude it, or it was never pushed through Entire"
     }
-  ]
+  ],
+  "verification": {
+    "state": "unprotected",
+    "reason": "the RSL has no entries for the ref, so nothing protects it. The repository's RSL coverage may exclude it"
+  }
 }

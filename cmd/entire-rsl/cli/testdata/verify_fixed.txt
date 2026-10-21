@@ -1,0 +1,5 @@
+Ref           refs/heads/fixed
+Verification  verified: gittuf verified every RSL entry for the ref against the policy
+Verified tip  18a7d66b2fb3ab6a4acb8b485ebb3a22ed7f9053
+Checked from  860e9cc02a7b3e2c1130bfdff2b0214f06ee5d77
+Rules         authorize-rsl-signers

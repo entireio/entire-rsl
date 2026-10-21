@@ -1,0 +1,13 @@
+{
+  "schema_version": 1,
+  "ref": "refs/heads/rogue",
+  "verification": {
+    "state": "failed",
+    "reason": "gittuf verification failed",
+    "error": "verifying Git namespace policies failed, gittuf policy verification failed",
+    "from_entry": "6ca19a5f51c2464b742b1215005891fe9295fc54",
+    "rules": [
+      "authorize-rsl-signers"
+    ]
+  }
+}

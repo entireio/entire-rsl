@@ -23,6 +23,9 @@ const shortIDLen = 12
 // none marks an empty cell.
 const none = "-"
 
+// labelRef labels a ref in detail views.
+const labelRef = "Ref"
+
 func shortID(h githash.Hash) string {
 	if len(h) == 0 {
 		return none
@@ -139,7 +142,7 @@ func entryFields(e rslread.Entry) []field {
 		}
 	default:
 		fields = append(fields,
-			field{"Ref", sanitize.Line(e.RefName)},
+			field{labelRef, sanitize.Line(e.RefName)},
 			field{"Target", e.TargetID.String()},
 		)
 		if e.Kind == rslread.KindPropagation {

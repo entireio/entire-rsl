@@ -1,0 +1,5 @@
+Ref           refs/heads/main
+Verification  verified: gittuf verified every RSL entry for the ref against the policy
+Verified tip  8c9626aa9daaf78041a7db7045b058738597e154
+Checked from  d424aa2b5963fed76767d1335a83938adc61a300
+Rules         authorize-rsl-signers

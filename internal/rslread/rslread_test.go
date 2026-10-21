@@ -250,8 +250,8 @@ func TestHistory(t *testing.T) {
 
 	fixed, err := r.History(t.Context(), "refs/heads/fixed", 1)
 	require.NoError(t, err)
-	assert.Equal(t, 2, fixed.Total)
-	assert.Equal(t, 1, fixed.Unskipped)
+	assert.Equal(t, 3, fixed.Total)
+	assert.Equal(t, 2, fixed.Unskipped)
 	assert.Equal(t, []githash.Hash{sc.FixedEntry}, ids(fixed.Entries))
 	require.NotNil(t, fixed.Current)
 	assert.Equal(t, sc.FixedEntry, fixed.Current.ID)

@@ -1,3 +1,3 @@
 NUMBER  ENTRY         TYPE       REF               TARGET        TIME                  SIGNER                SKIPPED
-11      2db61b8ed6be  reference  refs/heads/fixed  6e0e1b046eb7  1995-10-26T09:00:00Z  SHA256:ffaIKVVFWP8b…  yes, by 09ce3ff1bd76
-10      6ca19a5f51c2  reference  refs/heads/rogue  f390a5b0152b  1995-10-26T09:00:00Z  SHA256:ffaIKVVFWP8b…  -
+12      8c707461c74c  reference  refs/heads/fixed  33c123cf6c5b  1995-10-26T09:00:00Z  SHA256:ffaIKVVFWP8b…  yes, by f20a70c9876b
+11      860e9cc02a7b  reference  refs/heads/fixed  18a7d66b2fb3  1995-10-26T09:00:00Z  SHA256:gcwUs7YXVhN2…  -

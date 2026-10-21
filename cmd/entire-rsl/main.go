@@ -11,6 +11,7 @@ import (
 	"syscall"
 
 	"github.com/entireio/entire-rsl/cmd/entire-rsl/cli"
+	"github.com/entireio/entire-rsl/internal/gitcli"
 	"github.com/entireio/entire-rsl/internal/repo"
 )
 
@@ -19,6 +20,12 @@ func main() {
 }
 
 func run() int {
+	// gittuf starts git processes itself and they inherit this environment,
+	// so it is hardened before anything else runs.
+	if err := gitcli.HardenProcessEnv(); err != nil {
+		return cli.Report(os.Stderr, err)
+	}
+
 	// The Entire CLI forwards Ctrl-C and sends SIGINT with a five second grace
 	// period when it is cancelled. The first signal cancels the context so work
 	// unwinds. stop then restores the default disposition, so a second signal

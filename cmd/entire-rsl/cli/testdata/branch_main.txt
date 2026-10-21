@@ -1,9 +1,13 @@
-Ref        refs/heads/main
-Local tip  8c9626aa9daaf78041a7db7045b058738597e154
-RSL tip    8c9626aa9daaf78041a7db7045b058738597e154 (entry #9)
-Pushed by  jane, as recorded by Entire
-Time       1995-10-26T09:00:00Z (asserted by the signer)
-Signer     SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE, signature valid
+Ref           refs/heads/main
+Local tip     8c9626aa9daaf78041a7db7045b058738597e154
+RSL tip       8c9626aa9daaf78041a7db7045b058738597e154 (entry #9)
+Pushed by     jane, as recorded by Entire
+Time          1995-10-26T09:00:00Z (asserted by the signer)
+Signer        SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE, signature valid
+Verification  verified: gittuf verified every RSL entry for the ref against the policy
+Verified tip  8c9626aa9daaf78041a7db7045b058738597e154
+Checked from  d424aa2b5963fed76767d1335a83938adc61a300
+Rules         authorize-rsl-signers
 
 History (3 of 3 entries, newest first)
 NUMBER  ENTRY         TARGET        TIME                  BY    SIGNER                SKIPPED

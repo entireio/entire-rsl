@@ -1,11 +1,16 @@
-Ref        refs/heads/fixed
-Local tip  6e0e1b046eb7ae06b070ba9d43a9a223bdbdc44b
-RSL tip    6e0e1b046eb7ae06b070ba9d43a9a223bdbdc44b (entry #13)
-Pushed by  bob, as recorded by Entire
-Time       1995-10-26T09:00:00Z (asserted by the signer)
-Signer     SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE, signature valid
+Ref           refs/heads/fixed
+Local tip     18a7d66b2fb3ab6a4acb8b485ebb3a22ed7f9053
+RSL tip       18a7d66b2fb3ab6a4acb8b485ebb3a22ed7f9053 (entry #14)
+Pushed by     bob, as recorded by Entire
+Time          1995-10-26T09:00:00Z (asserted by the signer)
+Signer        SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE, signature valid
+Verification  verified: gittuf verified every RSL entry for the ref against the policy
+Verified tip  18a7d66b2fb3ab6a4acb8b485ebb3a22ed7f9053
+Checked from  860e9cc02a7b3e2c1130bfdff2b0214f06ee5d77
+Rules         authorize-rsl-signers
 
-History (2 of 2 entries, newest first)
+History (3 of 3 entries, newest first)
 NUMBER  ENTRY         TARGET        TIME                  BY   SIGNER                SKIPPED
-13      61abc6aed752  6e0e1b046eb7  1995-10-26T09:00:00Z  bob  SHA256:gcwUs7YXVhN2…  -
-11      2db61b8ed6be  6e0e1b046eb7  1995-10-26T09:00:00Z  -    SHA256:ffaIKVVFWP8b…  yes, by 09ce3ff1bd76
+14      1eab2edb244f  18a7d66b2fb3  1995-10-26T09:00:00Z  bob  SHA256:gcwUs7YXVhN2…  -
+12      8c707461c74c  33c123cf6c5b  1995-10-26T09:00:00Z  -    SHA256:ffaIKVVFWP8b…  yes, by f20a70c9876b
+11      860e9cc02a7b  18a7d66b2fb3  1995-10-26T09:00:00Z  bob  SHA256:gcwUs7YXVhN2…  -

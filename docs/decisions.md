@@ -149,3 +149,41 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   body does not count. Repeated identical IDs count once, distinct IDs are an
   error listing them.
 - **Rejected:** the legacy `entire/checkpoints/v1` branch, per the answer.
+
+## 2026-10-21: Four verification states and how they are decided
+
+- **Context:** gittuf's verifier passes a ref no rule covers without checking
+  anything ("This target is not protected by gittuf policy",
+  `internal/policy/verify.go:1110` at a818fabe), and its `ErrPolicyNotFound`
+  is internal. Full verification is `VerifyRelativeForRef` from the ref's
+  first entry, which `pkg/policy.VerifyRefFromEntry` exposes over a store.
+- **Decision:** `internal/verify` decides in this order. No RSL, or no applied
+  policy (gittuf's own `HasPolicy` query), is `unprotected`. An incomplete
+  local RSL (unreadable entry or shallow boundary) is `error`, checked first
+  because every gittuf walk reads a gap as the start of history and could
+  otherwise hide the policy or the ref's early entries. No RSL entries for the
+  ref is `unprotected` (Phase 0 answer 19). No covering rule is `unprotected`.
+  Coverage is gittuf's own: top-level rules from `ListRules` (allow rule
+  excluded) and global rules from `ListGlobalRules`, matched with each rule's
+  `Matches`, mirroring `findVerifiersForPathIfProtected`. Then
+  `VerifyRefFromEntry` from the first entry: no error is `verified`. Context
+  errors, store read errors, `ErrReadOnly`, a missing local ref and panics are
+  `error`, any other gittuf error is `failed`. Every outcome other than
+  `verified` exits non-zero in `verify`.
+- **Coverage uses the git binary:** `ListRules` exists only on
+  `experimental/gittuf.Repository`, which is tied to gittuf's git binary
+  backend. Reading the rules is the only place entire-rsl relies on it, so
+  `main` hardens the process environment first (`internal/gitcli`): repository
+  selectors removed, `core.fsmonitor` and `core.hooksPath` neutralised through
+  `GIT_CONFIG_COUNT`. Follow-up: expose coverage over a `gitstore.Storer` in
+  the fork's `pkg/policy`.
+- **Local drift does not fail verification:** gittuf's `VerifyRef` also checks
+  the local tip (`experimental/gittuf/verify.go:210`). SPEC.md section 3
+  reports drift as a warning, so `verified` covers the RSL history and
+  `branch`/`tag` report drift separately.
+- **Known gittuf limitation:** when a ref's very first entry is a violation,
+  gittuf cannot recover even if it is skipped and fixed, because it has no last
+  good state (`TODO: what if the very first entry for a ref is a violation?`).
+  Such refs report `failed`.
+- **Rejected:** treating all gittuf errors as `failed` or all as `error`, and
+  `--latest-only` (Phase 0 answer 7).

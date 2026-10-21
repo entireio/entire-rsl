@@ -2,11 +2,11 @@
   "schema_version": 1,
   "entries": [
     {
-      "number": 13,
-      "id": "61abc6aed75285bdf1ab56acb7c82267e0251894",
+      "number": 14,
+      "id": "1eab2edb244f060134138d7f03baf7eef6dfd18c",
       "type": "reference",
       "ref": "refs/heads/fixed",
-      "target": "6e0e1b046eb7ae06b070ba9d43a9a223bdbdc44b",
+      "target": "18a7d66b2fb3ab6a4acb8b485ebb3a22ed7f9053",
       "time": "1995-10-26T09:00:00Z",
       "signer": {
         "method": "ssh",
@@ -32,8 +32,8 @@
       }
     },
     {
-      "number": 12,
-      "id": "09ce3ff1bd7666fbfc27b695299a43ec098dfb45",
+      "number": 13,
+      "id": "f20a70c9876bb10b5906582c0aa2ec2879e42269",
       "type": "annotation",
       "time": "1995-10-26T09:00:00Z",
       "signer": {
@@ -48,16 +48,16 @@
       "skipped": false,
       "skip": true,
       "annotates": [
-        "2db61b8ed6bec7f9f868604a1749821c8d4965a9"
+        "8c707461c74c1e70fa82427a52a3f18bc129b168"
       ],
       "message": "revoked: signed by an unknown key"
     },
     {
-      "number": 11,
-      "id": "2db61b8ed6bec7f9f868604a1749821c8d4965a9",
+      "number": 12,
+      "id": "8c707461c74c1e70fa82427a52a3f18bc129b168",
       "type": "reference",
       "ref": "refs/heads/fixed",
-      "target": "6e0e1b046eb7ae06b070ba9d43a9a223bdbdc44b",
+      "target": "33c123cf6c5bd405a2b11c208350540c437f8fc7",
       "time": "1995-10-26T09:00:00Z",
       "signer": {
         "method": "ssh",
@@ -70,11 +70,41 @@
       },
       "skipped": true,
       "skipped_by": [
-        "09ce3ff1bd7666fbfc27b695299a43ec098dfb45"
+        "f20a70c9876bb10b5906582c0aa2ec2879e42269"
       ],
       "annotated_by": [
-        "09ce3ff1bd7666fbfc27b695299a43ec098dfb45"
+        "f20a70c9876bb10b5906582c0aa2ec2879e42269"
       ]
+    },
+    {
+      "number": 11,
+      "id": "860e9cc02a7b3e2c1130bfdff2b0214f06ee5d77",
+      "type": "reference",
+      "ref": "refs/heads/fixed",
+      "target": "18a7d66b2fb3ab6a4acb8b485ebb3a22ed7f9053",
+      "time": "1995-10-26T09:00:00Z",
+      "signer": {
+        "method": "ssh",
+        "signature_valid": true,
+        "key_id": "SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE"
+      },
+      "committer_unverified": {
+        "name": "Jane Doe",
+        "email": "jane.doe@example.com"
+      },
+      "skipped": false,
+      "entire": {
+        "pusher": {
+          "account_id": "01J9ZACCT000000000000000BB",
+          "handle": "bob",
+          "raw": "01J9ZACCT000000000000000BB (bob)"
+        },
+        "repository": "01J9ZREPQ0000000000000000R"
+      },
+      "custom_fields": {
+        "custom.entire.io/pusher": "01J9ZACCT000000000000000BB (bob)",
+        "custom.entire.io/repository": "01J9ZREPQ0000000000000000R"
+      }
     },
     {
       "number": 10,

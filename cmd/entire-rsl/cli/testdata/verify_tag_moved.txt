@@ -1,0 +1,5 @@
+Ref           refs/tags/v1.0.0
+Verification  failed: gittuf verification failed
+Detail        verifying tag entry failed, gittuf policy verification failed: verifying tag object's signature failed
+Checked from  60a5dd3f63e2269021e4722105a9602909d55ecf
+Rules         authorize-rsl-signers
