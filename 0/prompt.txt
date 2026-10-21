@@ -1,0 +1,3 @@
+The refresh is looking good. Two improvements:
+- When picking a remote, origin must always be the first option as that is generally the default
+- When showing what references were updated, show the quantity of commits between old and new. For RSL, perhaps show in parenthesis the previous rsl entry and the current

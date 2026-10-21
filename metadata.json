@@ -1,0 +1,34 @@
+{
+  "cli_version": "0.11.5-nightly.202610140625.065c76361",
+  "checkpoint_id": "01M5G634J6003AG7MDZN6PFZX6",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "README.md",
+    "cmd/entire-rsl/cli/fetch_test.go",
+    "cmd/entire-rsl/cli/repo.go",
+    "cmd/entire-rsl/cli/rsl_refresh.go",
+    "cmd/entire-rsl/cli/rsl_refresh_test.go",
+    "cmd/entire-rsl/cli/testdata/refresh_created.txt",
+    "cmd/entire-rsl/cli/testdata/refresh_updated.txt",
+    "docs/json-schema.md",
+    "internal/gitcli/fetch.go"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 10,
+    "cache_creation_tokens": 10863,
+    "cache_read_tokens": 3954299,
+    "output_tokens": 10065,
+    "api_call_count": 5
+  }
+}
