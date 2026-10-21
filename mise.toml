@@ -1,0 +1,36 @@
+[tools]
+# Please also keep the version aligned in the go.mod file
+go = { version = '1.27.3', postinstall = "go install gotest.tools/gotestsum@v1.13.0" }
+golangci-lint = '2.15.0'
+goreleaser = '2.18.3'
+shellcheck = 'latest'
+"go:golang.org/x/vuln/cmd/govulncheck" = 'v1.9.0'
+"go:github.com/google/go-licenses/v2" = 'v2.0.1'
+
+[tasks.fmt]
+description = "Run gofmt"
+run = "gofmt -s -w ."
+
+[tasks.test]
+description = "Run tests"
+run = "gotestsum --format pkgname --format-icons text --format-hide-empty-pkg --hide-summary skipped -- ./..."
+
+[tasks."test:ci"]
+description = "Run all tests with race detection"
+run = "go test -race ./..."
+
+[tasks.check]
+description = "Run formatting, linting, and CI tests"
+depends = ["fmt", "lint", "test:ci"]
+
+[tasks.build]
+description = "Build entire-rsl into ./bin"
+run = "CGO_ENABLED=0 go build -trimpath -ldflags '-s -w' -o bin/entire-rsl ./cmd/entire-rsl"
+
+[tasks.vuln]
+description = "Run govulncheck"
+run = "govulncheck ./..."
+
+[tasks.snapshot]
+description = "Build a local snapshot release into ./dist"
+run = "goreleaser release --snapshot --clean"

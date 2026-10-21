@@ -1,0 +1,14 @@
+#!/bin/sh
+#MISE description="Lint go"
+
+golangci-lint version
+golangci-lint config verify
+
+# CI runs golangci-lint through golangci/golangci-lint-action in lint.yml, so
+# only run it locally.
+if [ "$CI" = "true" ]; then
+  echo "skipped because CI=true"
+else
+  # No --fix: lint is read-only, like CI. `mise run fmt` owns rewriting.
+  golangci-lint run --timeout=30m ./...
+fi

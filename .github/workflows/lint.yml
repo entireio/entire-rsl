@@ -1,0 +1,43 @@
+name: Lint
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+
+      - uses: actions/setup-go@b7ad1dad31e06c5925ef5d2fc7ad053ef454303e # v7.0.0
+        with:
+          go-version-file: go.mod
+
+      - uses: jdx/mise-action@f10502fc09dadecfefb962fff68ce77213930204 # v4
+
+      - name: Run linters
+        run: mise run lint
+
+      # The version is read from mise.toml so the two pins cannot drift.
+      - name: Resolve golangci-lint version
+        id: golangci
+        run: |
+          version=$(sed -n "s/^golangci-lint = '\(.*\)'$/\1/p" mise.toml)
+          if [ -z "$version" ]; then
+            echo "could not read the golangci-lint version from mise.toml" >&2
+            exit 1
+          fi
+          echo "version=v$version" >> "$GITHUB_OUTPUT"
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@ba0d7d2ec06a0ea1cb5fa41b2e4a3ab91d21278a # v9
+        with:
+          version: ${{ steps.golangci.outputs.version }}

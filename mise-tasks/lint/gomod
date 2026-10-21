@@ -1,0 +1,15 @@
+#!/bin/sh
+#MISE description="Check that go.mod and go.sum are tidy"
+
+set -e
+
+before="$(cat go.mod go.sum | git hash-object --stdin)"
+go mod tidy
+after="$(cat go.mod go.sum | git hash-object --stdin)"
+
+# Compare contents rather than git status, so staged but uncommitted module
+# changes do not count as untidy.
+if [ "$before" != "$after" ]; then
+  echo "go.mod or go.sum changed after 'go mod tidy', please commit the result"
+  exit 1
+fi

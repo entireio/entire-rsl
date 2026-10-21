@@ -1,0 +1,57 @@
+# yaml-language-server: $schema=https://goreleaser.com/static/schema.json
+version: 2
+
+project_name: entire-rsl
+
+before:
+  hooks:
+    - go mod tidy
+
+builds:
+  - id: entire-rsl
+    main: ./cmd/entire-rsl
+    binary: entire-rsl
+    env:
+      - CGO_ENABLED=0
+    flags:
+      - -trimpath
+    goos:
+      - darwin
+      - linux
+      - windows
+    goarch:
+      - amd64
+      - arm64
+    ldflags:
+      - -s -w
+      - -X github.com/entireio/entire-rsl/internal/versioninfo.Version={{.Version}}
+      - -X github.com/entireio/entire-rsl/internal/versioninfo.Commit={{.ShortCommit}}
+
+archives:
+  - id: entire-rsl
+    ids:
+      - entire-rsl
+    # entire plugin install selects assets by goreleaser's default naming:
+    # entire-rsl_<version>_<os>_<arch>.tar.gz, .zip on Windows.
+    name_template: "{{ .ProjectName }}_{{ .Version }}_{{ .Os }}_{{ .Arch }}"
+    formats: [tar.gz]
+    format_overrides:
+      - goos: windows
+        formats: [zip]
+    # Exactly one binary per archive. entire extracts the first entry named
+    # entire-rsl[.exe] and ignores everything else.
+    files:
+      - none*
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+snapshot:
+  version_template: "{{ incpatch .Version }}-next"
+
+changelog:
+  disable: true
+
+release:
+  draft: true
