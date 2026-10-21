@@ -1,0 +1,37 @@
+{
+  "cli_version": "0.11.5-nightly.202610140625.065c76361",
+  "checkpoint_id": "01M5FYVVNR69N47K41KF4G9QZY",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "docs/reviews/0001.md",
+    "internal/store/store.go",
+    "internal/store/store_test.go",
+    "internal/testutil/testutil.go",
+    "mise-tasks/lint/licenses"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": "/0/prompt.txt"
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 276,
+    "cache_creation_tokens": 396886,
+    "cache_read_tokens": 35703463,
+    "output_tokens": 145154,
+    "api_call_count": 137,
+    "subagent_tokens": {
+      "input_tokens": 136,
+      "cache_creation_tokens": 224408,
+      "cache_read_tokens": 5166478,
+      "output_tokens": 28917,
+      "api_call_count": 68
+    }
+  }
+}

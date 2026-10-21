@@ -1,0 +1,194 @@
+<task-notification>
+<task-id>a89e6161f7bca8226</task-id>
+<tool-use-id>toolu_01UtoXyBWpVnnR3jbuy87GHK</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-gittuf/20849cfe-edd8-4d45-a1a1-b531a4274c7c/tasks/a89e6161f7bca8226.output</output-file>
+<status>completed</status>
+<summary>Agent "Find cluster RSL signer keys" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>I found answers to all four questions. The public signer keys for every cluster are in entiredb's embedded cluster fixtures, and infra pins the same fingerprints for each prod and staging cluster deployment.
+
+## Repo freshness
+| Repo | `git log -1` |
+|---|---|
+| /home/coder/git/entirehq/entiredb | e64a4f389a Wed Oct 21 16:18:12 2026 +0200 |
+| /home/coder/git/entirehq/entiredb-review | 91ec38fb2 Wed Oct 21 15:47:48 2026 +0100 (its prod `key_id` lines are identical to entiredb's) |
+| /home/coder/git/entirehq/entire-api | 5e87c6e1f Wed Oct 21 14:19:47 2026 +0000 |
+| /home/coder/git/entirehq/infra | 5903a110 Wed Oct 21 16:07:48 2026 +0100 |
+| /home/coder/git/entirehq/fleet | 4f58bcbfe Wed Oct 21 10:06:19 2026 +0100 |
+| gittuf fork used by entiredb: `~/go/pkg/mod/github.com/pjbgf/gittuf@v0.0.0-20261015143455-a818fabe56f0`, via the `replace` at entiredb/go.mod:15 | module cache, not a git checkout |
+
+## 1. RSL actor labels and operations
+
+**Actor field** (`/home/coder/git/entirehq/entiredb/rslstore/writer.go`)
+
+The comment at lines 73-81 sets out how actor and pusher relate:
+```
+// The actor field is the pusher field's orthogonal counterpart: pusher names the
+// human end user who originated a change, actor names the non-human service that
+// performed the write when it was not a plain human push. A direct human push
+// carries pusher and no actor; a mirror/automation/service-account/trust push
+// carries actor and no pusher. ...
+// ... a reader learns "a mirror service did this",
+// not the workload's SPIFFE name or a service account's ULID.
+```
+The constants are at lines 101-107, with the comment that the labels "deliberately omit the underlying technical identity (workload SPIFFE name, service-account ULID, automation id)".
+
+How each label is chosen, from `actorDescriptor` at lines 419-452:
+```go
+v, _ := ctx.Value(trustPublishActorKey{}).(bool)
+if v { return actorTrustService }
+...
+if p.PusherID() != "" { return "" }          // human -&gt; pusher field instead
+switch p.Kind {
+case reqctx.KindInternalWorkload:
+    if p.Handle == string(servicetoken.WorkloadMirrorWorker) { return actorMirrorService }
+    return actorInternalService
+case reqctx.KindAutomation:
+    return actorAutomationService
+case reqctx.TokenScopedJWT, reqctx.TokenLoginJWT:
+    if accountID, ok := p.Subject.AccountID(); ok &amp;&amp; accountID.IsServiceAccount() { return actorServiceAccount }
+    return ""
+case reqctx.TokenOpsAccess, reqctx.TokenDebugAccess, reqctx.TokenDeployAccess, reqctx.TokenBackupAccess:
+    return ""
+```
+- **`entire-mirror-service`**: an internal workload whose handle is the mirror-worker workload.
+- **`entire-internal-service`**: any other internal workload principal.
+- **`entire-automation-service`**: a principal of kind `KindAutomation`.
+- **`entire-service-account`**: a scoped or login JWT whose account is a service account rather than a human pusher.
+- **`entire-trust-service`**: policy publication (trust management). Lines 399-404 explain it: "the trust-management publication path (PublishPolicy), whose baseline entries are attributed to the trust service regardless of which principal triggered the publication. The publisher is typically an admin whose ops-access token is not a git pusher". It is applied at `rslstore/publish.go:315-317`: `fields := recordingCustomFields(withTrustPublishActor(ctx), repoID)`. These baseline entries have no operation field.
+- **No actor and no pusher**: ops, debug, deploy and backup tokens.
+
+**Operations** (`/home/coder/git/entirehq/entiredb/rslstore/operation.go`)
+- Lines 14-16: "A push carries no operation field, so a reader takes the field's absence as an ordinary push." The field key is `custom.entire.io/operation` (line 50).
+- **`default-branch-change`** (lines 32-36): "marks the HEAD entry that records a move of the repo's default branch. The entry's target is the tip of the new default branch. It carries customFieldSymrefTarget and, when HEAD had a previous symbolic target, customFieldSymrefPreviousTarget." Those keys are `custom.entire.io/symref-target` and `custom.entire.io/symref-previous-target` (lines 51-52), and their values are ref names encoded with %XX escaping (lines 125-149).
+- **`default-branch-baseline`** (lines 38-42): "marks the entry for the new default branch that follows an OperationDefaultBranchChange entry under default-branch coverage... gives verify-ref an anchor for it. It is not a push."
+
+**Ref names** (`/home/coder/git/entirehq/entiredb/refstore/rsl_default_branch.go:148-176`)
+- `default-branch-change` is recorded under `RefName: plumbing.HEAD.String()`, which is `HEAD`.
+- `default-branch-baseline` is recorded under `RefName: next`, the new default branch's full ref (for example `refs/heads/main`). It is only added when the coverage mode is `refpolicy.CoverageDefaultBranch` and the ref is not skipped.
+- Neither entry may be a force update (operation.go:72-74).
+- A `bootstrap_pending` repo moves HEAD without recording an entry (lines 30-34).
+
+## 2. Cluster and cell names
+
+The source of truth is entiredb's embedded fixtures, loaded at `/home/coder/git/entirehq/entiredb/core/cluster/fixture.go:12`.
+
+**Prod**: `/home/coder/git/entirehq/entiredb/core/cluster/fixtures/clusters.prod.yaml`. In every prod row the slug and the cell are the same string.
+| slug / cell | jurisdiction | line | public_url |
+|---|---|---|---|
+| aws-us-east-2 | us | 27 | https://aws-us-east-2.entire.io |
+| aws-eu-central-1 | eu | 67 | https://aws-eu-central-1.entire.io |
+| aws-ap-southeast-2 | au | 107 | https://aws-ap-southeast-2.entire.io |
+| aws-ap-south-1 | in | 150 | https://aws-ap-south-1.entire.io |
+| aws-eu-west-2 | uk | 189 | https://aws-eu-west-2.entire.io |
+| aws-ap-southeast-1 | sg | 230 | https://aws-ap-southeast-1.entire.io |
+| aws-sa-east-1 | br | 271 | https://aws-sa-east-1.entire.io (`hidden: true`, line 280) |
+
+Internal URLs follow the pattern `https://svctok.&lt;slug&gt;.entire.internal:8281`. The comment at lines 297-306 says `entire-ci-webhooks` is intentionally not registered in prod.
+
+**Staging**: `.../fixtures/clusters.staging.yaml`
+| slug | cell | jurisdiction | line | public_url |
+|---|---|---|---|---|
+| royalcanin | aws-us-west-2 | us | 55 | https://royalcanin.partial.to |
+| purina | aws-us-east-2 | us | 104 | https://purina.partial.to |
+| eukanuba | aws-eu-west-1 | eu | 154 | https://eukanuba.partial.to |
+
+**Display labels**: `.../fixtures/topology.yaml` labels the jurisdictions us, eu, au, in, uk, sg and br, and the regions aws-us-east-2, aws-eu-central-1, aws-us-west-2, aws-eu-west-1, aws-ap-southeast-2, aws-ap-south-1, aws-eu-west-2, aws-ap-southeast-1 and aws-sa-east-1.
+
+**infra and fleet**
+- Infra cluster directories are `/home/coder/git/entirehq/infra/aws/entire-prod/cluster-aws-{us-east-2,eu-central-1,ap-southeast-2,ap-south-1,eu-west-2,ap-southeast-1,sa-east-1}` and `/home/coder/git/entirehq/infra/aws/entire-nonprod/cluster-{royalcanin,purina,eukanuba}`.
+- The EKS cluster names are `eks-prod-&lt;region&gt;` (7 regions) and `eks-staging-{eu-west-1,us-east-2,us-west-2}`. They appear in both `infra/aws/entire-{prod,nonprod}/` and `/home/coder/git/entirehq/fleet/clusters/{prod,nonprod}/`.
+- `infra/aws/regions.hcl:8-19` also lists `us-east-1`, but that is for Config, GuardDuty and Security Hub coverage. I found no cluster in us-east-1.
+
+**entire-api**: it has no cluster list of its own. It refers to entiredb cluster slugs:
+- `internal/repoapi/client.go:132`: "placement (e.g. `https://aws-us-east-2.entire.io/api/v1`)"
+- `internal/store/store.go:653`: "(entiredb clusters.slug, e.g. aws-eu-central-1)"
+- `aws-us-east-1` appears only in test files.
+
+## 3. Public RSL signer keys and fingerprints
+
+**Found.** They are in the same fixtures, in the `rsl_signers` block of each cluster. `key_id` is the SSH SHA256 fingerprint and `public_key` is the raw ed25519 key in standard base64. `core/cluster/trust.go:270-306` checks that each `key_id` matches its key.
+
+**Prod** (`clusters.prod.yaml`):
+| cluster | gen | key_id | public_key | state | lines |
+|---|---|---|---|---|---|
+| aws-us-east-2 | 1 | SHA256:FtO/REDACTED | iIDIqjqkDe0WmESf/ZQeuR+Yw52F+p0HFY4brKLmV/E= | active | 43-46 |
+| aws-eu-central-1 | 1 | SHA256:REDACTED | dATcLAm5+K/REDACTED | active | 83-86 |
+| aws-ap-southeast-2 | 1 | SHA256:REDACTED | REDACTED | active | 126-129 |
+| aws-ap-south-1 | 1 | SHA256:Mp+mUThsliFRfaN5k/yDj0wuCuAUJR+hg3pClmUL0NM | REDACTED | active | 165-168 |
+| aws-eu-west-2 | 1 | SHA256:REDACTED | TeBScj0/REDACTED | active | 206-209 |
+| aws-ap-southeast-1 | 1 | SHA256:83JIUjrI5cPfgM/REDACTED | mAorVibTTeszrO1YyLa8HYhK/K8FlYLyotr9GgTu1nI= | active | 247-250 |
+| aws-sa-east-1 | 1 | SHA256:pf/REDACTED/R590 | REDACTED | active | 285-288 |
+
+The prod fleet root key is `root_profile`, lines 16-23: `custody: server_held`, `threshold: 1`, `key_id: SHA256:REDACTED`, `public_key: 0YOabvC1LUqgoo/y9AEXIinCTW/Ge3hu+27th5Rxpas=`.
+
+**Staging** (`clusters.staging.yaml`):
+| cluster | gen | key_id | public_key | lines |
+|---|---|---|---|---|
+| royalcanin | 1 | SHA256:REDACTED | 4E0g/REDACTED | 76-79 |
+| purina | 1 | SHA256:REDACTED | REDACTED | 126-129 |
+| eukanuba | 2 | SHA256:REDACTED/8fY76HaVS4WGxQ1Pic | KP5THuMh8wTdAUOF/PTC+pYcCehytlmNt40guTgVqMc= | 173-176 |
+
+The staging fleet root key is at lines 44-51: `SHA256:REDACTED/OaR1/wQW1mdEtJ8` / `REDACTED`.
+
+**Infra pins the same fingerprints.** Each cluster's `terragrunt.hcl` sets `ENTIRE_RSL_EXPECTED_SIGNER_KEY_ID`, and every value matches the fixture:
+- `infra/aws/entire-prod/cluster-aws-us-east-2/terragrunt.hcl:302`
+- `cluster-aws-eu-central-1/terragrunt.hcl:77`
+- `cluster-aws-ap-southeast-2/terragrunt.hcl:307`
+- `cluster-aws-ap-south-1/terragrunt.hcl:309`
+- `cluster-aws-eu-west-2/terragrunt.hcl:309`
+- `cluster-aws-ap-southeast-1/terragrunt.hcl:309`
+- `cluster-aws-sa-east-1/terragrunt.hcl:309`
+- nonprod: `cluster-royalcanin:179`, `cluster-purina:173`, `cluster-eukanuba:65` (generation 2)
+
+entiredb checks a node's loaded key against this pin in `internal/entireserver/rslsigner.go:104-118`.
+
+**Public endpoint: not found.**
+- The public discovery document `/.well-known/entire-cluster.json` (`entiredb/server/cluster_discovery.go:20,126-166`) returns only core URLs, domain, jurisdiction and login URL. It contains no keys.
+- I found no signer or key fields in `core/coreapi/clusters.go`, which serves `GET /api/v1/clusters` and `/topology`.
+- Signer key IDs are only shown through session-gated admin routes: `GET /api/admin/repos/{repoID}/trust` (`core/api/server.go:1673`), built from the fixture in `core/api/admin_repo_trust.go:722-745`.
+- entire-api has no RSL, gittuf or signer code.
+
+**Secrets (not quoted):**
+- A hex `ENTIRE_RSL_SIGNER_SEED` value is in `/home/coder/git/entirehq/entiredb/.env.example:129` and `/home/coder/git/entirehq/entiredb/scripts/pentest/make-entiredb-env.sh:43`. Both are dev/pentest env files.
+- In production the seeds come from Secrets Manager. In the cached module copies under `infra/aws/entire-nonprod/cluster-*/.terragrunt-cache/`, `aws-server-nodegroup/scripts/prepare_env.sh` reads them from `SECRETS[RSL_KEYS]`. I found no prod seed in any repo.
+
+## 4. How a repo's root of trust is created
+
+**Who holds the root key.** A single fleet root, kept on the server (`custody: server_held`, threshold 1; clusters.prod.yaml:9-23). Its seed is stored encrypted with KMS in Secrets Manager. It is fetched per generation by `core/trust/rootseed_provider.go:12-20` and unwrapped inside entire-core. `core/trust/author.go:62-89` checks it against the reviewed profile key before signing anything.
+
+**What gets authorized.** `core/trust/policyrequest.go:92-149` (`AuthorPolicyRequest`) includes every `pending` and `active` signer from every cluster the repo is placed on (primary plus native mirrors), and leaves out `retiring` signers. It fails if any placement has no authorized signer.
+
+**Building the signed policy.** `core/trust/author.go:101-131` builds a `gittufstore.AuthorPolicyInput`. For a first bootstrap it calls `gittufstore.AuthorBootstrapClosure`, which creates a policy commit with no parent; later changes use `AuthorSuccessorClosure`. `gittufstore/closure.go:160-168` then calls the fork's `policy.Author` (in place of `policy.Bootstrap`):
+```go
+treeID, err := policy.Author(ctx, store, policy.BootstrapParams{
+    RootSigners:         []crypto.Signer{rootPriv},
+    RootPublicKeys:      cryptoPublicKeys(in.RootPublicKeys),
+    RootThreshold:       in.RootThreshold,
+    RSLSignerPublicKeys: cryptoPublicKeys(in.RSLSignerPublicKeys),
+    RefPatterns:         in.RefPatterns,
+    ...
+```
+
+**Inside the fork** (`pkg/policy/policy.go`):
+- The root keys go into both the root role and the primary rule file, with the root threshold (lines 641-664).
+- The RSL signers are added as principals in a single targets rule: `const rslSignerRuleName = "authorize-rsl-signers"` (line 63), created with `targetsMetadata.AddRule(rslSignerRuleName, ids, p.RefPatterns, p.rslSignerThreshold())` (line 682). The RSL signer threshold defaults to 1 (lines 456-462).
+
+**RefPatterns: `git:refs/*`.** Set at `/home/coder/git/entirehq/entiredb/internal/entirecore/trust_reconciler.go:58`:
+```go
+func trustReconcilerRefPatterns() []string { return []string{"git:refs/*"} }
+```
+The comment at lines 43-57 says this is intentionally the all-refs wildcard rather than the narrower set the ADR targets ("refs/gittuf/policy + refs/entire/checkpoints/* + refs/tags/* + default branch"). Narrowing is tracked in ENT-1605. The value is passed in at line 541 through `nativemirror.TrustReconcilerConfig.RefPatterns`.
+
+**Expiry.** Defaults to 10 years (`core/nativemirror/trust_reconciler.go:236`).
+
+**Publication.** `rslstore/publish.go` `PublishPolicy` (line 103) does a compare-and-swap on `refs/gittuf/policy`. On bootstrap, `recordBaseline` (lines 264-330) throws away any RSL entries written before the policy and starts the baseline at entry 1. Those baseline entries carry the `entire-trust-service` actor.
+
+**Per-repo state.** Lifecycle states are `disabled` → `bootstrap_pending` → `rooted` (`rslstore/writer.go` `LifecycleFunc` comment). Admins trigger rooting with `POST /api/admin/repos/{repoID}/enable-trust-root` (`core/api/server.go:1674`). The procedure is in `docs/runbooks/rsl-bootstrap-production.md`, which I did not read.
+
+## Not found
+- A public, unauthenticated API endpoint that publishes RSL signer public keys or the root of trust.
+- Any RSL signer, gittuf or trust code in entire-api.
+- Docs outside the fixtures that list the fingerprints: a search of entiredb (fixtures and `.go` source only), company-knowledge and ck2 found only the fixture copies in entiredb and entiredb-review. I did not read entiredb's `docs/runbooks/rsl-*.md`.</result>
+<usage><subagent_tokens>125424</subagent_tokens><tool_uses>42</tool_uses><duration_ms>218007</duration_ms></usage>
+</task-notification>

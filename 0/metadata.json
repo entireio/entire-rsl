@@ -1,0 +1,68 @@
+{
+  "cli_version": "0.11.5-nightly.202610140625.065c76361",
+  "checkpoint_id": "01M5FYVVNR69N47K41KF4G9QZY",
+  "session_id": "20849cfe-edd8-4d45-a1a1-b531a4274c7c",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-21T19:26:33.871051753Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "docs/reviews/0001.md",
+    "internal/store/store.go",
+    "internal/store/store_test.go",
+    "internal/testutil/testutil.go",
+    "mise-tasks/lint/licenses"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-5-5",
+  "turn_id": "3e4be79c3a41",
+  "compact_transcript_start": 0,
+  "token_usage": {
+    "input_tokens": 276,
+    "cache_creation_tokens": 396886,
+    "cache_read_tokens": 35703463,
+    "output_tokens": 145154,
+    "api_call_count": 137,
+    "subagent_tokens": {
+      "input_tokens": 136,
+      "cache_creation_tokens": 224408,
+      "cache_read_tokens": 5166478,
+      "output_tokens": 28917,
+      "api_call_count": 68
+    }
+  },
+  "skill_events_version": 1,
+  "skill_events": [
+    {
+      "id": "claude-skill-toolu_015Ra2cvFfogxPEPTVovH6Zj",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "anthropic-skills:docs"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "3e4be79c3a41",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 35,
+        "end": 36,
+        "entry_ids": [
+          "f497a412-d543-4245-a559-f1f21fe3b9a0"
+        ],
+        "tool_use_id": "toolu_015Ra2cvFfogxPEPTVovH6Zj"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_015Ra2cvFfogxPEPTVovH6Zj"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: anthropic-skills:docs",
+        "default_collapsed": true
+      }
+    }
+  ]
+}
