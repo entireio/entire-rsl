@@ -1,0 +1,49 @@
+{
+  "cli_version": "0.11.5-nightly.202610140625.065c76361",
+  "checkpoint_id": "01M5FZDPZXPVWDQY7KGQQ57SH5",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "cmd/entire-rsl/cli/cli_test.go",
+    "cmd/entire-rsl/cli/model.go",
+    "cmd/entire-rsl/cli/render.go",
+    "cmd/entire-rsl/cli/repo.go",
+    "cmd/entire-rsl/cli/root.go",
+    "cmd/entire-rsl/cli/rsl_entry.go",
+    "cmd/entire-rsl/cli/rsl_entry_test.go",
+    "cmd/entire-rsl/cli/rsl_log.go",
+    "cmd/entire-rsl/cli/rsl_log_test.go",
+    "cmd/entire-rsl/cli/sanitize_test.go",
+    "cmd/entire-rsl/cli/testdata/entry_annotation.json",
+    "cmd/entire-rsl/cli/testdata/entry_annotation.txt",
+    "cmd/entire-rsl/cli/testdata/entry_feature_actor.txt",
+    "cmd/entire-rsl/cli/testdata/entry_first.txt",
+    "cmd/entire-rsl/cli/testdata/entry_main.json",
+    "cmd/entire-rsl/cli/testdata/entry_main.txt",
+    "cmd/entire-rsl/cli/testdata/entry_revoked.txt",
+    "cmd/entire-rsl/cli/testdata/log.json",
+    "cmd/entire-rsl/cli/testdata/log.txt",
+    "cmd/entire-rsl/cli/testdata/log_limit_before.txt",
+    "cmd/entire-rsl/cli/testdata/log_no_match.txt",
+    "cmd/entire-rsl/cli/testdata/log_ref_main.txt",
+    "cmd/entire-rsl/main.go",
+    "docs/json-schema.md"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 0,
+    "cache_creation_tokens": 0,
+    "cache_read_tokens": 0,
+    "output_tokens": 0,
+    "api_call_count": 0
+  }
+}
