@@ -1,0 +1,7 @@
+<task-notification>
+<task-id>bd3x9qt3h</task-id>
+<tool-use-id>toolu_01WpFAzihvpefrYs3ErQB5qW</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-gittuf/20849cfe-edd8-4d45-a1a1-b531a4274c7c/tasks/bd3x9qt3h.output</output-file>
+<status>completed</status>
+<summary>Background command "S=/tmp/claude-1000/-home-coder-git-entireio-entire-gittuf/20849cfe-edd8-4d45-a1a1-b531a4274c7c/scratchpad; $S/codex-review.sh 7a12bfb b6ea792 $S/review-0003.md; echo "exit=$?"" completed (exit code 0)</summary>
+</task-notification>
