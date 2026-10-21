@@ -14,6 +14,7 @@ import (
 	"github.com/entireio/entire-rsl/internal/refresolve"
 	"github.com/entireio/entire-rsl/internal/rslread"
 	"github.com/entireio/entire-rsl/internal/sanitize"
+	"github.com/entireio/entire-rsl/internal/tipstate"
 	"github.com/entireio/entire-rsl/internal/verify"
 	"github.com/gittuf/gittuf/pkg/githash"
 	"github.com/gittuf/gittuf/pkg/gitstore"
@@ -31,6 +32,7 @@ const (
 	warnAllSkipped   = "all_entries_skipped"
 	warnLocalMissing = "local_ref_missing"
 	warnLocalDrift   = "local_drift"
+	warnLocalBehind  = "local_behind"
 	warnTagMoved     = "tag_moved"
 )
 
@@ -42,6 +44,9 @@ type warning struct {
 // refReport is what the RSL records for one ref, next to the local ref.
 type refReport struct {
 	LocalTip githash.Hash
+	// Relation relates LocalTip to the RSL record, nil when either is
+	// missing.
+	Relation *tipstate.Relation
 	// Verification is nil when verification was skipped.
 	Verification *verify.Result
 	History      rslread.History
@@ -136,6 +141,14 @@ func buildRefReport(ctx context.Context, s *session, ref string, historyLimit in
 		return refReport{}, err
 	}
 
+	if len(r.LocalTip) != 0 && r.History.Current != nil {
+		rel, err := tipstate.Relate(ctx, s.repo.Store, s.reader, ref, r.LocalTip)
+		if err != nil {
+			return refReport{}, err
+		}
+		r.Relation = &rel
+	}
+
 	r.Warnings = refWarnings(r)
 	return r, nil
 }
@@ -151,11 +164,14 @@ func refWarnings(r refReport) []warning {
 		ws = append(ws, warning{Code: warnAllSkipped, Message: "every RSL entry for " + ref + " is skipped by an annotation"})
 	}
 
-	switch tip := r.rslTip(); {
+	switch {
 	case len(r.LocalTip) == 0:
 		ws = append(ws, warning{Code: warnLocalMissing, Message: ref + " does not exist locally. Fetch it to compare with the RSL"})
-	case len(tip) != 0 && !r.LocalTip.Equal(tip):
-		ws = append(ws, warning{Code: warnLocalDrift, Message: fmt.Sprintf("local %s is at %s but the RSL records %s", ref, shortID(r.LocalTip), shortID(tip))})
+	case r.Relation == nil, r.Relation.Kind == tipstate.Match:
+	case r.Relation.Kind == tipstate.Behind:
+		ws = append(ws, warning{Code: warnLocalBehind, Message: "local " + ref + ": " + r.Relation.Describe()})
+	default:
+		ws = append(ws, warning{Code: warnLocalDrift, Message: "local " + ref + ": " + r.Relation.Describe()})
 	}
 
 	if strings.HasPrefix(r.Ref, refresolve.TagsPrefix) && r.History.Unskipped > 1 {

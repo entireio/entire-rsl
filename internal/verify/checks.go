@@ -2,6 +2,7 @@ package verify
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"slices"
 	"strings"
@@ -9,6 +10,7 @@ import (
 	"github.com/entireio/entire-rsl/internal/clusters"
 	"github.com/entireio/entire-rsl/internal/rslread"
 	"github.com/entireio/entire-rsl/internal/store"
+	"github.com/entireio/entire-rsl/internal/tipstate"
 	"github.com/gittuf/gittuf/pkg/githash"
 	"github.com/gittuf/gittuf/pkg/policy"
 )
@@ -17,11 +19,13 @@ import (
 type CheckStatus string
 
 // Check outcomes. A failed check turns verified into failed. A skipped check
-// did not apply.
+// did not apply. Behind is the tip check's pass for a local ref that is
+// behind the RSL tip but holds a state the verified history covers.
 const (
-	CheckPass CheckStatus = "pass"
-	CheckFail CheckStatus = "fail"
-	CheckSkip CheckStatus = "skip"
+	CheckPass   CheckStatus = "pass"
+	CheckFail   CheckStatus = "fail"
+	CheckSkip   CheckStatus = "skip"
+	CheckBehind CheckStatus = "behind"
 )
 
 // Check names.
@@ -40,7 +44,7 @@ type Check struct {
 
 // runChecks runs the tip, root of trust and signer checks. An error means a
 // check could not be evaluated, as opposed to a check that failed.
-func runChecks(ctx context.Context, st *store.Store, reader *rslread.Reader, ref string, res Result, opts Options) ([]Check, error) {
+func runChecks(ctx context.Context, st *store.Store, reader *rslread.Reader, ref string, opts Options) ([]Check, error) {
 	latest, err := reader.History(ctx, ref, 1)
 	if err != nil {
 		return nil, fmt.Errorf("read the ref's latest RSL entry: %w", err)
@@ -50,7 +54,7 @@ func runChecks(ctx context.Context, st *store.Store, reader *rslread.Reader, ref
 	}
 	entry := latest.Entries[0]
 
-	tip, err := checkTip(ref, entry, res, opts.LocalTip)
+	tip, err := checkTip(ctx, st, reader, ref, opts.LocalTip)
 	if err != nil {
 		return nil, err
 	}
@@ -61,30 +65,42 @@ func runChecks(ctx context.Context, st *store.Store, reader *rslread.Reader, ref
 	return []Check{tip, root, checkSigner(entry, rootKey, opts.Keys)}, nil
 }
 
-// checkTip compares the tip the RSL records, which the server signed, with
-// the local ref.
-func checkTip(ref string, latest rslread.Entry, res Result, localTip func(string) (githash.Hash, error)) (Check, error) {
+// checkTip relates the local ref to the tip the RSL records, which the
+// server signed. A local ref behind the tip passes as behind when its state
+// is one the verified history covers.
+func checkTip(ctx context.Context, st *store.Store, reader *rslread.Reader, ref string, localTip func(string) (githash.Hash, error)) (Check, error) {
 	c := Check{Name: CheckTip}
-
-	recorded := res.ExpectedTip
-	if len(recorded) == 0 {
-		recorded = latest.TargetID
-	}
 
 	if localTip == nil {
 		c.Status, c.Detail = CheckSkip, "the local ref was not read"
 		return c, nil
 	}
 	local, err := localTip(ref)
-	switch {
-	case err != nil:
+	if err != nil {
 		return Check{}, fmt.Errorf("read the local ref: %w", err)
-	case len(local) == 0:
+	}
+	if len(local) == 0 {
 		c.Status, c.Detail = CheckSkip, "the ref does not exist locally, so there is nothing to compare"
-	case !local.Equal(recorded):
-		c.Status, c.Detail = CheckFail, fmt.Sprintf("the RSL records %s but the local ref is at %s", recorded.String(), local.String())
+		return c, nil
+	}
+
+	rel, err := tipstate.Relate(ctx, st, reader, ref, local)
+	if errors.Is(err, tipstate.ErrNoEntries) {
+		c.Status, c.Detail = CheckFail, "every RSL entry for the ref is skipped, so no tip is recorded"
+		return c, nil
+	}
+	if err != nil {
+		return Check{}, err
+	}
+
+	c.Detail = rel.Describe()
+	switch rel.Kind {
+	case tipstate.Match:
+		c.Status = CheckPass
+	case tipstate.Behind:
+		c.Status = CheckBehind
 	default:
-		c.Status, c.Detail = CheckPass, "the local ref matches the tip the RSL records ("+recorded.String()+")"
+		c.Status = CheckFail
 	}
 	return c, nil
 }

@@ -267,17 +267,67 @@ func TestChecksPassOnTheScenario(t *testing.T) {
 	assert.Contains(t, signer.Detail, "Entire test test-cluster (local)")
 }
 
-func TestLocalDriftFailsVerification(t *testing.T) {
+func TestLocalRefBehindAtARecordedTipVerifies(t *testing.T) {
 	t.Parallel()
 
 	sc := testutil.NewScenario(t)
-	sc.SetRef("refs/heads/main", sc.MainFirst)
+	sc.SetRef("refs/heads/main", sc.MainSecond)
+
+	res := run(t.Context(), t, sc.Dir, "refs/heads/main", time.Minute)
+
+	assert.Equal(t, Verified, res.State, res.Reason)
+	assert.Contains(t, res.Reason, "behind the RSL tip")
+	tip := checkByName(t, res, CheckTip)
+	assert.Equal(t, CheckBehind, tip.Status)
+	assert.Contains(t, tip.Detail, "at entry #4, the RSL tip is entry #9 (1 entry, 1 commit behind)")
+}
+
+func TestLocalRefBehindInsideAPushVerifies(t *testing.T) {
+	t.Parallel()
+
+	r := testutil.NewRepo(t)
+	r.Bootstrap()
+	inside := r.Commit("refs/heads/main", "pushed together")
+	r.Commit("refs/heads/main", "with this one")
+	r.Record(r.Cluster, "refs/heads/main", nil)
+	r.Commit("refs/heads/main", "pushed later")
+	r.Record(r.Cluster, "refs/heads/main", nil)
+	r.SetRef("refs/heads/main", inside)
+
+	res := run(t.Context(), t, r.Dir, "refs/heads/main", time.Minute)
+
+	assert.Equal(t, Verified, res.State, res.Reason)
+	tip := checkByName(t, res, CheckTip)
+	assert.Equal(t, CheckBehind, tip.Status)
+	assert.Contains(t, tip.Detail, "in the push recorded by entry #3, the RSL tip is entry #4 (1 entry, 2 commits behind)")
+}
+
+func TestLocalRefAheadFailsVerification(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	sc.Commit("refs/heads/main", "not pushed")
 
 	res := run(t.Context(), t, sc.Dir, "refs/heads/main", time.Minute)
 
 	assert.Equal(t, Failed, res.State)
-	assert.Contains(t, res.Reason, "tip check failed")
-	assert.Equal(t, CheckFail, checkByName(t, res, CheckTip).Status)
+	tip := checkByName(t, res, CheckTip)
+	assert.Equal(t, CheckFail, tip.Status)
+	assert.Contains(t, tip.Detail, "ahead of the RSL tip (entry #9) by 1 commit")
+}
+
+func TestLocalRefDivergedFailsVerification(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	feature, err := sc.Git.GetReference("refs/heads/feature")
+	require.NoError(t, err)
+	sc.SetRef("refs/heads/main", feature)
+
+	res := run(t.Context(), t, sc.Dir, "refs/heads/main", time.Minute)
+
+	assert.Equal(t, Failed, res.State)
+	assert.Contains(t, checkByName(t, res, CheckTip).Detail, "diverged")
 }
 
 func TestMissingLocalRefSkipsTheTipCheck(t *testing.T) {

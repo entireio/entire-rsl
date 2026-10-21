@@ -360,3 +360,24 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   the same length and every cell of a coloured table column, header included,
   is styled, so tabwriter's alignment survives. A test strips colour and
   compares with plain output.
+
+## 2026-10-21: A local ref behind the RSL still verifies
+
+- **Context:** the user asked that `verify` still validate a ref whose local
+  value is behind the RSL tip, and say so. Before, any difference failed the
+  tip check.
+- **Decision:** `internal/tipstate` relates the local value to the ref's
+  unskipped RSL entries: `match` (the newest entry's target), `behind` (an
+  older entry's exact target, or a commit an entry's target contains, found
+  by walking back from the tip to the push that introduced it, capped at
+  1,000 entries), `ahead` (descends from the tip) or `diverged`. gittuf's full
+  verification covers every entry for the ref, so a `behind` state is one the
+  verified history includes: the tip check reports a new non-failing status,
+  `behind`, naming the entry and how many entries and commits separate it
+  from the tip, the state stays `verified` and the reason says the ref is
+  behind. `ahead` (commits the RSL never recorded) and `diverged` still fail.
+  Tag objects relate by exact match only, since ancestry applies to commits.
+  `branch` and `tag` report `local_behind` instead of `local_drift` for the
+  behind case.
+- **Rejected:** verifying only up to the matching entry, which would ignore
+  later violations in the RSL the user is about to fetch.

@@ -15,6 +15,7 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
+	"slices"
 	"time"
 
 	"github.com/entireio/entire-rsl/internal/clusters"
@@ -153,13 +154,16 @@ func Verify(ctx context.Context, st *store.Store, ref string, opts Options) (res
 		res.Reason = "gittuf verified every RSL entry for the ref against the policy, and every check passed"
 	}
 
-	res.Checks, err = runChecks(ctx, st, reader, ref, res, opts)
+	res.Checks, err = runChecks(ctx, st, reader, ref, opts)
 	if err != nil {
 		return errorResult(ctx, ref, "verification checks could not complete", err)
 	}
 	if failed, ok := failedCheck(res.Checks); ok && res.State == Verified {
 		res.State, res.ExpectedTip = Failed, nil
 		res.Reason = "gittuf verified the ref, but the " + failed.Name + " check failed: " + failed.Detail
+	}
+	if res.State == Verified && slices.ContainsFunc(res.Checks, func(c Check) bool { return c.Status == CheckBehind }) {
+		res.Reason += ". The local ref is behind the RSL tip, at a state the verified history covers"
 	}
 	return res
 }

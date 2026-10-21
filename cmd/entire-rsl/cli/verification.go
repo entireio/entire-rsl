@@ -95,6 +95,8 @@ func checkStyle(status verify.CheckStatus, st styles) string {
 		return st.good(string(status))
 	case verify.CheckFail:
 		return st.bad(string(status))
+	case verify.CheckBehind:
+		return st.warn(string(status))
 	case verify.CheckSkip:
 		return string(status)
 	default:

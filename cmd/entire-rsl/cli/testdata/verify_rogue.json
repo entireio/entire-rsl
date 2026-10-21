@@ -13,7 +13,7 @@
       {
         "name": "tip",
         "status": "pass",
-        "detail": "the local ref matches the tip the RSL records (f390a5b0152b504232e69b38ba4e6255ea7dccbd)"
+        "detail": "the local ref matches the tip the RSL records (f390a5b0152b504232e69b38ba4e6255ea7dccbd, entry #10)"
       },
       {
         "name": "root_of_trust",

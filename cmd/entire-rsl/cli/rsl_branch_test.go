@@ -55,19 +55,40 @@ func warningCodes(t *testing.T, stdout string) []string {
 	return codes
 }
 
-func TestBranchWarnsOnLocalDrift(t *testing.T) {
+func TestBranchWarnsWhenBehindOrDrifted(t *testing.T) {
 	t.Parallel()
 
 	sc := testutil.NewScenario(t)
 	sc.SetRef("refs/heads/main", sc.MainFirst)
 
-	res := execute(t, inRepo(sc.Dir), "branch", "--json", "main")
-
-	require.Equal(t, ExitOK, res.code, res.stderr)
-	assert.Equal(t, []string{warnLocalDrift}, warningCodes(t, res.stdout))
+	behind := execute(t, inRepo(sc.Dir), "branch", "--json", "main")
+	require.Equal(t, ExitOK, behind.code, behind.stderr)
+	assert.Equal(t, []string{warnLocalBehind}, warningCodes(t, behind.stdout))
 
 	text := execute(t, inRepo(sc.Dir), "branch", "main")
-	assert.Contains(t, text.stdout, "Warning: local refs/heads/main is at "+sc.MainFirst.String()[:12]+" but the RSL records "+sc.TrailerCommit.String()[:12])
+	assert.Contains(t, text.stdout, "Warning: local refs/heads/main: the local ref is behind: it is at entry #3, the RSL tip is entry #9 (2 entries, 2 commits behind)")
+	assert.Contains(t, text.stdout, "behind: the local ref is behind")
+
+	sc.SetRef("refs/heads/main", sc.TrailerCommit)
+	sc.Commit("refs/heads/main", "not pushed")
+	ahead := execute(t, inRepo(sc.Dir), "branch", "--json", "main")
+	require.Equal(t, ExitOK, ahead.code, ahead.stderr)
+	assert.Equal(t, []string{warnLocalDrift}, warningCodes(t, ahead.stdout))
+}
+
+func TestVerifyPassesWhenBehind(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	sc.SetRef("refs/heads/main", sc.MainSecond)
+
+	res := execute(t, inRepo(sc.Dir), "verify", "main")
+
+	assert.Equal(t, ExitOK, res.code, res.stdout)
+	assert.Contains(t, res.stdout, "Check tip            behind: ")
+
+	coloured := executeColor(t, inRepo(sc.Dir), "verify", "main")
+	assert.Contains(t, coloured.stdout, ansiYellow+"behind"+ansiReset)
 }
 
 func TestBranchWarnsWhenMissingLocally(t *testing.T) {
