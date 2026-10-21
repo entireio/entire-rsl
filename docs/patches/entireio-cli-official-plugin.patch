@@ -1,0 +1,24 @@
+From: Paulo Gomes <paulo@entire.io>
+Subject: [PATCH] plugin: record telemetry for the rsl plugin
+
+Adds rsl (entireio/entire-rsl) to officialPlugins so `entire rsl`
+invocations emit cli_plugin_executed like other Entire-shipped plugins.
+
+Drafted against entireio/cli main at 21836151e. Not opened as a PR.
+
+Signed-off-by: Paulo Gomes <paulo@entire.io>
+---
+diff --git a/cmd/entire/cli/plugin_official.go b/cmd/entire/cli/plugin_official.go
+index f9e0e36..cd4ea55 100644
+--- a/cmd/entire/cli/plugin_official.go
++++ b/cmd/entire/cli/plugin_official.go
+@@ -11,7 +11,8 @@ import "slices"
+ //nolint:gochecknoglobals // package-level allowlist; mutated by tests via snapshot/restore.
+ var officialPlugins = []string{
+ 	// Add Entire-shipped plugin names here as they're released.
+-	"ci", // entire-ci: customer-facing CI-integration management (entireio/entire-ci)
++	"ci",  // entire-ci: customer-facing CI-integration management (entireio/entire-ci)
++	"rsl", // entire-rsl: gittuf RSL inspection and verification (entireio/entire-rsl)
+ }
+ 
+ func IsOfficialPlugin(name string) bool {

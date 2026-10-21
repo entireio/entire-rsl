@@ -10,3 +10,8 @@ All notable changes to this project are documented here. The format follows
 - `entire rsl` plugin for the Entire CLI: inspect the gittuf Reference State
   Log for branches, tags and Entire checkpoints, and verify them against gittuf
   policy.
+- Commands: `verify`, `branch`, `tag`, `checkpoint`, `log`, `entry`,
+  `agent-help` and `version`, each with `--json`.
+- Verification in four states with tip, root of trust and signer checks, and
+  `--root-key` for self-managed roots.
+- Fetching a missing RSL from a remote with consent (`--fetch`).

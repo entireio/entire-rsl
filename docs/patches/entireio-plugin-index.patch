@@ -1,0 +1,28 @@
+From: Paulo Gomes <paulo@entire.io>
+Subject: [PATCH] index: add rsl
+
+Lists entireio/entire-rsl as the official rsl plugin so
+`entire plugin install rsl` resolves it.
+
+Drafted against entireio/plugin-index at 9bb4595. Not opened as a PR.
+The repository must publish a release with checksums.txt first.
+
+Signed-off-by: Paulo Gomes <paulo@entire.io>
+---
+diff --git a/index.json b/index.json
+index acc02c6..b1e9e42 100644
+--- a/index.json
++++ b/index.json
+@@ -13,6 +13,12 @@
+       "description": "Run a multi-agent investigation against a topic, issue, or seed doc",
+       "official": true
+     },
++    {
++      "name": "rsl",
++      "repo_url": "https://github.com/entireio/entire-rsl",
++      "description": "Inspect the gittuf Reference State Log of branches, tags and Entire checkpoints, and verify them against gittuf policy",
++      "official": true
++    },
+     {
+       "name": "run",
+       "repo_url": "https://github.com/entireio/entire-run",

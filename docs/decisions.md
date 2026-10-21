@@ -298,3 +298,16 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   `internal/testutil` writes fixtures and is exempt, and a second check fails
   if any production file imports it. The structural guarantee remains the
   store's `ErrReadOnly` for everything gittuf does.
+
+## 2026-10-21: Plugin index and allowlist changes are patch files
+
+- **Context:** Phase 0 answer 9 asks for the plugin-index entry and the
+  `officialPlugins` allowlist change as patch files, not pull requests.
+- **Decision:** `docs/patches/entireio-cli-official-plugin.patch` adds `rsl`
+  to `officialPlugins` (entireio/cli `cmd/entire/cli/plugin_official.go` at
+  21836151e) so `entire rsl` emits `cli_plugin_executed`.
+  `docs/patches/entireio-plugin-index.patch` adds the `rsl` entry to
+  `index.json` (entireio/plugin-index at 9bb4595, from the local index cache).
+  Both apply cleanly with `git apply`. The index entry should land only after
+  a release with `checksums.txt` exists, or `entire plugin install rsl`
+  fails.

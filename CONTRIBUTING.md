@@ -18,7 +18,12 @@ mise run test       # unit tests
 mise run check      # fmt + lint + tests with -race; must pass before every commit
 mise run build      # ./bin/entire-rsl
 mise run snapshot   # local goreleaser snapshot into ./dist
+mise run fuzz       # fuzz every target, FUZZTIME per target
 ```
+
+`go test ./cmd/entire-rsl` runs the dispatch acceptance test when the Entire
+CLI is on PATH: it installs the built binary with `entire plugin install` into
+a temporary plugin directory and compares `entire rsl ...` with the binary.
 
 Read [CLAUDE.md](CLAUDE.md) for the repository rules: the read-only guarantee, how verification states are decided, and test conventions. Non-obvious design decisions are recorded in [docs/decisions.md](docs/decisions.md).
 
