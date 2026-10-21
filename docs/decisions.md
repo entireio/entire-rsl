@@ -187,3 +187,29 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   Such refs report `failed`.
 - **Rejected:** treating all gittuf errors as `failed` or all as `error`, and
   `--latest-only` (Phase 0 answer 7).
+
+## 2026-10-21: Local installs use the binary, not the archive
+
+- **Context:** SPEC.md section 4's acceptance test installs
+  `./dist/<archive>`. `entire plugin install <path>` refuses a non-executable
+  source ("is not executable (chmod +x)"). Archives are only for remote
+  installs, which download them and check `checksums.txt`
+  (external-commands.md, "Remote install").
+- **Decision:** the acceptance test (`cmd/entire-rsl/acceptance_test.go`)
+  builds the binary, installs it with `entire plugin install` into a temporary
+  `ENTIRE_PLUGIN_DIR`, and compares `entire rsl ...` with the binary run
+  directly, output and exit code. It skips when `entire` is not on PATH. The
+  snapshot's `dist/entire-rsl_linux_amd64_v1/entire-rsl` was installed the
+  same way by hand. The archive layout (one `entire-rsl` binary per archive,
+  goreleaser naming, `checksums.txt`) is what remote installs select.
+
+## 2026-10-21: agent-help mirrors the Entire CLI's shape
+
+- **Context:** entire delegates `entire agent-help rsl [path...] [--json]` to
+  `entire-rsl agent-help [path...] [--json]` (external-commands.md, "Agent
+  help").
+- **Decision:** the JSON uses entireio/cli's `agentHelpJSON` field names
+  (`cmd/entire/cli/agent_help_cmd.go:652`): `command`, `short`, `long`,
+  `guidance`, `flags`, `subcommands` with `audience`. Every command is
+  `read-only`. Guidance for agents lives in its own table, not in cobra's help,
+  as entireio/cli requires.

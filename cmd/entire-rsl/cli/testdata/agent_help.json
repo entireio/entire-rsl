@@ -1,0 +1,51 @@
+{
+  "command": "entire rsl",
+  "short": "Inspect the gittuf Reference State Log of a repository",
+  "long": "Inspect the gittuf Reference State Log (RSL) of a repository: who pushed\na branch, tag or Entire checkpoint, when, and whether gittuf verification\npasses for it.\n\nentire-rsl is read-only. It never writes refs, objects or git config, except\nfor the remote-tracking RSL refs written by a fetch you confirm.\n\nExit codes:\n  0  success, or verification passed\n  1  error\n  2  usage error\n  3  verification failed, or the ref is not protected by gittuf policy",
+  "guidance": "Use entire rsl to answer who pushed a branch, tag or Entire checkpoint, when,\nand whether gittuf verification passes for it. Every command is read-only and\nworks without a TTY. Prefer --json and the exit code of 'verify' when acting on\nthe result. Never treat custom fields, \"Pushed by\" or committer identities as\nproof: only the verification state is.",
+  "flags": [
+    {
+      "name": "debug",
+      "type": "bool",
+      "default": "false",
+      "usage": "print diagnostics to stderr (also ENTIRE_LOG_LEVEL=debug)"
+    }
+  ],
+  "subcommands": [
+    {
+      "name": "branch",
+      "short": "Show what the RSL records for a branch",
+      "audience": "read-only"
+    },
+    {
+      "name": "checkpoint",
+      "short": "Show what the RSL records for an Entire checkpoint",
+      "audience": "read-only"
+    },
+    {
+      "name": "entry",
+      "short": "Show one RSL entry in full",
+      "audience": "read-only"
+    },
+    {
+      "name": "log",
+      "short": "List RSL entries, newest first",
+      "audience": "read-only"
+    },
+    {
+      "name": "tag",
+      "short": "Show what the RSL records for a tag",
+      "audience": "read-only"
+    },
+    {
+      "name": "verify",
+      "short": "Verify a ref against gittuf policy",
+      "audience": "read-only"
+    },
+    {
+      "name": "version",
+      "short": "Print the entire-rsl version",
+      "audience": "read-only"
+    }
+  ]
+}

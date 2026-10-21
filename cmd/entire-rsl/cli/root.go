@@ -79,6 +79,7 @@ Exit codes:
 		newVerifyCmd(a),
 		newLogCmd(a),
 		newEntryCmd(a),
+		newAgentHelpCmd(),
 		newVersionCmd(),
 	)
 

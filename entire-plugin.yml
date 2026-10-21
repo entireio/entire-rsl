@@ -1,0 +1,2 @@
+name: rsl
+description: Inspect the gittuf Reference State Log of branches, tags and Entire checkpoints, and verify them against gittuf policy

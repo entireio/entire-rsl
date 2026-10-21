@@ -9,6 +9,7 @@ require (
 	github.com/go-git/go-git/v6 v6.0.0-beta.1
 	github.com/hiddeco/sshsig v0.2.0
 	github.com/spf13/cobra v1.10.2
+	github.com/spf13/pflag v1.0.10
 	github.com/stretchr/testify v1.12.1
 	golang.org/x/crypto v0.57.0
 )
@@ -151,7 +152,6 @@ require (
 	github.com/sigstore/sigstore/pkg/signature/kms/hashivault v1.11.0 // indirect
 	github.com/sigstore/timestamp-authority/v2 v2.1.3 // indirect
 	github.com/sirupsen/logrus v1.10.2 // indirect
-	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/syndtr/goleveldb v1.0.1-0.20220721030215-126854af5e6d // indirect
 	github.com/theupdateframework/go-tuf v0.7.0 // indirect
 	github.com/theupdateframework/go-tuf/v2 v2.4.2 // indirect

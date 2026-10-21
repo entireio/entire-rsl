@@ -1,0 +1,20 @@
+{
+  "command": "entire rsl verify",
+  "short": "Verify a ref against gittuf policy",
+  "long": "Run full gittuf verification for a branch, tag, full ref or checkpoint and\nreport one state:\n\n  verified     gittuf verified every RSL entry for the ref     exit 0\n  failed       gittuf found a violation                        exit 3\n  unprotected  no policy, no covering rule, or no RSL entries  exit 3\n  error        verification could not complete                 exit 1\n\nShort names resolve as git does, but a name matching more than one ref is an\nerror. A checkpoint is named by its ID, or by a full commit ID whose\nEntire-Checkpoint trailer names it.",
+  "guidance": "Use to decide whether a ref can be trusted. Exit 0 only for verified. Treat failed, unprotected and error as untrusted.",
+  "flags": [
+    {
+      "name": "json",
+      "type": "bool",
+      "default": "false",
+      "usage": "print JSON"
+    },
+    {
+      "name": "timeout",
+      "type": "duration",
+      "default": "5m0s",
+      "usage": "maximum time verification may take"
+    }
+  ]
+}
