@@ -1,7 +1,7 @@
 {
   "command": "entire rsl",
   "short": "Inspect the gittuf Reference State Log of a repository",
-  "long": "Inspect the gittuf Reference State Log (RSL) of a repository: who pushed\na branch, tag or Entire checkpoint, when, and whether gittuf verification\npasses for it.\n\nentire-rsl is read-only. It never writes refs, objects or git config, except\nfor the remote-tracking RSL refs written by a fetch you confirm.\n\nExit codes:\n  0  success, or verification passed\n  1  error\n  2  usage error\n  3  verification failed, or the ref is not protected by gittuf policy",
+  "long": "Inspect the gittuf Reference State Log (RSL) of a repository: who pushed\na branch, tag or Entire checkpoint, when, and whether gittuf verification\npasses for it.\n\nentire-rsl is read-only. It never writes refs, objects or git config, except\nwhen the repository has no local RSL and you agree to fetch it: then it\ncreates the missing refs/gittuf/* refs, never overwriting existing ones, and\nupdates refs/remotes/\u003cremote\u003e/gittuf/*.\n\nExit codes:\n  0  success, or verification passed\n  1  error\n  2  usage error\n  3  verification failed, or the ref is not protected by gittuf policy",
   "guidance": "Use entire rsl to answer who pushed a branch, tag or Entire checkpoint, when,\nand whether gittuf verification passes for it. Every command is read-only and\nworks without a TTY. Prefer --json and the exit code of 'verify' when acting on\nthe result. Never treat custom fields, \"Pushed by\" or committer identities as\nproof: only the verification state is.",
   "flags": [
     {
@@ -9,6 +9,11 @@
       "type": "bool",
       "default": "false",
       "usage": "print diagnostics to stderr (also ENTIRE_LOG_LEVEL=debug)"
+    },
+    {
+      "name": "fetch",
+      "type": "string",
+      "usage": "when the repository has no local RSL, fetch the gittuf refs from this remote without asking (--fetch alone picks the only remote)"
     }
   ],
   "subcommands": [

@@ -213,3 +213,36 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   `guidance`, `flags`, `subcommands` with `audience`. Every command is
   `read-only`. Guidance for agents lives in its own table, not in cobra's help,
   as entireio/cli requires.
+
+## 2026-10-21: Fetching a missing RSL creates local gittuf refs
+
+- **Context:** Phase 0 answer 6 asks entire-rsl to offer a fetch when the RSL
+  is missing, asking first and asking for a remote when there are several.
+  SPEC.md section 5 allows writes only to remote-tracking refs. Coverage is
+  read through `experimental/gittuf.Repository`, which reads `refs/gittuf/*`
+  with the git binary and cannot be pointed at tracking refs, so a
+  tracking-only fetch would leave `verify` reporting `error`. Asked on
+  2026-10-21: the user chose to create local gittuf refs.
+- **Decision:** only when the repository has no local RSL, and only with
+  consent (`--fetch[=<remote>]`, or a yes or a remote picked at a prompt on a
+  terminal), `internal/gitcli` runs
+  `git fetch -- <remote> refs/gittuf/*:refs/gittuf/* +refs/gittuf/*:refs/remotes/<remote>/gittuf/*`.
+  The first refspec has no `+`, so git creates missing local gittuf refs and
+  refuses to overwrite an existing one that the remote does not fast-forward,
+  failing the fetch. This is what `gittuf rsl remote pull` does. The second
+  keeps gittuf's own remote-tracking layout (`pkg/rsl` `remoteTrackerRef`).
+  The remote must be a configured remote name, so no URL reaches git from the
+  command line.
+- **Hardening:** git is resolved to an absolute path once; arguments are a
+  slice with `--` before the remote; `core.fsmonitor`, `core.hooksPath` and
+  the `ext` transport are disabled; `--no-write-fetch-head`,
+  `--no-auto-maintenance`, `--no-recurse-submodules`,
+  `fetch.writeCommitGraph=false` keep the fetch from writing anything else;
+  output is captured and URL credentials redacted; cancellation interrupts git
+  with a five second grace.
+- **Non-interactive:** without a terminal the command fails with how to
+  fetch (`--fetch`, or `--fetch=<remote>` when there are several). Prompts are
+  plain lines on stderr, so they work with screen readers like the Entire
+  CLI's accessible mode.
+- **Rejected:** tracking refs only (breaks verification of a fetched RSL),
+  and `huh` forms (a new dependency for two prompts).

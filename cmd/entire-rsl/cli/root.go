@@ -2,6 +2,7 @@
 package cli
 
 import (
+	"bufio"
 	"io"
 	"log/slog"
 	"runtime"
@@ -21,6 +22,9 @@ type Options struct {
 	Stderr io.Writer
 	Getenv func(key string) string
 	Getwd  func() (string, error)
+	// Interactive reports whether prompts can be shown and answered: stdin
+	// and stderr are terminals. Nil means never.
+	Interactive func() bool
 
 	// SetDefaultLogger installs the debug logger as the process default so
 	// gittuf's own slog output reaches it. Nil leaves the default alone.
@@ -29,9 +33,11 @@ type Options struct {
 
 // app is the state shared by every command of one invocation.
 type app struct {
-	opts   Options
-	logger *slog.Logger
-	debug  bool
+	stdin     *bufio.Reader
+	opts      Options
+	logger    *slog.Logger
+	fetchFrom string
+	debug     bool
 }
 
 // NewRootCmd builds the entire-rsl command tree.
@@ -46,7 +52,9 @@ a branch, tag or Entire checkpoint, when, and whether gittuf verification
 passes for it.
 
 entire-rsl is read-only. It never writes refs, objects or git config, except
-for the remote-tracking RSL refs written by a fetch you confirm.
+when the repository has no local RSL and you agree to fetch it: then it
+creates the missing refs/gittuf/* refs, never overwriting existing ones, and
+updates refs/remotes/<remote>/gittuf/*.
 
 Exit codes:
   0  success, or verification passed
@@ -71,6 +79,8 @@ Exit codes:
 		return usageError(err)
 	})
 	root.PersistentFlags().BoolVar(&a.debug, "debug", false, "print diagnostics to stderr (also ENTIRE_LOG_LEVEL=debug)")
+	root.PersistentFlags().StringVar(&a.fetchFrom, "fetch", "", "when the repository has no local RSL, fetch the gittuf refs from this remote without asking (--fetch alone picks the only remote)")
+	root.PersistentFlags().Lookup("fetch").NoOptDefVal = fetchAnyRemote
 
 	root.AddCommand(
 		newBranchCmd(a),

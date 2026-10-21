@@ -38,15 +38,23 @@ type result struct {
 // print and exit with.
 func execute(t *testing.T, env testEnv, args ...string) result {
 	t.Helper()
+	return executeInteractive(t, env, false, "", args...)
+}
+
+// executeInteractive is execute on a terminal when interactive is true, with
+// stdin as what the user types.
+func executeInteractive(t *testing.T, env testEnv, interactive bool, stdin string, args ...string) result {
+	t.Helper()
 
 	var stdout, stderr bytes.Buffer
 	cwd := t.TempDir()
 	root := NewRootCmd(Options{
-		Stdin:  &bytes.Buffer{},
-		Stdout: &stdout,
-		Stderr: &stderr,
-		Getenv: env.get,
-		Getwd:  func() (string, error) { return cwd, nil },
+		Stdin:       bytes.NewBufferString(stdin),
+		Stdout:      &stdout,
+		Stderr:      &stderr,
+		Getenv:      env.get,
+		Getwd:       func() (string, error) { return cwd, nil },
+		Interactive: func() bool { return interactive },
 	})
 	root.SetArgs(args)
 

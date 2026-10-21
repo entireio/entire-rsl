@@ -13,6 +13,7 @@ import (
 	"github.com/entireio/entire-rsl/cmd/entire-rsl/cli"
 	"github.com/entireio/entire-rsl/internal/gitcli"
 	"github.com/entireio/entire-rsl/internal/repo"
+	"golang.org/x/term"
 )
 
 func main() {
@@ -44,6 +45,9 @@ func run() int {
 		Stderr: os.Stderr,
 		Getenv: env.Getenv,
 		Getwd:  env.Getwd,
+		Interactive: func() bool {
+			return term.IsTerminal(int(os.Stdin.Fd())) && term.IsTerminal(int(os.Stderr.Fd()))
+		},
 
 		SetDefaultLogger: slog.SetDefault,
 	})

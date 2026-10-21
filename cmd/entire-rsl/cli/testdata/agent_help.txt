@@ -19,5 +19,6 @@ Commands:
 
 Flags:
   --debug        print diagnostics to stderr (also ENTIRE_LOG_LEVEL=debug)
+  --fetch        when the repository has no local RSL, fetch the gittuf refs from this remote without asking (--fetch alone picks the only remote)
 
 Run 'entire agent-help rsl <command>' for one command.

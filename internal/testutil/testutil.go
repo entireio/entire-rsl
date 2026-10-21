@@ -12,6 +12,7 @@ import (
 	"crypto/sha256"
 	"encoding/pem"
 	"os"
+	"os/exec"
 	"testing"
 	"time"
 
@@ -141,6 +142,29 @@ func (r *Repo) Bootstrap(patterns ...string) {
 	})
 	if err != nil {
 		r.t.Fatalf("bootstrap gittuf policy: %v", err)
+	}
+}
+
+// Clone clones r into a new directory with git, under remote name. git clone
+// fetches branches and tags only, so the clone has no gittuf refs.
+func (r *Repo) Clone(t *testing.T, remote string) string {
+	t.Helper()
+
+	dir := t.TempDir()
+	cmd := exec.CommandContext(t.Context(), "git", "clone", "--quiet", "--origin", remote, "--", r.Dir, dir)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("clone %s: %v: %s", r.Dir, err, out)
+	}
+	return dir
+}
+
+// AddRemote adds a remote to the repository at dir.
+func AddRemote(t *testing.T, dir, name, url string) {
+	t.Helper()
+
+	cmd := exec.CommandContext(t.Context(), "git", "-C", dir, "remote", "add", "--", name, url)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("add remote %s: %v: %s", name, err, out)
 	}
 }
 
