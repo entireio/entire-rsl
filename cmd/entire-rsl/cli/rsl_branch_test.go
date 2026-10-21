@@ -76,6 +76,19 @@ func TestBranchWarnsWhenBehindOrDrifted(t *testing.T) {
 	assert.Equal(t, []string{warnLocalDrift}, warningCodes(t, ahead.stdout))
 }
 
+func TestBehindWarningClaimsNoVerification(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	sc.SetRef("refs/heads/main", sc.MainFirst)
+
+	res := execute(t, inRepo(sc.Dir), "branch", "--no-verify", "main")
+
+	require.Equal(t, ExitOK, res.code, res.stderr)
+	assert.Contains(t, res.stdout, "the local ref is behind")
+	assert.NotContains(t, res.stdout, "verified")
+}
+
 func TestVerifyPassesWhenBehind(t *testing.T) {
 	t.Parallel()
 
@@ -86,6 +99,7 @@ func TestVerifyPassesWhenBehind(t *testing.T) {
 
 	assert.Equal(t, ExitOK, res.code, res.stdout)
 	assert.Contains(t, res.stdout, "Check tip            behind: ")
+	assert.Contains(t, res.stdout, "gittuf verified the entries that record this state")
 
 	coloured := executeColor(t, inRepo(sc.Dir), "verify", "main")
 	assert.Contains(t, coloured.stdout, ansiYellow+"behind"+ansiReset)

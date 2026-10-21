@@ -376,6 +376,12 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   `behind`, naming the entry and how many entries and commits separate it
   from the tip, the state stays `verified` and the reason says the ref is
   behind. `ahead` (commits the RSL never recorded) and `diverged` still fail.
+  A commit a skipped entry's target contains is `revoked` and fails, even if
+  a later entry still contains it: gittuf recovers from a skipped entry with
+  a tree-same fix commit that may keep the revoked commits as ancestors, so
+  containment alone does not show a commit was verified (review 0007). The
+  relation states recorded facts only; the claim that gittuf verified the
+  state is added only when verification passed. Read errors are errors.
   Tag objects relate by exact match only, since ancestry applies to commits.
   `branch` and `tag` report `local_behind` instead of `local_drift` for the
   behind case.

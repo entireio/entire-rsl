@@ -52,7 +52,8 @@ checks:
   at a state the verified history covers: an earlier recorded tip, or a commit
   inside a recorded push. A ref behind still verifies, and the check says
   which entry it is at and how many entries and commits it is behind. A ref
-  ahead of the RSL (unrecorded commits) or diverged from it fails.
+  ahead of the RSL (unrecorded commits), diverged from it, or at a commit a
+  skipped (revoked) entry brought in fails.
 - **root_of_trust**: the policy descends from a known root of trust:
   Entire's production or staging root, or a key given with
   `--root-key "ssh-ed25519 ..."` (or `--root-key @file`) for self-managed

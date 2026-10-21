@@ -154,7 +154,7 @@ func Verify(ctx context.Context, st *store.Store, ref string, opts Options) (res
 		res.Reason = "gittuf verified every RSL entry for the ref against the policy, and every check passed"
 	}
 
-	res.Checks, err = runChecks(ctx, st, reader, ref, opts)
+	res.Checks, err = runChecks(ctx, st, reader, ref, res.State == Verified, opts)
 	if err != nil {
 		return errorResult(ctx, ref, "verification checks could not complete", err)
 	}

@@ -44,7 +44,7 @@ type Check struct {
 
 // runChecks runs the tip, root of trust and signer checks. An error means a
 // check could not be evaluated, as opposed to a check that failed.
-func runChecks(ctx context.Context, st *store.Store, reader *rslread.Reader, ref string, opts Options) ([]Check, error) {
+func runChecks(ctx context.Context, st *store.Store, reader *rslread.Reader, ref string, gittufPassed bool, opts Options) ([]Check, error) {
 	latest, err := reader.History(ctx, ref, 1)
 	if err != nil {
 		return nil, fmt.Errorf("read the ref's latest RSL entry: %w", err)
@@ -54,7 +54,7 @@ func runChecks(ctx context.Context, st *store.Store, reader *rslread.Reader, ref
 	}
 	entry := latest.Entries[0]
 
-	tip, err := checkTip(ctx, st, reader, ref, opts.LocalTip)
+	tip, err := checkTip(ctx, st, reader, ref, gittufPassed, opts.LocalTip)
 	if err != nil {
 		return nil, err
 	}
@@ -66,9 +66,10 @@ func runChecks(ctx context.Context, st *store.Store, reader *rslread.Reader, ref
 }
 
 // checkTip relates the local ref to the tip the RSL records, which the
-// server signed. A local ref behind the tip passes as behind when its state
-// is one the verified history covers.
-func checkTip(ctx context.Context, st *store.Store, reader *rslread.Reader, ref string, localTip func(string) (githash.Hash, error)) (Check, error) {
+// server signed. A local ref behind the tip passes as behind: its state is an
+// unskipped entry's record, which gittuf's full verification covered when
+// gittufPassed is set.
+func checkTip(ctx context.Context, st *store.Store, reader *rslread.Reader, ref string, gittufPassed bool, localTip func(string) (githash.Hash, error)) (Check, error) {
 	c := Check{Name: CheckTip}
 
 	if localTip == nil {
@@ -99,6 +100,9 @@ func checkTip(ctx context.Context, st *store.Store, reader *rslread.Reader, ref 
 		c.Status = CheckPass
 	case tipstate.Behind:
 		c.Status = CheckBehind
+		if gittufPassed {
+			c.Detail += ". gittuf verified the entries that record this state"
+		}
 	default:
 		c.Status = CheckFail
 	}

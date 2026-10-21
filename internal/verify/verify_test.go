@@ -5,7 +5,9 @@ import (
 	"errors"
 	"log/slog"
 	"os"
+	"os/exec"
 	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -419,4 +421,50 @@ func TestLocalRefReadErrorIsAnError(t *testing.T) {
 
 	assert.Equal(t, Error, res.State, "a check that cannot run is an error, not a failure")
 	require.ErrorContains(t, res.Err, "disk on fire")
+}
+
+func TestRevokedCommitKeptByARecoveryCommitFailsVerification(t *testing.T) {
+	t.Parallel()
+
+	r := testutil.NewRepo(t)
+	r.Bootstrap()
+	good := r.Commit("refs/heads/main", "good")
+	r.Record(r.Cluster, "refs/heads/main", nil)
+	rogue := r.Commit("refs/heads/main", "rogue")
+	rogueEntry := r.Record(r.Rogue, "refs/heads/main", nil)
+	r.Annotate(r.Cluster, true, "revoked", rogueEntry)
+
+	// gittuf accepts a fix tree-same with the last good state, here one that
+	// keeps the rogue commit as its parent.
+	goodTree, err := r.Git.GetCommitTreeID(good)
+	require.NoError(t, err)
+	out, err := exec.CommandContext(t.Context(), "git", "-C", r.Dir, "commit-tree", goodTree.String(), "-p", rogue.String(), "-m", "fix").CombinedOutput()
+	require.NoError(t, err, string(out))
+	fix, err := githash.NewHash(strings.TrimSpace(string(out)))
+	require.NoError(t, err)
+	r.SetRef("refs/heads/main", fix)
+	r.Record(r.Cluster, "refs/heads/main", nil)
+
+	atFix := run(t.Context(), t, r.Dir, "refs/heads/main", time.Minute)
+	require.Equal(t, Verified, atFix.State, "%s: %v", atFix.Reason, atFix.Err)
+
+	r.SetRef("refs/heads/main", rogue)
+	atRogue := run(t.Context(), t, r.Dir, "refs/heads/main", time.Minute)
+
+	assert.Equal(t, Failed, atRogue.State)
+	tip := checkByName(t, atRogue, CheckTip)
+	assert.Equal(t, CheckFail, tip.Status)
+	assert.Contains(t, tip.Detail, "brought in by skipped entry")
+}
+
+func TestBehindWithAMissingObjectIsAnError(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	sc.SetRef("refs/heads/main", sc.MainFirst)
+	removeLooseObject(t, sc.Dir, sc.MainFirst.String())
+
+	res := run(t.Context(), t, sc.Dir, "refs/heads/main", time.Minute)
+
+	assert.Equal(t, Error, res.State, "%s: %v", res.Reason, res.Err)
 }

@@ -188,27 +188,28 @@ func (r *Reader) parent(entry rsl.Entry) (rsl.Entry, bool, error) {
 	return parent, true, nil
 }
 
-// Target is an unskipped entry's record of a ref, without the commit
-// metadata and signature check a full Entry carries.
+// Target is an entry's record of a ref, without the commit metadata and
+// signature check a full Entry carries.
 type Target struct {
-	ID     githash.Hash
-	Target githash.Hash
-	Number uint64
+	ID      githash.Hash
+	Target  githash.Hash
+	Number  uint64
+	Skipped bool
 }
 
-// Targets returns the unskipped reference and propagation entries for ref,
-// newest first.
+// Targets returns the reference and propagation entries for ref, newest
+// first, skipped ones marked.
 func (r *Reader) Targets(ctx context.Context, ref string) ([]Target, error) {
 	var out []Target
 	err := r.walk(ctx, func(w raw) (bool, error) {
-		if w.refName() != ref || w.skipped() {
+		if w.refName() != ref {
 			return true, nil
 		}
 		u, ok := w.entry.(rsl.ReferenceUpdaterEntry)
 		if !ok {
 			return true, nil
 		}
-		out = append(out, Target{ID: u.GetID(), Target: u.GetTargetID(), Number: u.GetNumber()})
+		out = append(out, Target{ID: u.GetID(), Target: u.GetTargetID(), Number: u.GetNumber(), Skipped: w.skipped()})
 		return true, nil
 	})
 	if err != nil {
