@@ -1,0 +1,31 @@
+{
+  "cli_version": "0.11.5-nightly.202610140625.065c76361",
+  "checkpoint_id": "01M5G2C3RWZSR33D1TWF661T2X",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "CHANGELOG.md",
+    "CONTRIBUTING.md",
+    "README.md",
+    "docs/decisions.md",
+    "docs/patches/entireio-cli-official-plugin.patch",
+    "docs/patches/entireio-plugin-index.patch"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 12,
+    "cache_creation_tokens": 6280,
+    "cache_read_tokens": 4260914,
+    "output_tokens": 6362,
+    "api_call_count": 6
+  }
+}
