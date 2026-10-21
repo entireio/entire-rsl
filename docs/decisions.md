@@ -311,3 +311,16 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   Both apply cleanly with `git apply`. The index entry should land only after
   a release with `checksums.txt` exists, or `entire plugin install rsl`
   fails.
+
+## 2026-10-21: ISC joins the allowed licenses
+
+- **Context:** the license check found `github.com/emirpasic/gods` (through
+  go-git) and testify's vendored `spew` (through gittuf) licensed ISC, which
+  entireio/cli's `.allowed-licenses` does not list, although entireio/cli
+  itself depends on gods through go-git. go-licenses also could not classify
+  three Apache-2.0 modules whose LICENSE files carry only the header.
+- **Decision:** add ISC, a permissive license equivalent to MIT, to
+  `.allowed-licenses`, and override in-toto/attestation,
+  in-toto/in-toto-golang and cyberphone/json-canonicalization to Apache-2.0
+  in `.license-overrides` after reading their LICENSE files.
+- **Rejected:** dropping go-git or gittuf, which the Phase 0 answers require.
