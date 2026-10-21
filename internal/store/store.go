@@ -79,6 +79,9 @@ func (e *ObjectError) Error() string {
 
 func (e *ObjectError) Unwrap() error { return e.Err }
 
+// opReadShallow names reads of the shallow boundary list in errors.
+const opReadShallow = "read shallow boundaries"
+
 // maxWalk caps the commits one history walk visits.
 const maxWalk = 10_000_000
 
@@ -214,7 +217,7 @@ func (s *Store) GetCommitParentIDs(commitID githash.Hash) ([]githash.Hash, error
 
 	shallow, err := s.repo.Storer.Shallow()
 	if err != nil {
-		return nil, &ObjectError{Op: "read shallow boundaries", Err: err}
+		return nil, &ObjectError{Op: opReadShallow, Err: err}
 	}
 	if slices.Contains(shallow, commit.Hash) || len(commit.ParentHashes) == 0 {
 		return nil, nil
@@ -493,7 +496,7 @@ func (s *Store) walk(from githash.Hash, visit func(plumbing.Hash) bool) error {
 
 	shallow, err := s.repo.Storer.Shallow()
 	if err != nil {
-		return &ObjectError{Op: "read shallow boundaries", Err: err}
+		return &ObjectError{Op: opReadShallow, Err: err}
 	}
 
 	seen := map[plumbing.Hash]struct{}{}

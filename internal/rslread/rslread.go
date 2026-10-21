@@ -39,6 +39,7 @@ var (
 	ErrAmbiguousEntry = errors.New("ambiguous RSL entry ID prefix")
 	ErrWalkLimit      = errors.New("RSL walk exceeded its limit")
 	ErrInvalidEntryID = errors.New("invalid RSL entry: use an entry number, or an entry ID of at least 7 hex characters")
+	ErrShallowRSL     = errors.New("the RSL history is shallow: fetch its full history to read it")
 )
 
 // Entry is one RSL entry with everything entire-rsl shows about it.
@@ -147,15 +148,44 @@ func (r *Reader) walk(ctx context.Context, visit func(raw) (bool, error)) error 
 			return err
 		}
 
-		parent, err := rsl.GetParentForEntry(r.st, entry)
-		if errors.Is(err, rsl.ErrRSLEntryNotFound) {
-			return nil
-		}
-		if err != nil {
-			return fmt.Errorf("read parent of RSL entry %s: %w", entry.GetID().String(), err)
+		parent, ok, err := r.parent(entry)
+		if err != nil || !ok {
+			return err
 		}
 		entry = parent
 	}
+}
+
+// parent returns entry's parent, and false at the first entry of the RSL.
+//
+// gittuf's GetParentForEntry reports a parent it cannot read with an error
+// that also matches ErrRSLEntryNotFound (pkg/rsl GetEntry joins them), which
+// is indistinguishable from reaching the first entry. The parent IDs are read
+// first so only a commit with no parents ends the walk, and a shallow
+// boundary inside the RSL is reported instead of read as its start.
+func (r *Reader) parent(entry rsl.Entry) (rsl.Entry, bool, error) {
+	id := entry.GetID()
+
+	parents, err := r.st.GetCommitParentIDs(id)
+	if err != nil {
+		return nil, false, fmt.Errorf("read parents of RSL entry %s: %w", id.String(), err)
+	}
+	if len(parents) == 0 {
+		shallow, err := r.st.IsShallowBoundary(id)
+		if err != nil {
+			return nil, false, err
+		}
+		if shallow {
+			return nil, false, fmt.Errorf("%w (entry %s)", ErrShallowRSL, id.String())
+		}
+		return nil, false, nil
+	}
+
+	parent, err := rsl.GetParentForEntry(r.st, entry)
+	if err != nil {
+		return nil, false, fmt.Errorf("read parent of RSL entry %s: %w", id.String(), err)
+	}
+	return parent, true, nil
 }
 
 // Walk visits complete entries newest first from the tip until visit returns
@@ -218,6 +248,18 @@ type LogOptions struct {
 
 // Log returns up to opts.Limit entries newest first.
 func (r *Reader) Log(ctx context.Context, opts LogOptions) ([]Entry, error) {
+	// A prefix is resolved to one entry first, so an ambiguous prefix fails
+	// as it does for Find instead of starting below whichever match comes
+	// first.
+	if opts.Before != nil && opts.Before.isPrefix() {
+		e, err := r.Find(ctx, *opts.Before)
+		if err != nil {
+			return nil, err
+		}
+		exact := Selector{idPrefix: e.ID.String()}
+		opts.Before = &exact
+	}
+
 	var out []Entry
 	started := opts.Before == nil
 

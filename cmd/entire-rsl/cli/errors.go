@@ -6,6 +6,9 @@ import (
 	"fmt"
 	"io"
 	"strings"
+
+	"github.com/entireio/entire-rsl/internal/redact"
+	"github.com/entireio/entire-rsl/internal/sanitize"
 )
 
 // Exit codes. Only ExitOK means the command succeeded. ExitVerification is
@@ -68,7 +71,7 @@ func Report(w io.Writer, err error) int {
 	}
 
 	if !silent {
-		fmt.Fprintln(w, "Error: "+err.Error())
+		fmt.Fprintln(w, "Error: "+sanitize.Lines(redact.URLs(err.Error())))
 	}
 	if code == ExitUsage {
 		fmt.Fprintln(w, "Run 'entire rsl --help' for usage.")

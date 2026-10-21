@@ -199,6 +199,17 @@ func (r *Repo) RecordAt(key Key, ref string, target githash.Hash, fields rsl.Cus
 	return r.rslTip()
 }
 
+// Propagate appends an RSL propagation entry for ref at target, recording
+// upstream as the repository it came from, signed by key.
+func (r *Repo) Propagate(key Key, ref string, target githash.Hash, upstream string, upstreamEntry githash.Hash) githash.Hash {
+	r.t.Helper()
+
+	if err := rsl.NewPropagationEntry(ref, target, upstream, upstreamEntry).CommitUsingSpecificKey(r.Git, key.PEM); err != nil {
+		r.t.Fatalf("record RSL propagation entry for %s: %v", ref, err)
+	}
+	return r.rslTip()
+}
+
 // Annotate appends an RSL annotation entry over ids, signed by key.
 func (r *Repo) Annotate(key Key, skip bool, message string, ids ...githash.Hash) githash.Hash {
 	r.t.Helper()

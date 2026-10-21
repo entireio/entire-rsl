@@ -10,6 +10,7 @@ import (
 	"text/tabwriter"
 
 	"github.com/entireio/entire-rsl/internal/entirefields"
+	"github.com/entireio/entire-rsl/internal/redact"
 	"github.com/entireio/entire-rsl/internal/refresolve"
 	"github.com/entireio/entire-rsl/internal/rslread"
 	"github.com/entireio/entire-rsl/internal/sanitize"
@@ -169,7 +170,7 @@ func writeRefReport(w io.Writer, r refReport, lead ...field) error {
 
 	if c := r.History.Current; c != nil {
 		fields = append(fields, field{"RSL tip", fmt.Sprintf("%s (entry #%d)", c.TargetID.String(), c.Number)})
-		if who := entirefields.Parse(c.CustomFields).Who(); who != "" {
+		if who := entirefields.Parse(redact.Values(c.CustomFields)).Who(); who != "" {
 			fields = append(fields, field{"Pushed by", sanitize.Line(who) + ", as recorded by Entire"})
 		}
 		fields = append(fields,
@@ -199,7 +200,7 @@ func writeRefReport(w io.Writer, r refReport, lead ...field) error {
 	tw := tabwriter.NewWriter(w, 0, 4, 2, ' ', 0)
 	fmt.Fprintln(tw, "NUMBER\tENTRY\tTARGET\tTIME\tBY\tSIGNER\tSKIPPED")
 	for _, e := range r.History.Entries {
-		by := entirefields.Parse(e.CustomFields).Who()
+		by := entirefields.Parse(redact.Values(e.CustomFields)).Who()
 		if by == "" {
 			by = none
 		}

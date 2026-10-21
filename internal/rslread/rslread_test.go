@@ -3,6 +3,7 @@ package rslread
 import (
 	"context"
 	"os"
+	"path/filepath"
 	"testing"
 
 	"github.com/entireio/entire-rsl/internal/store"
@@ -313,4 +314,52 @@ func FuzzParseSelector(f *testing.F) {
 		assert.GreaterOrEqual(t, len(sel.idPrefix), minPrefix)
 		assert.True(t, isHex(sel.idPrefix))
 	})
+}
+
+func TestWalkFailsOnMissingParentInsteadOfStopping(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	removeLooseObject(t, sc.Dir, sc.TagFirstEntry.String())
+
+	r := openReader(t, sc.Dir)
+	_, err := r.Log(t.Context(), LogOptions{Limit: 100})
+
+	require.Error(t, err)
+	assert.Contains(t, err.Error(), sc.TagFirstEntry.String())
+}
+
+func TestWalkFailsAtShallowBoundaryInsideTheRSL(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	require.NoError(t, os.WriteFile(filepath.Join(sc.Dir, ".git", "shallow"), []byte(sc.CheckpointEntry.String()+"\n"), 0o600))
+
+	r := openReader(t, sc.Dir)
+	_, err := r.Log(t.Context(), LogOptions{Limit: 100})
+
+	require.ErrorIs(t, err, ErrShallowRSL)
+}
+
+func TestLogBeforeRejectsAmbiguousPrefix(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	r := openReader(t, sc.Dir)
+
+	// An empty prefix matches every entry, standing in for two entries that
+	// share a seven character prefix.
+	ambiguous := Selector{}
+	_, err := r.Log(t.Context(), LogOptions{Before: &ambiguous, Limit: 1})
+
+	require.ErrorIs(t, err, ErrAmbiguousEntry)
+}
+
+func removeLooseObject(t *testing.T, dir, id string) {
+	t.Helper()
+
+	path := filepath.Join(dir, ".git", "objects", id[:2], id[2:])
+	require.FileExists(t, path)
+	require.NoError(t, os.Chmod(path, 0o600))
+	require.NoError(t, os.Remove(path))
 }

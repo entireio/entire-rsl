@@ -44,3 +44,31 @@ func TestHostileRepositoryStringsRenderInert(t *testing.T) {
 	assert.NotContains(t, res.stdout, "\x1b", "JSON escapes control characters")
 	assert.Contains(t, res.stdout, `\u001b`, "the raw value survives in JSON, escaped")
 }
+
+func TestUpstreamCredentialsAreRedacted(t *testing.T) {
+	t.Parallel()
+
+	r := testutil.NewRepo(t)
+	r.Bootstrap()
+	target := r.Commit("refs/heads/main", "only")
+	upstream := r.Record(r.Cluster, "refs/heads/main", nil)
+	prop := r.Propagate(r.Cluster, "refs/heads/vendored", target, "https://user:s3cr3t-token@example.com/upstream.git", upstream)
+	withURL := r.RecordAt(r.Cluster, "refs/heads/other", target, map[string]string{"custom.example.com/source": "https://bot:t0ken@example.com/x"})
+
+	for _, args := range [][]string{
+		{"entry", prop.String()},
+		{"entry", "--json", prop.String()},
+		{"entry", withURL.String()},
+		{"entry", "--json", withURL.String()},
+		{"log", "--json"},
+	} {
+		res := execute(t, inRepo(r.Dir), args...)
+		require.Equal(t, ExitOK, res.code, res.stderr)
+
+		assert.NotContains(t, res.stdout, "s3cr3t-token", args)
+		assert.NotContains(t, res.stdout, "t0ken", args)
+	}
+
+	res := execute(t, inRepo(r.Dir), "entry", prop.String())
+	assert.Contains(t, res.stdout, "https://redacted@example.com/upstream.git")
+}

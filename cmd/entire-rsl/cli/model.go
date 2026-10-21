@@ -5,6 +5,7 @@ import (
 
 	"github.com/entireio/entire-rsl/internal/clusters"
 	"github.com/entireio/entire-rsl/internal/entirefields"
+	"github.com/entireio/entire-rsl/internal/redact"
 	"github.com/entireio/entire-rsl/internal/rslread"
 	"github.com/gittuf/gittuf/pkg/githash"
 )
@@ -48,6 +49,7 @@ type entryJSON struct {
 }
 
 func toEntryJSON(e rslread.Entry) entryJSON {
+	custom := redact.Values(e.CustomFields)
 	j := entryJSON{
 		Number:             e.Number,
 		ID:                 e.ID.String(),
@@ -61,8 +63,8 @@ func toEntryJSON(e rslread.Entry) entryJSON {
 		AnnotatedBy:        hashStrings(e.AnnotatedBy),
 		Annotates:          hashStrings(e.Annotates),
 		Message:            e.Message,
-		UpstreamRepository: e.UpstreamRepository,
-		CustomFields:       e.CustomFields,
+		UpstreamRepository: redact.URLs(e.UpstreamRepository),
+		CustomFields:       custom,
 	}
 	if len(e.TargetID) != 0 {
 		j.Target = e.TargetID.String()
@@ -74,8 +76,8 @@ func toEntryJSON(e rslread.Entry) entryJSON {
 		skip := e.Skip
 		j.Skip = &skip
 	}
-	if len(e.CustomFields) != 0 {
-		f := entirefields.Parse(e.CustomFields)
+	if len(custom) != 0 {
+		f := entirefields.Parse(custom)
 		j.Entire = &f
 	}
 	return j

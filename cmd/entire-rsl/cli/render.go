@@ -11,6 +11,7 @@ import (
 	"time"
 
 	"github.com/entireio/entire-rsl/internal/entirefields"
+	"github.com/entireio/entire-rsl/internal/redact"
 	"github.com/entireio/entire-rsl/internal/rslread"
 	"github.com/entireio/entire-rsl/internal/sanitize"
 	"github.com/gittuf/gittuf/pkg/githash"
@@ -143,7 +144,7 @@ func entryFields(e rslread.Entry) []field {
 		)
 		if e.Kind == rslread.KindPropagation {
 			fields = append(fields,
-				field{"Upstream", sanitize.Line(e.UpstreamRepository)},
+				field{"Upstream", sanitize.Line(redact.URLs(e.UpstreamRepository))},
 				field{"Upstream entry", e.UpstreamEntryID.String()},
 			)
 		}
@@ -162,7 +163,7 @@ func entryFields(e rslread.Entry) []field {
 		fields = append(fields, field{"Annotated by", strings.Join(hashStrings(e.AnnotatedBy), "\n")})
 	}
 
-	return append(fields, entireFields(e.CustomFields)...)
+	return append(fields, entireFields(redact.Values(e.CustomFields))...)
 }
 
 // entireFields describes Entire's custom fields, then every field raw. The
