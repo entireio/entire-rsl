@@ -283,3 +283,18 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   store. Decoded commits are never mutated. A fetch adds refs and objects but
   no shallow boundaries, so the cached list stays valid for the invocation.
 - **Result:** see docs/benchmarks.md.
+
+## 2026-10-21: The read-only guarantee is a source check
+
+- **Context:** SPEC.md section 5 asks for a test that fails when write APIs
+  appear outside an allowlist that is empty except for the fetch.
+- **Decision:** `internal/guard` scans every non-test Go file, comments and
+  declarations removed, for calls that write refs, objects, config, the RSL
+  or files (gittuf's `Record*`, `Push*`, `Pull*`, `Commit`, store setters,
+  go-git object and reference setters, `os` file writers) and, in files that
+  import `os/exec`, for git subcommands that write. The allowlist holds
+  `"fetch"` and `"update-ref"` in `internal/gitcli/fetch.go`, and go-git's
+  `Worktree()` in `internal/repo/repo.go`, used only to locate the root.
+  `internal/testutil` writes fixtures and is exempt, and a second check fails
+  if any production file imports it. The structural guarantee remains the
+  store's `ErrReadOnly` for everything gittuf does.

@@ -1,0 +1,2 @@
+go test fuzz v1
+string("A3B2C4D5E6F7")

@@ -1,0 +1,2 @@
+go test fuzz v1
+string("main\xe2\x80\xaegnp.exe")

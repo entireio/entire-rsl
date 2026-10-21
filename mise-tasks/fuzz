@@ -1,0 +1,19 @@
+#!/bin/sh
+#MISE description="Run every fuzz target (FUZZTIME per target, default 30s)"
+
+set -e
+
+fuzztime="${FUZZTIME:-30s}"
+
+# Seed corpora live in each package's testdata/fuzz directory and also run as
+# ordinary tests in `mise run test`.
+for target in \
+  "./internal/refname FuzzValidate" \
+  "./internal/refresolve FuzzCheckpointID" \
+  "./internal/rslread FuzzParseSelector" \
+  "./internal/sanitize FuzzLine"; do
+  # shellcheck disable=SC2086
+  set -- $target
+  echo "fuzzing $2 for $fuzztime"
+  go test -run '^$' -fuzz "^$2\$" -fuzztime "$fuzztime" "$1"
+done
