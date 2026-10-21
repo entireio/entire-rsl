@@ -32,6 +32,7 @@ type refreshRefJSON struct {
 	New          string          `json:"new"`
 	Commits      int             `json:"commits"`
 	LocalCommits int             `json:"local_commits,omitempty"`
+	Symbolic     bool            `json:"symbolic,omitempty"`
 }
 
 // rslEntries are the RSL entry numbers before and after a refresh. Old is 0
@@ -99,7 +100,7 @@ terminal.`,
 			if asJSON {
 				out := refreshJSON{SchemaVersion: schemaVersion, Remote: choice.name, Refs: make([]refreshRefJSON, 0, len(updates))}
 				for _, u := range updates {
-					ref := refreshRefJSON{Ref: u.Ref, Status: u.Status, Old: u.Old, New: u.New, Commits: u.Commits, LocalCommits: u.LocalCommits}
+					ref := refreshRefJSON{Ref: u.Ref, Status: u.Status, Old: u.Old, New: u.New, Commits: u.Commits, LocalCommits: u.LocalCommits, Symbolic: u.Symbolic}
 					if e, ok := entries[u.Ref]; ok {
 						ref.RSLEntries = &rslEntriesJSON{Old: e.old, New: e.new}
 					}
@@ -125,8 +126,9 @@ terminal.`,
 
 // rslEntryNumbers reads the RSL entry numbers before and after the refresh
 // for the RSL ref, from a repository opened afresh to see the fetched
-// objects. A number that cannot be read is left out: it only labels the
-// change.
+// objects. Numbers only label the change, so when one cannot be read, or an
+// entry is unnumbered (gittuf numbers entries from 1, and 0 means none), both
+// are left out.
 func (a *app) rslEntryNumbers(ctx context.Context, updates []gitcli.RefUpdate) map[string]rslEntries {
 	out := map[string]rslEntries{}
 	idx := slices.IndexFunc(updates, func(u gitcli.RefUpdate) bool { return u.Ref == pkgrsl.Ref })
@@ -150,7 +152,8 @@ func (a *app) rslEntryNumbers(ctx context.Context, updates []gitcli.RefUpdate) m
 			a.logger.DebugContext(ctx, "read RSL entry number", slog.String("entry", id), slog.String("error", err.Error()))
 			return 0, false
 		}
-		return entry.GetNumber(), true
+		n := entry.GetNumber()
+		return n, n > 0
 	}
 
 	var e rslEntries
@@ -178,6 +181,9 @@ func commitsText(u gitcli.RefUpdate, entries map[string]rslEntries) string {
 		text = "+" + plural(u.Commits, "commit", "commits")
 	case gitcli.RefDiverged:
 		text = fmt.Sprintf("remote +%d, local +%d", u.Commits, u.LocalCommits)
+		if u.Symbolic {
+			text += ", local ref is symbolic"
+		}
 	default:
 		return none
 	}

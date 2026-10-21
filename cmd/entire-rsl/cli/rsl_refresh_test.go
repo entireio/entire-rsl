@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	"github.com/entireio/entire-rsl/internal/testutil"
+	"github.com/gittuf/gittuf/pkg/rsl"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -131,7 +132,11 @@ func TestRefreshNeverWritesThroughASymbolicGittufRef(t *testing.T) {
 	res := execute(t, inRepo(clone), "refresh", "--json")
 
 	assert.Equal(t, ExitFailure, res.code)
-	assert.Equal(t, "diverged", refreshStatuses(t, res.stdout)["refs/gittuf/policy"])
+	policy := refreshRefs(t, res.stdout)["refs/gittuf/policy"]
+	assert.Equal(t, "diverged", policy.Status)
+	assert.True(t, policy.Symbolic)
+	assert.Positive(t, policy.Commits, "counts compare with the object the symbolic ref resolves to")
+	assert.Positive(t, policy.LocalCommits)
 	assert.Equal(t, mainBefore, gitOut(t, clone, "rev-parse", "refs/heads/main"))
 	assert.Equal(t, "refs/heads/main", gitOut(t, clone, "symbolic-ref", "refs/gittuf/policy"))
 }
@@ -196,4 +201,23 @@ func TestPickerListsOriginFirst(t *testing.T) {
 	assert.Contains(t, res.stderr, "2) aaa")
 	assert.Contains(t, res.stderr, "3) zzz")
 	assert.Contains(t, res.stdout, `"remote": "origin"`)
+}
+
+func TestRefreshOmitsNumbersForUnnumberedEntries(t *testing.T) {
+	t.Parallel()
+
+	r := testutil.NewRepo(t)
+	target := r.Commit("refs/heads/main", "only")
+	require.NoError(t, rsl.NewReferenceEntry("refs/heads/main", target).CommitWithoutNumber(r.Git))
+	clone := r.Clone(t, "origin")
+
+	res := execute(t, inRepo(clone), "refresh", "--json")
+
+	require.Equal(t, ExitOK, res.code, res.stderr)
+	entry := refreshRefs(t, res.stdout)["refs/gittuf/reference-state-log"]
+	assert.Equal(t, "created", entry.Status)
+	assert.Nil(t, entry.RSLEntries, "an unnumbered entry has no number to show")
+
+	text := execute(t, inRepo(clone), "refresh")
+	assert.NotContains(t, text.stdout, "entry #0")
 }

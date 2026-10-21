@@ -195,4 +195,5 @@ The exit code carries the state: 0 `verified`, 3 `failed` or `unprotected`,
 | `refs[].new` | string | The remote's value. |
 | `refs[].commits` | integer | Commits the remote's ref has that the local one did not: all of them for `created`, the fast-forward for `updated`, the remote's side for `diverged`. 0 for `unchanged`. |
 | `refs[].local_commits` | integer | For `diverged`, the commits only the local ref has. |
-| `refs[].rsl_entries` | object | For the RSL ref when it changed: `old` and `new` entry numbers. `old` is absent when the RSL was created. |
+| `refs[].symbolic` | boolean | The local ref is symbolic, so it was left as it was (`diverged`). Counts compare with the object it resolves to. |
+| `refs[].rsl_entries` | object | For the RSL ref when it changed: `old` and `new` entry numbers. `old` is absent when the RSL was created. Absent when either end is unnumbered (legacy gittuf entries). |

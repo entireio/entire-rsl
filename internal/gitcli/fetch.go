@@ -95,6 +95,9 @@ type RefUpdate struct {
 	// LocalCommits counts, for a diverged ref, the commits only the local
 	// ref has.
 	LocalCommits int
+	// Symbolic is set when the local ref is symbolic, which is why it was
+	// left as it was.
+	Symbolic bool
 }
 
 // SyncGittufRefs fetches the remote's gittuf refs into
@@ -169,8 +172,15 @@ func (g *Git) SyncGittufRefs(ctx context.Context, root, remote string, fastForwa
 			changes++
 		case symbolic[localName]:
 			// A symbolic gittuf ref would redirect the write to its target,
-			// possibly outside refs/gittuf/, so it is never touched.
-			u.Status = RefDiverged
+			// possibly outside refs/gittuf/, so it is never touched. The
+			// counts compare with the object it resolves to.
+			u.Status, u.Symbolic = RefDiverged, true
+			if u.Commits, err = g.countCommits(ctx, root, u.Old, id); err != nil {
+				return nil, err
+			}
+			if u.LocalCommits, err = g.countCommits(ctx, root, id, u.Old); err != nil {
+				return nil, err
+			}
 		case u.Old == id || !fastForward:
 			u.Status = RefUnchanged
 		default:
