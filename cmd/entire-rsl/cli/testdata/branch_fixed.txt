@@ -1,0 +1,11 @@
+Ref        refs/heads/fixed
+Local tip  6e0e1b046eb7ae06b070ba9d43a9a223bdbdc44b
+RSL tip    6e0e1b046eb7ae06b070ba9d43a9a223bdbdc44b (entry #13)
+Pushed by  bob, as recorded by Entire
+Time       1995-10-26T09:00:00Z (asserted by the signer)
+Signer     SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE, signature valid
+
+History (2 of 2 entries, newest first)
+NUMBER  ENTRY         TARGET        TIME                  BY   SIGNER                SKIPPED
+13      61abc6aed752  6e0e1b046eb7  1995-10-26T09:00:00Z  bob  SHA256:gcwUs7YXVhN2…  -
+11      2db61b8ed6be  6e0e1b046eb7  1995-10-26T09:00:00Z  -    SHA256:ffaIKVVFWP8b…  yes, by 09ce3ff1bd76

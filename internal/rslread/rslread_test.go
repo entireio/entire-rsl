@@ -252,6 +252,14 @@ func TestHistory(t *testing.T) {
 	assert.Equal(t, 2, fixed.Total)
 	assert.Equal(t, 1, fixed.Unskipped)
 	assert.Equal(t, []githash.Hash{sc.FixedEntry}, ids(fixed.Entries))
+	require.NotNil(t, fixed.Current)
+	assert.Equal(t, sc.FixedEntry, fixed.Current.ID)
+
+	beyond, err := r.History(t.Context(), "refs/heads/main", 0)
+	require.NoError(t, err)
+	assert.Empty(t, beyond.Entries)
+	require.NotNil(t, beyond.Current, "the current entry is found beyond the limit")
+	assert.Equal(t, sc.MainLastEntry, beyond.Current.ID)
 
 	none, err := r.History(t.Context(), "refs/heads/never", 10)
 	require.NoError(t, err)

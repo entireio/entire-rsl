@@ -1,0 +1,13 @@
+Ref        refs/tags/v1.0.0
+Local tip  732924be9ec6dad0a148a35536c2ac65cc345a67
+RSL tip    732924be9ec6dad0a148a35536c2ac65cc345a67 (entry #7)
+Pushed by  jane, as recorded by Entire
+Time       1995-10-26T09:00:00Z (asserted by the signer)
+Signer     SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE, signature valid
+
+Warning: tag refs/tags/v1.0.0 has 2 unskipped RSL entries, so it was moved after it was first pushed
+
+History (2 of 2 entries, newest first)
+NUMBER  ENTRY         TARGET        TIME                  BY    SIGNER                SKIPPED
+7       e1188d6637f0  732924be9ec6  1995-10-26T09:00:00Z  jane  SHA256:gcwUs7YXVhN2…  -
+6       60a5dd3f63e2  67b438c76d82  1995-10-26T09:00:00Z  jane  SHA256:gcwUs7YXVhN2…  -

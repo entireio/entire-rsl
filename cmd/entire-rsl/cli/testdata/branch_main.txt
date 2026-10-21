@@ -1,0 +1,12 @@
+Ref        refs/heads/main
+Local tip  8c9626aa9daaf78041a7db7045b058738597e154
+RSL tip    8c9626aa9daaf78041a7db7045b058738597e154 (entry #9)
+Pushed by  jane, as recorded by Entire
+Time       1995-10-26T09:00:00Z (asserted by the signer)
+Signer     SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE, signature valid
+
+History (3 of 3 entries, newest first)
+NUMBER  ENTRY         TARGET        TIME                  BY    SIGNER                SKIPPED
+9       2f3106dcfec6  8c9626aa9daa  1995-10-26T09:00:00Z  jane  SHA256:gcwUs7YXVhN2…  -
+4       5e3963e1c33e  732924be9ec6  1995-10-26T09:00:00Z  jane  SHA256:gcwUs7YXVhN2…  -
+3       d424aa2b5963  67b438c76d82  1995-10-26T09:00:00Z  jane  SHA256:gcwUs7YXVhN2…  -

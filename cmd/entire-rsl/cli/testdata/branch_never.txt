@@ -1,0 +1,5 @@
+Ref        refs/heads/never
+Local tip  absent
+RSL tip    none
+
+Warning: the RSL has no entries for refs/heads/never. The repository's RSL coverage may exclude it, or it was never pushed through Entire

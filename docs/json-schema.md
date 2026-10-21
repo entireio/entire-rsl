@@ -94,3 +94,38 @@ Entries are newest first. `entries` is an empty array when nothing matches.
 ```json
 {"schema_version": 1, "entry": Entry}
 ```
+
+## `branch` and `tag`
+
+```json
+{
+  "schema_version": 1,
+  "ref": "refs/heads/main",
+  "local_tip": "...",
+  "rsl_tip": "...",
+  "current_entry": Entry,
+  "history": [Entry, ...],
+  "history_total": 3,
+  "warnings": [{"code": "...", "message": "..."}]
+}
+```
+
+| Field | Type | Meaning |
+| --- | --- | --- |
+| `ref` | string | Full ref name. |
+| `local_tip` | string or null | Local value of the ref. Null when the ref does not exist locally. |
+| `rsl_tip` | string or null | Target of `current_entry`. Null when the RSL has no unskipped entry for the ref. |
+| `current_entry` | Entry or null | Newest entry for the ref that no annotation skips. |
+| `history` | array of Entry | Newest entries for the ref, newest first, up to `--history`, skipped ones included. |
+| `history_total` | integer | Number of entries the RSL holds for the ref. |
+| `warnings` | array | Each with a stable `code` and a human `message`. |
+
+Warning codes:
+
+| Code | Meaning |
+| --- | --- |
+| `no_rsl_entries` | The RSL has no entry for the ref. Coverage may exclude it. |
+| `all_entries_skipped` | Every entry for the ref is skipped. |
+| `local_ref_missing` | The ref does not exist locally. |
+| `local_drift` | The local ref differs from `rsl_tip`. |
+| `tag_moved` | A tag has more than one unskipped entry. |

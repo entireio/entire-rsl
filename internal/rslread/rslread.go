@@ -282,6 +282,9 @@ type History struct {
 	Entries []Entry
 	// Total counts every such entry in the RSL, beyond the limit too.
 	Total int
+	// Current is the newest entry no skip annotation revokes, which records
+	// the state the ref should have. Nil when every entry is skipped.
+	Current *Entry
 	// Unskipped counts the entries no skip annotation revokes.
 	Unskipped int
 }
@@ -294,17 +297,27 @@ func (r *Reader) History(ctx context.Context, ref string, limit int) (History, e
 			return true, nil
 		}
 		h.Total++
-		if !w.skipped() {
+		skipped := w.skipped()
+		if !skipped {
 			h.Unskipped++
 		}
-		if len(h.Entries) >= limit {
+
+		keep := len(h.Entries) < limit
+		current := h.Current == nil && !skipped
+		if !keep && !current {
 			return true, nil
 		}
+
 		e, err := r.build(w)
 		if err != nil {
 			return false, err
 		}
-		h.Entries = append(h.Entries, e)
+		if keep {
+			h.Entries = append(h.Entries, e)
+		}
+		if current {
+			h.Current = &e
+		}
 		return true, nil
 	})
 	if err != nil {

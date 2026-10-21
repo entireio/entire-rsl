@@ -1,0 +1,15 @@
+{
+  "schema_version": 1,
+  "ref": "refs/heads/never",
+  "local_tip": null,
+  "rsl_tip": null,
+  "current_entry": null,
+  "history": [],
+  "history_total": 0,
+  "warnings": [
+    {
+      "code": "no_rsl_entries",
+      "message": "the RSL has no entries for refs/heads/never. The repository's RSL coverage may exclude it, or it was never pushed through Entire"
+    }
+  ]
+}

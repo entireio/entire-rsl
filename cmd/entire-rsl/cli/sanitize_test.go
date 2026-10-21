@@ -1,7 +1,6 @@
 package cli
 
 import (
-	"strings"
 	"testing"
 
 	"github.com/entireio/entire-rsl/internal/testutil"
@@ -43,5 +42,5 @@ func TestHostileRepositoryStringsRenderInert(t *testing.T) {
 	res = execute(t, inRepo(r.Dir), "entry", "--json", evil.String())
 	require.Equal(t, ExitOK, res.code)
 	assert.NotContains(t, res.stdout, "\x1b", "JSON escapes control characters")
-	assert.True(t, strings.Contains(res.stdout, `\u001b`), "the raw value survives in JSON, escaped")
+	assert.Contains(t, res.stdout, `\u001b`, "the raw value survives in JSON, escaped")
 }

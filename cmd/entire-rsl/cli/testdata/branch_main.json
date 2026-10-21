@@ -1,0 +1,130 @@
+{
+  "schema_version": 1,
+  "ref": "refs/heads/main",
+  "local_tip": "8c9626aa9daaf78041a7db7045b058738597e154",
+  "rsl_tip": "8c9626aa9daaf78041a7db7045b058738597e154",
+  "current_entry": {
+    "number": 9,
+    "id": "2f3106dcfec619b4807b8fc24927c954cf17565e",
+    "type": "reference",
+    "ref": "refs/heads/main",
+    "target": "8c9626aa9daaf78041a7db7045b058738597e154",
+    "time": "1995-10-26T09:00:00Z",
+    "signer": {
+      "method": "ssh",
+      "signature_valid": true,
+      "key_id": "SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE"
+    },
+    "committer_unverified": {
+      "name": "Jane Doe",
+      "email": "jane.doe@example.com"
+    },
+    "skipped": false,
+    "entire": {
+      "pusher": {
+        "account_id": "01J9ZACCT000000000000000JD",
+        "handle": "jane",
+        "raw": "01J9ZACCT000000000000000JD (jane)"
+      },
+      "repository": "01J9ZREPQ0000000000000000R"
+    },
+    "custom_fields": {
+      "custom.entire.io/pusher": "01J9ZACCT000000000000000JD (jane)",
+      "custom.entire.io/repository": "01J9ZREPQ0000000000000000R"
+    }
+  },
+  "history": [
+    {
+      "number": 9,
+      "id": "2f3106dcfec619b4807b8fc24927c954cf17565e",
+      "type": "reference",
+      "ref": "refs/heads/main",
+      "target": "8c9626aa9daaf78041a7db7045b058738597e154",
+      "time": "1995-10-26T09:00:00Z",
+      "signer": {
+        "method": "ssh",
+        "signature_valid": true,
+        "key_id": "SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE"
+      },
+      "committer_unverified": {
+        "name": "Jane Doe",
+        "email": "jane.doe@example.com"
+      },
+      "skipped": false,
+      "entire": {
+        "pusher": {
+          "account_id": "01J9ZACCT000000000000000JD",
+          "handle": "jane",
+          "raw": "01J9ZACCT000000000000000JD (jane)"
+        },
+        "repository": "01J9ZREPQ0000000000000000R"
+      },
+      "custom_fields": {
+        "custom.entire.io/pusher": "01J9ZACCT000000000000000JD (jane)",
+        "custom.entire.io/repository": "01J9ZREPQ0000000000000000R"
+      }
+    },
+    {
+      "number": 4,
+      "id": "5e3963e1c33ee98e4fef2eaa4c2790ffe2749afa",
+      "type": "reference",
+      "ref": "refs/heads/main",
+      "target": "732924be9ec6dad0a148a35536c2ac65cc345a67",
+      "time": "1995-10-26T09:00:00Z",
+      "signer": {
+        "method": "ssh",
+        "signature_valid": true,
+        "key_id": "SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE"
+      },
+      "committer_unverified": {
+        "name": "Jane Doe",
+        "email": "jane.doe@example.com"
+      },
+      "skipped": false,
+      "entire": {
+        "pusher": {
+          "account_id": "01J9ZACCT000000000000000JD",
+          "handle": "jane",
+          "raw": "01J9ZACCT000000000000000JD (jane)"
+        },
+        "repository": "01J9ZREPQ0000000000000000R"
+      },
+      "custom_fields": {
+        "custom.entire.io/pusher": "01J9ZACCT000000000000000JD (jane)",
+        "custom.entire.io/repository": "01J9ZREPQ0000000000000000R"
+      }
+    },
+    {
+      "number": 3,
+      "id": "d424aa2b5963fed76767d1335a83938adc61a300",
+      "type": "reference",
+      "ref": "refs/heads/main",
+      "target": "67b438c76d8297490d984054665424d99f93ec1c",
+      "time": "1995-10-26T09:00:00Z",
+      "signer": {
+        "method": "ssh",
+        "signature_valid": true,
+        "key_id": "SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE"
+      },
+      "committer_unverified": {
+        "name": "Jane Doe",
+        "email": "jane.doe@example.com"
+      },
+      "skipped": false,
+      "entire": {
+        "pusher": {
+          "account_id": "01J9ZACCT000000000000000JD",
+          "handle": "jane",
+          "raw": "01J9ZACCT000000000000000JD (jane)"
+        },
+        "repository": "01J9ZREPQ0000000000000000R"
+      },
+      "custom_fields": {
+        "custom.entire.io/pusher": "01J9ZACCT000000000000000JD (jane)",
+        "custom.entire.io/repository": "01J9ZREPQ0000000000000000R"
+      }
+    }
+  ],
+  "history_total": 3,
+  "warnings": []
+}

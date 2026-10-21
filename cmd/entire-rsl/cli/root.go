@@ -73,6 +73,8 @@ Exit codes:
 	root.PersistentFlags().BoolVar(&a.debug, "debug", false, "print diagnostics to stderr (also ENTIRE_LOG_LEVEL=debug)")
 
 	root.AddCommand(
+		newBranchCmd(a),
+		newTagCmd(a),
 		newLogCmd(a),
 		newEntryCmd(a),
 		newVersionCmd(),

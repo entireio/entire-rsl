@@ -1,0 +1,111 @@
+{
+  "schema_version": 1,
+  "ref": "refs/tags/v1.0.0",
+  "local_tip": "732924be9ec6dad0a148a35536c2ac65cc345a67",
+  "rsl_tip": "732924be9ec6dad0a148a35536c2ac65cc345a67",
+  "current_entry": {
+    "number": 7,
+    "id": "e1188d6637f0a142efd2c835ff8e6fbbfa75d85e",
+    "type": "reference",
+    "ref": "refs/tags/v1.0.0",
+    "target": "732924be9ec6dad0a148a35536c2ac65cc345a67",
+    "time": "1995-10-26T09:00:00Z",
+    "signer": {
+      "method": "ssh",
+      "signature_valid": true,
+      "key_id": "SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE"
+    },
+    "committer_unverified": {
+      "name": "Jane Doe",
+      "email": "jane.doe@example.com"
+    },
+    "skipped": false,
+    "entire": {
+      "pusher": {
+        "account_id": "01J9ZACCT000000000000000JD",
+        "handle": "jane",
+        "raw": "01J9ZACCT000000000000000JD (jane)"
+      },
+      "repository": "01J9ZREPQ0000000000000000R",
+      "force_push": true
+    },
+    "custom_fields": {
+      "custom.entire.io/force-push": "true",
+      "custom.entire.io/pusher": "01J9ZACCT000000000000000JD (jane)",
+      "custom.entire.io/repository": "01J9ZREPQ0000000000000000R"
+    }
+  },
+  "history": [
+    {
+      "number": 7,
+      "id": "e1188d6637f0a142efd2c835ff8e6fbbfa75d85e",
+      "type": "reference",
+      "ref": "refs/tags/v1.0.0",
+      "target": "732924be9ec6dad0a148a35536c2ac65cc345a67",
+      "time": "1995-10-26T09:00:00Z",
+      "signer": {
+        "method": "ssh",
+        "signature_valid": true,
+        "key_id": "SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE"
+      },
+      "committer_unverified": {
+        "name": "Jane Doe",
+        "email": "jane.doe@example.com"
+      },
+      "skipped": false,
+      "entire": {
+        "pusher": {
+          "account_id": "01J9ZACCT000000000000000JD",
+          "handle": "jane",
+          "raw": "01J9ZACCT000000000000000JD (jane)"
+        },
+        "repository": "01J9ZREPQ0000000000000000R",
+        "force_push": true
+      },
+      "custom_fields": {
+        "custom.entire.io/force-push": "true",
+        "custom.entire.io/pusher": "01J9ZACCT000000000000000JD (jane)",
+        "custom.entire.io/repository": "01J9ZREPQ0000000000000000R"
+      }
+    },
+    {
+      "number": 6,
+      "id": "60a5dd3f63e2269021e4722105a9602909d55ecf",
+      "type": "reference",
+      "ref": "refs/tags/v1.0.0",
+      "target": "67b438c76d8297490d984054665424d99f93ec1c",
+      "time": "1995-10-26T09:00:00Z",
+      "signer": {
+        "method": "ssh",
+        "signature_valid": true,
+        "key_id": "SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE"
+      },
+      "committer_unverified": {
+        "name": "Jane Doe",
+        "email": "jane.doe@example.com"
+      },
+      "skipped": false,
+      "entire": {
+        "pusher": {
+          "account_id": "01J9ZACCT000000000000000JD",
+          "handle": "jane",
+          "raw": "01J9ZACCT000000000000000JD (jane)"
+        },
+        "repository": "01J9ZREPQ0000000000000000R",
+        "force_push": true
+      },
+      "custom_fields": {
+        "custom.entire.io/force-push": "true",
+        "custom.entire.io/pusher": "01J9ZACCT000000000000000JD (jane)",
+        "custom.entire.io/repository": "01J9ZREPQ0000000000000000R"
+      }
+    }
+  ],
+  "history_total": 2,
+  "warnings": [
+    {
+      "code": "tag_moved",
+      "message": "tag refs/tags/v1.0.0 has 2 unskipped RSL entries, so it was moved after it was first pushed"
+    }
+  ]
+}
