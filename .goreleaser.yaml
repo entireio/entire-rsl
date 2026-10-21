@@ -5,7 +5,7 @@ project_name: entire-rsl
 
 before:
   hooks:
-    - go mod tidy
+    - go mod tidy -e
 
 builds:
   - id: entire-rsl

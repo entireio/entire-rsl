@@ -4,7 +4,7 @@
 set -e
 
 before="$(cat go.mod go.sum | git hash-object --stdin)"
-go mod tidy
+go mod tidy -e
 after="$(cat go.mod go.sum | git hash-object --stdin)"
 
 # Compare contents rather than git status, so staged but uncommitted module

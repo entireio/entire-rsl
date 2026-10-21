@@ -39,3 +39,16 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
 - **Decision:** `cli.Options.SetDefaultLogger` is the only path to
   `slog.SetDefault`. `main` passes `slog.SetDefault`, tests pass nil.
 - **Rejected:** calling `slog.SetDefault` inside the command tree.
+
+## 2026-10-21: go mod tidy runs with -e
+
+- **Context:** `go mod tidy` fails on a test of a transitive dependency:
+  `tink-go-gcpkms/v2/integration/gcpkms` tests import
+  `google.golang.org/genproto/googleapis/cloud/kms/v1`, which genproto dropped
+  after 2026-06-22, while gittuf requires genproto 2026-09-28. The gittuf fork
+  fails `go mod tidy` the same way. No package entire-rsl builds imports it.
+- **Decision:** the tidy check (`mise-tasks/lint/gomod`) and the goreleaser hook
+  run `go mod tidy -e`, and the check still fails if tidying changes go.mod or
+  go.sum.
+- **Rejected:** excluding genproto versions (gittuf's requirement sets the
+  floor, so no older version can be selected), and dropping the tidy check.
