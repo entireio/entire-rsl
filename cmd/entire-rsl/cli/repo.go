@@ -125,13 +125,28 @@ func (a *app) offerFetch(ctx context.Context, r *repo.Repo) error {
 		}
 	}
 
+	cfg, err := r.Store.Repository().Config()
+	if err != nil {
+		return fmt.Errorf("read repository config: %w", err)
+	}
+	if err := gitcli.CheckFetchConfig(cfg.Raw, remote); err != nil {
+		return err
+	}
+
 	git, err := gitcli.Find()
 	if err != nil {
 		return err
 	}
 	a.logger.DebugContext(ctx, "fetching gittuf refs", slog.String("remote", remote))
 	fmt.Fprintf(a.opts.Stderr, "Fetching gittuf refs from %s...\n", sanitize.Line(remote))
-	return git.FetchGittufRefs(ctx, r.Root, remote)
+	created, err := git.FetchGittufRefs(ctx, r.Root, remote)
+	if err != nil {
+		return err
+	}
+	for _, ref := range created {
+		fmt.Fprintf(a.opts.Stderr, "Created %s\n", sanitize.Line(ref))
+	}
+	return nil
 }
 
 func (a *app) interactive() bool {

@@ -38,7 +38,7 @@ type verificationJSON struct {
 }
 
 func toVerificationJSON(r verify.Result) verificationJSON {
-	j := verificationJSON{State: string(r.State), Reason: r.Reason, Rules: r.Rules}
+	j := verificationJSON{State: string(r.State), Reason: redact.URLs(r.Reason), Rules: r.Rules}
 	if r.Err != nil {
 		j.Error = redact.URLs(r.Err.Error())
 	}
@@ -56,7 +56,7 @@ func toVerificationJSON(r verify.Result) verificationJSON {
 
 // verificationFields describes a result for a detail view.
 func verificationFields(r verify.Result) []field {
-	fields := []field{{"Verification", string(r.State) + ": " + r.Reason}}
+	fields := []field{{"Verification", string(r.State) + ": " + sanitize.Line(redact.URLs(r.Reason))}}
 	if r.Err != nil {
 		fields = append(fields, field{"Detail", sanitize.Lines(redact.URLs(r.Err.Error()))})
 	}

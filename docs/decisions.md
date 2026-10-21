@@ -223,21 +223,24 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   2026-10-21: the user chose to create local gittuf refs.
 - **Decision:** only when the repository has no local RSL, and only with
   consent (`--fetch[=<remote>]`, or a yes or a remote picked at a prompt on a
-  terminal), `internal/gitcli` runs
-  `git fetch -- <remote> refs/gittuf/*:refs/gittuf/* +refs/gittuf/*:refs/remotes/<remote>/gittuf/*`.
-  The first refspec has no `+`, so git creates missing local gittuf refs and
-  refuses to overwrite an existing one that the remote does not fast-forward,
-  failing the fetch. This is what `gittuf rsl remote pull` does. The second
-  keeps gittuf's own remote-tracking layout (`pkg/rsl` `remoteTrackerRef`).
-  The remote must be a configured remote name, so no URL reaches git from the
-  command line.
+  terminal), `internal/gitcli` fetches `+refs/gittuf/*` into gittuf's own
+  remote-tracking layout `refs/remotes/<remote>/gittuf/*` (`pkg/rsl`
+  `remoteTrackerRef`), then creates each missing local `refs/gittuf/*` ref
+  from its tracking ref in one `git update-ref --stdin` transaction of
+  `create` commands, which fails if a ref appeared meanwhile. Existing local
+  refs are never changed (review 0003). The remote must be a configured remote
+  name, so no URL reaches git from the command line.
 - **Hardening:** git is resolved to an absolute path once; arguments are a
   slice with `--` before the remote; `core.fsmonitor`, `core.hooksPath` and
-  the `ext` transport are disabled; `--no-write-fetch-head`,
-  `--no-auto-maintenance`, `--no-recurse-submodules`,
-  `fetch.writeCommitGraph=false` keep the fetch from writing anything else;
-  output is captured and URL credentials redacted; cancellation interrupts git
-  with a five second grace.
+  the `ext` transport are disabled; `--refmap=`, `--no-prune` and
+  `--no-prune-tags` stop configured mappings and pruning from widening the
+  write; `--no-write-fetch-head`, `--no-auto-maintenance`,
+  `--no-recurse-submodules` and `fetch.writeCommitGraph=false` keep the fetch
+  from writing anything else; the fetch is refused when the repository's own
+  config names a program git would run (`core.sshCommand`,
+  `remote.<name>.uploadpack`, credential helpers, includes); output is
+  captured and URL credentials redacted; cancellation interrupts git with a
+  five second grace.
 - **Non-interactive:** without a terminal the command fails with how to
   fetch (`--fetch`, or `--fetch=<remote>` when there are several). Prompts are
   plain lines on stderr, so they work with screen readers like the Entire

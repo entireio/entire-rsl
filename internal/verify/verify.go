@@ -153,9 +153,9 @@ func Verify(ctx context.Context, st *store.Store, ref string, opts Options) (res
 		res.Reason = "gittuf verified every RSL entry for the ref against the policy, and every check passed"
 	}
 
-	res.Checks = runChecks(ctx, st, reader, ref, res, opts)
-	if err := ctx.Err(); err != nil {
-		return errorResult(ctx, ref, "verification could not complete", err)
+	res.Checks, err = runChecks(ctx, st, reader, ref, res, opts)
+	if err != nil {
+		return errorResult(ctx, ref, "verification checks could not complete", err)
 	}
 	if failed, ok := failedCheck(res.Checks); ok && res.State == Verified {
 		res.State, res.ExpectedTip = Failed, nil
@@ -189,10 +189,28 @@ type matcher interface {
 // whether any rule applies (internal/policy/policy.go,
 // findVerifiersForPathIfProtected).
 func coveringRules(ctx context.Context, repoPath, ref string) ([]string, error) {
-	if err := ctx.Err(); err != nil {
-		return nil, fmt.Errorf("list policy rules: %w", err)
+	// gittuf starts git without a context here, so the work runs aside and
+	// the caller stops waiting when the context is done. An abandoned git
+	// process only reads, and ends with the command.
+	type result struct {
+		names []string
+		err   error
 	}
+	done := make(chan result, 1)
+	go func() {
+		names, err := listCoveringRules(ctx, repoPath, ref)
+		done <- result{names, err}
+	}()
 
+	select {
+	case <-ctx.Done():
+		return nil, fmt.Errorf("list policy rules: %w", ctx.Err())
+	case r := <-done:
+		return r.names, r.err
+	}
+}
+
+func listCoveringRules(ctx context.Context, repoPath, ref string) ([]string, error) {
 	repo, err := gittuf.LoadRepository(repoPath)
 	if err != nil {
 		return nil, fmt.Errorf("load repository for policy rules: %w", err)

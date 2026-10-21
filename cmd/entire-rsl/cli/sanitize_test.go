@@ -4,6 +4,7 @@ import (
 	"testing"
 
 	"github.com/entireio/entire-rsl/internal/testutil"
+	"github.com/entireio/entire-rsl/internal/verify"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -71,4 +72,18 @@ func TestUpstreamCredentialsAreRedacted(t *testing.T) {
 
 	res := execute(t, inRepo(r.Dir), "entry", prop.String())
 	assert.Contains(t, res.stdout, "https://redacted@example.com/upstream.git")
+}
+
+func TestVerificationReasonIsSanitized(t *testing.T) {
+	t.Parallel()
+
+	res := verify.Result{State: verify.Failed, Reason: "root key " + hostile + " https://u:tok@h/x"}
+
+	fields := verificationFields(res)
+
+	require.NotEmpty(t, fields)
+	assert.NotContains(t, fields[0].value, "\x1b")
+	assert.NotContains(t, fields[0].value, string(rune(0x202e)))
+	assert.NotContains(t, fields[0].value, "tok")
+	assert.NotContains(t, toVerificationJSON(res).Reason, "tok")
 }

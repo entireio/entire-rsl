@@ -349,3 +349,24 @@ func TestUserSuppliedRootSkipsTheSignerCheck(t *testing.T) {
 	assert.Equal(t, Verified, res.State, res.Reason)
 	assert.Equal(t, CheckSkip, checkByName(t, res, CheckSigner).Status)
 }
+
+func TestLocalRefReadErrorIsAnError(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	g, err := gogit.PlainOpen(sc.Dir)
+	require.NoError(t, err)
+	st, err := store.New(g)
+	require.NoError(t, err)
+
+	res := Verify(t.Context(), st, "refs/heads/main", Options{
+		Logger:   slog.New(slog.DiscardHandler),
+		RepoPath: sc.Dir,
+		Timeout:  time.Minute,
+		Keys:     testutil.TrustedKeys(t),
+		LocalTip: func(string) (githash.Hash, error) { return nil, errors.New("disk on fire") },
+	})
+
+	assert.Equal(t, Error, res.State, "a check that cannot run is an error, not a failure")
+	require.ErrorContains(t, res.Err, "disk on fire")
+}
