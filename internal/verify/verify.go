@@ -51,8 +51,10 @@ type Result struct {
 	ExpectedTip githash.Hash
 	// FromEntry is the first RSL entry for the ref, where verification starts.
 	FromEntry githash.Hash
-	State     State
-	Ref       string
+	// FromNumber is FromEntry's number, 0 for an unnumbered entry.
+	FromNumber uint64
+	State      State
+	Ref        string
 	// Reason explains the state in a sentence.
 	Reason string
 	// Rules names the policy rules that cover the ref.
@@ -129,7 +131,7 @@ func Verify(ctx context.Context, st *store.Store, ref string, opts Options) (res
 	if err != nil {
 		return errorResult(ctx, ref, "could not read the ref's RSL entries", err)
 	}
-	res.FromEntry = first.GetID()
+	res.FromEntry, res.FromNumber = first.GetID(), first.GetNumber()
 
 	res.Rules, err = coveringRules(ctx, opts.RepoPath, ref)
 	if err != nil {

@@ -113,6 +113,7 @@
     "reason": "gittuf verification failed",
     "error": "verifying tag entry failed, gittuf policy verification failed: verifying tag object's signature failed",
     "from_entry": "60a5dd3f63e2269021e4722105a9602909d55ecf",
+    "from_entry_number": 6,
     "rules": [
       "authorize-rsl-signers"
     ],

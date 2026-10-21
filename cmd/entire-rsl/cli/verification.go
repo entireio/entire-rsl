@@ -33,6 +33,7 @@ type verificationJSON struct {
 	Error       string      `json:"error,omitempty"`
 	VerifiedTip string      `json:"verified_tip,omitempty"`
 	FromEntry   string      `json:"from_entry,omitempty"`
+	FromNumber  uint64      `json:"from_entry_number,omitempty"`
 	Rules       []string    `json:"rules,omitempty"`
 	Checks      []checkJSON `json:"checks,omitempty"`
 }
@@ -46,7 +47,7 @@ func toVerificationJSON(r verify.Result) verificationJSON {
 		j.VerifiedTip = r.ExpectedTip.String()
 	}
 	if len(r.FromEntry) != 0 {
-		j.FromEntry = r.FromEntry.String()
+		j.FromEntry, j.FromNumber = r.FromEntry.String(), r.FromNumber
 	}
 	for _, c := range r.Checks {
 		j.Checks = append(j.Checks, checkJSON{Name: c.Name, Status: string(c.Status), Detail: redact.URLs(c.Detail)})
@@ -65,7 +66,11 @@ func verificationFields(r verify.Result, st styles) []field {
 		fields = append(fields, field{"Verified tip", r.ExpectedTip.String()})
 	}
 	if len(r.FromEntry) != 0 {
-		fields = append(fields, field{"Checked from", r.FromEntry.String()})
+		first := r.FromEntry.String()
+		if r.FromNumber > 0 {
+			first = fmt.Sprintf("#%d %s", r.FromNumber, first)
+		}
+		fields = append(fields, field{"First RSL entry", first})
 	}
 	if len(r.Rules) != 0 {
 		fields = append(fields, field{"Rules", sanitize.Line(strings.Join(r.Rules, ", "))})

@@ -158,6 +158,7 @@ is given.
 | `error` | string | The underlying error, for `failed` and `error`. |
 | `verified_tip` | string | For `verified`: the target of the latest RSL entry, which gittuf verified. |
 | `from_entry` | string | The ref's first RSL entry, where full verification starts. |
+| `from_entry_number` | integer | `from_entry`'s number. Absent for an unnumbered (legacy) entry. |
 | `rules` | array of string | Policy rules covering the ref. Global rules carry a `global:` prefix. |
 | `checks` | array | entire-rsl's own checks, each `{name, status, detail}`. `status` is `pass`, `fail`, `skip` or, for `tip` only, `behind`. A failed check makes the state `failed`. `behind` does not. |
 

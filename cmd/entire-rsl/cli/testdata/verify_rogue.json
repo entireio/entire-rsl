@@ -6,6 +6,7 @@
     "reason": "gittuf verification failed",
     "error": "verifying Git namespace policies failed, gittuf policy verification failed",
     "from_entry": "6ca19a5f51c2464b742b1215005891fe9295fc54",
+    "from_entry_number": 10,
     "rules": [
       "authorize-rsl-signers"
     ],
