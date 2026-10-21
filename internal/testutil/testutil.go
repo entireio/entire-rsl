@@ -53,6 +53,12 @@ func IsolateGitConfig() {
 	}
 }
 
+// The identity fixtures commit as, matching gittuf's test repositories.
+const (
+	committerName  = "Jane Doe"
+	committerEmail = "jane.doe@example.com"
+)
+
 // Key is a deterministic ed25519 key pair.
 type Key struct {
 	Private ed25519.PrivateKey
@@ -134,6 +140,36 @@ func NewRepo(t *testing.T) *Repo {
 		Root:    NewKey(t, "root"),
 		Cluster: NewKey(t, "cluster"),
 		Rogue:   NewKey(t, "rogue"),
+	}
+}
+
+// NewBenchRepo creates an empty repository for benchmarks. Unlike NewRepo it
+// uses the real clock, so its object IDs differ between runs.
+func NewBenchRepo(b testing.TB) *Repo {
+	b.Helper()
+
+	dir := b.TempDir()
+	for _, args := range [][]string{
+		{"init", "--quiet", "-b", "main", dir},
+		{"-C", dir, "config", "user.name", committerName},
+		{"-C", dir, "config", "user.email", committerEmail},
+	} {
+		if out, err := exec.CommandContext(b.Context(), "git", args...).CombinedOutput(); err != nil {
+			b.Fatalf("git %v: %v: %s", args, err, out)
+		}
+	}
+
+	repo, err := gitinterface.LoadRepository(dir)
+	if err != nil {
+		b.Fatalf("load repository: %v", err)
+	}
+	return &Repo{
+		t:       b,
+		Dir:     dir,
+		Git:     repo,
+		Root:    NewKey(b, "root"),
+		Cluster: NewKey(b, "cluster"),
+		Rogue:   NewKey(b, "rogue"),
 	}
 }
 

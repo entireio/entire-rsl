@@ -52,9 +52,9 @@ func (s *Store) IsShallowBoundary(id githash.Hash) (bool, error) {
 	if err != nil {
 		return false, err
 	}
-	shallow, err := s.repo.Storer.Shallow()
+	shallow, err := s.shallow()
 	if err != nil {
-		return false, &ObjectError{Op: opReadShallow, Err: err}
+		return false, err
 	}
 	return slices.Contains(shallow, h), nil
 }

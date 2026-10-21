@@ -272,3 +272,14 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
 - **Rejected:** reporting drift only as a warning (the user asked for it as a
   check), and accepting unknown roots silently, which would let any
   self-rooted RSL verify as if Entire had signed it.
+
+## 2026-10-21: Store caches decoded commits and shallow boundaries
+
+- **Context:** profiling a 100,000-entry RSL walk showed each entry commit
+  decoded three times (parents, gittuf's parent check, message) and the
+  shallow file read twice per entry.
+- **Decision:** the store keeps a bounded FIFO of 4,096 decoded commits and
+  reads the shallow list once, both shared by the context-bound copies of one
+  store. Decoded commits are never mutated. A fetch adds refs and objects but
+  no shallow boundaries, so the cached list stays valid for the invocation.
+- **Result:** see docs/benchmarks.md.

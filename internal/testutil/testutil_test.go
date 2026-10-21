@@ -87,3 +87,24 @@ func TestScenarioVerificationOutcomes(t *testing.T) {
 	_, err := policy.VerifyRef(t.Context(), s.Git, "refs/heads/rogue")
 	assert.Error(t, err, "rogue")
 }
+
+func TestAppendedEntriesVerifyWithGittuf(t *testing.T) {
+	t.Parallel()
+
+	r := NewRepo(t)
+	r.Bootstrap()
+	target := r.Commit("refs/heads/main", "only")
+	first := r.Record(r.Cluster, "refs/heads/main", nil)
+	r.AppendEntries(t, r.Cluster, "refs/heads/main", target, 25)
+
+	tip, err := policy.VerifyRef(t.Context(), r.Git, "refs/heads/main")
+	require.NoError(t, err)
+	assert.Equal(t, target, tip)
+
+	_, err = policy.VerifyRefFromEntry(t.Context(), r.Git, "refs/heads/main", first)
+	require.NoError(t, err)
+
+	latest, err := rsl.GetLatestEntry(r.Git)
+	require.NoError(t, err)
+	assert.Equal(t, uint64(28), latest.GetNumber())
+}

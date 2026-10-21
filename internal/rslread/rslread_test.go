@@ -21,6 +21,11 @@ func TestMain(m *testing.M) {
 
 func openStore(t *testing.T, dir string) *store.Store {
 	t.Helper()
+	return openStoreTB(t, dir)
+}
+
+func openStoreTB(t testing.TB, dir string) *store.Store {
+	t.Helper()
 
 	g, err := gogit.PlainOpen(dir)
 	require.NoError(t, err)

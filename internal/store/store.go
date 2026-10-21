@@ -94,6 +94,7 @@ type Store struct {
 	// take no context, so the store carries the invocation's.
 	ctx    context.Context //nolint:containedctx // gitstore.Storer methods take no context
 	repo   *gogit.Repository
+	cache  *cache
 	limits limits
 	sha256 bool
 }
@@ -112,7 +113,13 @@ func New(repo *gogit.Repository) (*Store, error) {
 		return nil, &ObjectError{Op: "read repository config", Err: err}
 	}
 
-	return &Store{ctx: context.Background(), repo: repo, limits: defaultLimits, sha256: cfg.Extensions.ObjectFormat == "sha256"}, nil
+	return &Store{
+		ctx:    context.Background(),
+		repo:   repo,
+		cache:  newCache(commitCacheSize),
+		limits: defaultLimits,
+		sha256: cfg.Extensions.ObjectFormat == "sha256",
+	}, nil
 }
 
 // WithContext returns a copy of the store whose walks stop when ctx is done.
@@ -215,9 +222,9 @@ func (s *Store) GetCommitParentIDs(commitID githash.Hash) ([]githash.Hash, error
 		return nil, err
 	}
 
-	shallow, err := s.repo.Storer.Shallow()
+	shallow, err := s.shallow()
 	if err != nil {
-		return nil, &ObjectError{Op: opReadShallow, Err: err}
+		return nil, err
 	}
 	if slices.Contains(shallow, commit.Hash) || len(commit.ParentHashes) == 0 {
 		return nil, nil
@@ -494,9 +501,9 @@ func (s *Store) walk(from githash.Hash, visit func(plumbing.Hash) bool) error {
 		return err
 	}
 
-	shallow, err := s.repo.Storer.Shallow()
+	shallow, err := s.shallow()
 	if err != nil {
-		return &ObjectError{Op: opReadShallow, Err: err}
+		return err
 	}
 
 	seen := map[plumbing.Hash]struct{}{}
@@ -737,6 +744,10 @@ func (s *Store) commit(id githash.Hash) (*object.Commit, error) {
 }
 
 func (s *Store) commitObject(h plumbing.Hash) (*object.Commit, error) {
+	if c, ok := s.cache.commit(h); ok {
+		return c, nil
+	}
+
 	obj, err := s.encodedGoGit(h, plumbing.CommitObject, s.limits.commit)
 	if err != nil {
 		return nil, err
@@ -745,7 +756,19 @@ func (s *Store) commitObject(h plumbing.Hash) (*object.Commit, error) {
 	if err != nil {
 		return nil, &ObjectError{Op: "decode commit", ID: h.String(), Err: err}
 	}
+	s.cache.addCommit(h, commit)
 	return commit, nil
+}
+
+// shallow returns the repository's shallow boundaries, read once per store.
+func (s *Store) shallow() ([]plumbing.Hash, error) {
+	return s.cache.shallowOnce(func() ([]plumbing.Hash, error) {
+		shallow, err := s.repo.Storer.Shallow()
+		if err != nil {
+			return nil, &ObjectError{Op: opReadShallow, Err: err}
+		}
+		return shallow, nil
+	})
 }
 
 func (s *Store) tagObject(h plumbing.Hash) (*object.Tag, error) {
