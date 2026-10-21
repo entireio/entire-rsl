@@ -6,7 +6,10 @@ import (
 	"path/filepath"
 	"testing"
 
+	"github.com/entireio/entire-rsl/internal/rslread"
 	"github.com/entireio/entire-rsl/internal/testutil"
+	"github.com/entireio/entire-rsl/internal/verify"
+	"github.com/gittuf/gittuf/pkg/githash"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
 )
@@ -135,4 +138,25 @@ func TestDetailCommandsVerifyByDefault(t *testing.T) {
 
 	res = execute(t, inRepo(sc.Dir), "branch", "--timeout", "0s", "main")
 	assert.Equal(t, ExitUsage, res.code)
+}
+
+func TestCheckedText(t *testing.T) {
+	t.Parallel()
+
+	first := rslread.Target{Number: 3, ID: mustHash(t, "d424aa2b5963fed76767d1335a83938adc61a300")}
+	last := rslread.Target{Number: 9, ID: mustHash(t, "2f3106dcfec619b4807b8fc24927c954cf17565e")}
+	legacy := rslread.Target{ID: mustHash(t, "0123456789abcdef0123456789abcdef01234567")}
+
+	assert.Equal(t, "#3 d424aa2b5963 → #9 2f3106dcfec6 (3 entries)", checkedText(verify.Checked{First: first, Last: last, Count: 3}))
+	assert.Equal(t, "#3 d424aa2b5963 → #9 2f3106dcfec6 (3 entries, 1 skipped)", checkedText(verify.Checked{First: first, Last: last, Count: 3, Skipped: 1}))
+	assert.Equal(t, "#9 2f3106dcfec6 (1 entry)", checkedText(verify.Checked{First: last, Last: last, Count: 1}))
+	assert.Equal(t, "0123456789ab → #9 2f3106dcfec6 (2 entries)", checkedText(verify.Checked{First: legacy, Last: last, Count: 2}))
+}
+
+func mustHash(t *testing.T, s string) githash.Hash {
+	t.Helper()
+
+	h, err := githash.NewHash(s)
+	require.NoError(t, err)
+	return h
 }

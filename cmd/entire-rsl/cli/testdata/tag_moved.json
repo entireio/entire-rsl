@@ -114,6 +114,18 @@
     "error": "verifying tag entry failed, gittuf policy verification failed: verifying tag object's signature failed",
     "from_entry": "60a5dd3f63e2269021e4722105a9602909d55ecf",
     "from_entry_number": 6,
+    "entries_checked": {
+      "first": {
+        "number": 6,
+        "id": "60a5dd3f63e2269021e4722105a9602909d55ecf"
+      },
+      "last": {
+        "number": 7,
+        "id": "e1188d6637f0a142efd2c835ff8e6fbbfa75d85e"
+      },
+      "count": 2,
+      "skipped": 0
+    },
     "rules": [
       "authorize-rsl-signers"
     ],

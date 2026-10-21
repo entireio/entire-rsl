@@ -53,8 +53,12 @@ type Result struct {
 	FromEntry githash.Hash
 	// FromNumber is FromEntry's number, 0 for an unnumbered entry.
 	FromNumber uint64
-	State      State
-	Ref        string
+	// Checked describes the RSL entries for the ref that verification
+	// covers, from FromEntry to the latest. Nil when verification did not
+	// reach the ref's entries.
+	Checked *Checked
+	State   State
+	Ref     string
 	// Reason explains the state in a sentence.
 	Reason string
 	// Rules names the policy rules that cover the ref.
@@ -63,6 +67,14 @@ type Result struct {
 	// ref.
 	Checks   []Check
 	Duration time.Duration
+}
+
+// Checked is the range of RSL entries for a ref that verification covers.
+type Checked struct {
+	First, Last rslread.Target
+	// Count counts the ref's entries in the range, Skipped those an
+	// annotation revokes.
+	Count, Skipped int
 }
 
 // Options configure Verify.
@@ -132,6 +144,20 @@ func Verify(ctx context.Context, st *store.Store, ref string, opts Options) (res
 		return errorResult(ctx, ref, "could not read the ref's RSL entries", err)
 	}
 	res.FromEntry, res.FromNumber = first.GetID(), first.GetNumber()
+
+	targets, err := reader.Targets(ctx, ref)
+	if err != nil {
+		return errorResult(ctx, ref, "could not read the ref's RSL entries", err)
+	}
+	if len(targets) > 0 {
+		checked := &Checked{First: targets[len(targets)-1], Last: targets[0], Count: len(targets)}
+		for _, t := range targets {
+			if t.Skipped {
+				checked.Skipped++
+			}
+		}
+		res.Checked = checked
+	}
 
 	res.Rules, err = coveringRules(ctx, opts.RepoPath, ref)
 	if err != nil {

@@ -1,7 +1,7 @@
 Ref                  refs/heads/main
 Verification         verified: gittuf verified every RSL entry for the ref against the policy, and every check passed
 Verified tip         8c9626aa9daaf78041a7db7045b058738597e154
-First RSL entry      #3 d424aa2b5963fed76767d1335a83938adc61a300
+RSL entries checked  #3 d424aa2b5963 → #9 2f3106dcfec6 (3 entries)
 Rules                authorize-rsl-signers
 Check tip            pass: the local ref matches the tip the RSL records (8c9626aa9daaf78041a7db7045b058738597e154, entry #9)
 Check root_of_trust  pass: anchored to Entire test root (SHA256:XoKzzUGnLJ4GK8IPQ+7CYaXXU5HjoVZaneZsu6w4Mtw), root version 1

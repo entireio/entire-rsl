@@ -73,6 +73,18 @@
     "verified_tip": "fe16799c32d2f19aeba4d415f9b42f37799acc3e",
     "from_entry": "e0ff9ff266d46ca738826fd52b1db5dab6f46271",
     "from_entry_number": 8,
+    "entries_checked": {
+      "first": {
+        "number": 8,
+        "id": "e0ff9ff266d46ca738826fd52b1db5dab6f46271"
+      },
+      "last": {
+        "number": 8,
+        "id": "e0ff9ff266d46ca738826fd52b1db5dab6f46271"
+      },
+      "count": 1,
+      "skipped": 0
+    },
     "rules": [
       "authorize-rsl-signers"
     ],

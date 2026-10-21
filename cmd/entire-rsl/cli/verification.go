@@ -13,6 +13,7 @@ import (
 
 	"github.com/entireio/entire-rsl/internal/clusters"
 	"github.com/entireio/entire-rsl/internal/redact"
+	"github.com/entireio/entire-rsl/internal/rslread"
 	"github.com/entireio/entire-rsl/internal/sanitize"
 	"github.com/entireio/entire-rsl/internal/verify"
 	"github.com/spf13/cobra"
@@ -27,15 +28,28 @@ type checkJSON struct {
 	Detail string `json:"detail"`
 }
 
+type checkedEntryJSON struct {
+	Number uint64 `json:"number,omitempty"`
+	ID     string `json:"id"`
+}
+
+type entriesCheckedJSON struct {
+	First   checkedEntryJSON `json:"first"`
+	Last    checkedEntryJSON `json:"last"`
+	Count   int              `json:"count"`
+	Skipped int              `json:"skipped"`
+}
+
 type verificationJSON struct {
-	State       string      `json:"state"`
-	Reason      string      `json:"reason"`
-	Error       string      `json:"error,omitempty"`
-	VerifiedTip string      `json:"verified_tip,omitempty"`
-	FromEntry   string      `json:"from_entry,omitempty"`
-	FromNumber  uint64      `json:"from_entry_number,omitempty"`
-	Rules       []string    `json:"rules,omitempty"`
-	Checks      []checkJSON `json:"checks,omitempty"`
+	State       string              `json:"state"`
+	Reason      string              `json:"reason"`
+	Error       string              `json:"error,omitempty"`
+	VerifiedTip string              `json:"verified_tip,omitempty"`
+	FromEntry   string              `json:"from_entry,omitempty"`
+	FromNumber  uint64              `json:"from_entry_number,omitempty"`
+	Checked     *entriesCheckedJSON `json:"entries_checked,omitempty"`
+	Rules       []string            `json:"rules,omitempty"`
+	Checks      []checkJSON         `json:"checks,omitempty"`
 }
 
 func toVerificationJSON(r verify.Result) verificationJSON {
@@ -48,6 +62,14 @@ func toVerificationJSON(r verify.Result) verificationJSON {
 	}
 	if len(r.FromEntry) != 0 {
 		j.FromEntry, j.FromNumber = r.FromEntry.String(), r.FromNumber
+	}
+	if c := r.Checked; c != nil {
+		j.Checked = &entriesCheckedJSON{
+			First:   checkedEntryJSON{Number: c.First.Number, ID: c.First.ID.String()},
+			Last:    checkedEntryJSON{Number: c.Last.Number, ID: c.Last.ID.String()},
+			Count:   c.Count,
+			Skipped: c.Skipped,
+		}
 	}
 	for _, c := range r.Checks {
 		j.Checks = append(j.Checks, checkJSON{Name: c.Name, Status: string(c.Status), Detail: redact.URLs(c.Detail)})
@@ -65,12 +87,8 @@ func verificationFields(r verify.Result, st styles) []field {
 	if len(r.ExpectedTip) != 0 {
 		fields = append(fields, field{"Verified tip", r.ExpectedTip.String()})
 	}
-	if len(r.FromEntry) != 0 {
-		first := r.FromEntry.String()
-		if r.FromNumber > 0 {
-			first = fmt.Sprintf("#%d %s", r.FromNumber, first)
-		}
-		fields = append(fields, field{"First RSL entry", first})
+	if r.Checked != nil {
+		fields = append(fields, field{"RSL entries checked", checkedText(*r.Checked)})
 	}
 	if len(r.Rules) != 0 {
 		fields = append(fields, field{"Rules", sanitize.Line(strings.Join(r.Rules, ", "))})
@@ -79,6 +97,29 @@ func verificationFields(r verify.Result, st styles) []field {
 		fields = append(fields, field{"Check " + c.Name, checkStyle(c.Status, st) + ": " + sanitize.Line(redact.URLs(c.Detail))})
 	}
 	return fields
+}
+
+// checkedText describes the range of RSL entries verification covered, such
+// as "#3 d424aa2b5963 -> #9 2f3106dcfec6 (3 entries)".
+func checkedText(c verify.Checked) string {
+	text := entryLabel(c.First)
+	if !c.First.ID.Equal(c.Last.ID) {
+		text += " \u2192 " + entryLabel(c.Last)
+	}
+	text += " (" + plural(c.Count, "entry", "entries")
+	if c.Skipped > 0 {
+		text += fmt.Sprintf(", %d skipped", c.Skipped)
+	}
+	return text + ")"
+}
+
+// entryLabel is an entry's number and short ID, the ID alone when the entry
+// is unnumbered.
+func entryLabel(t rslread.Target) string {
+	if t.Number == 0 {
+		return shortID(t.ID)
+	}
+	return fmt.Sprintf("#%d %s", t.Number, shortID(t.ID))
 }
 
 func stateStyle(state verify.State, st styles) string {

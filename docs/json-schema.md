@@ -159,6 +159,7 @@ is given.
 | `verified_tip` | string | For `verified`: the target of the latest RSL entry, which gittuf verified. |
 | `from_entry` | string | The ref's first RSL entry, where full verification starts. |
 | `from_entry_number` | integer | `from_entry`'s number. Absent for an unnumbered (legacy) entry. |
+| `entries_checked` | object | The ref's RSL entries verification covered: `first` and `last`, each `{number, id}` (`number` absent when unnumbered), `count` of the ref's entries in that range and how many are `skipped`. Entry numbers count every ref, so `count` can be smaller than the difference of the numbers. |
 | `rules` | array of string | Policy rules covering the ref. Global rules carry a `global:` prefix. |
 | `checks` | array | entire-rsl's own checks, each `{name, status, detail}`. `status` is `pass`, `fail`, `skip` or, for `tip` only, `behind`. A failed check makes the state `failed`. `behind` does not. |
 
