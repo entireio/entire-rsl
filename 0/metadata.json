@@ -1,0 +1,77 @@
+{
+  "cli_version": "0.11.5-nightly.202610140625.065c76361",
+  "checkpoint_id": "01M5FZKE0DHMGFZJE3X4G92HGN",
+  "session_id": "20849cfe-edd8-4d45-a1a1-b531a4274c7c",
+  "strategy": "manual-commit",
+  "created_at": "2026-10-21T19:39:25.883241667Z",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    "cmd/entire-rsl/cli/refreport.go",
+    "cmd/entire-rsl/cli/root.go",
+    "cmd/entire-rsl/cli/rsl_branch.go",
+    "cmd/entire-rsl/cli/rsl_branch_test.go",
+    "cmd/entire-rsl/cli/rsl_tag.go",
+    "cmd/entire-rsl/cli/sanitize_test.go",
+    "cmd/entire-rsl/cli/testdata/branch_fixed.txt",
+    "cmd/entire-rsl/cli/testdata/branch_main.json",
+    "cmd/entire-rsl/cli/testdata/branch_main.txt",
+    "cmd/entire-rsl/cli/testdata/branch_main_history1.txt",
+    "cmd/entire-rsl/cli/testdata/branch_never.json",
+    "cmd/entire-rsl/cli/testdata/branch_never.txt",
+    "cmd/entire-rsl/cli/testdata/tag_moved.json",
+    "cmd/entire-rsl/cli/testdata/tag_moved.txt",
+    "docs/json-schema.md",
+    "internal/refresolve/refresolve.go",
+    "internal/refresolve/refresolve_test.go",
+    "internal/rslread/rslread.go",
+    "internal/rslread/rslread_test.go"
+  ],
+  "agent": "Claude Code",
+  "model": "claude-opus-5-5",
+  "turn_id": "3e4be79c3a41",
+  "checkpoint_transcript_start": 1269,
+  "transcript_lines_at_start": 1269,
+  "compact_transcript_start": 177,
+  "token_usage": {
+    "input_tokens": 14,
+    "cache_creation_tokens": 19503,
+    "cache_read_tokens": 3486147,
+    "output_tokens": 15900,
+    "api_call_count": 7
+  },
+  "skill_events_version": 1,
+  "skill_events": [
+    {
+      "id": "claude-skill-toolu_015Ra2cvFfogxPEPTVovH6Zj",
+      "event_type": "tool_invocation",
+      "skill": {
+        "name": "anthropic-skills:docs"
+      },
+      "source": {
+        "agent": "claude-code",
+        "signal": "skill_tool_use",
+        "confidence": "explicit"
+      },
+      "turn_id": "3e4be79c3a41",
+      "transcript_anchor": {
+        "unit": "line",
+        "start": 35,
+        "end": 36,
+        "entry_ids": [
+          "f497a412-d543-4245-a559-f1f21fe3b9a0"
+        ],
+        "tool_use_id": "toolu_015Ra2cvFfogxPEPTVovH6Zj"
+      },
+      "native": {
+        "tool_name": "Skill",
+        "tool_use_id": "toolu_015Ra2cvFfogxPEPTVovH6Zj"
+      },
+      "collapse": {
+        "target": "tool_pair",
+        "label": "Skill: anthropic-skills:docs",
+        "default_collapsed": true
+      }
+    }
+  ]
+}
