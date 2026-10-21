@@ -31,4 +31,6 @@ func TestHardenProcessEnv(t *testing.T) {
 	assert.Equal(t, "core.hooksPath", os.Getenv("GIT_CONFIG_KEY_1"))
 	assert.Equal(t, os.DevNull, os.Getenv("GIT_CONFIG_VALUE_1"))
 	assert.Equal(t, "/run/agent", os.Getenv("SSH_AUTH_SOCK"), "credentials plumbing is kept")
+	assert.Equal(t, "1", os.Getenv("GIT_NO_REPLACE_OBJECTS"))
+	assert.Equal(t, os.DevNull, os.Getenv("GIT_GRAFT_FILE"))
 }

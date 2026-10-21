@@ -64,5 +64,12 @@ func HardenProcessEnv() error {
 	if err := os.Setenv("GIT_CONFIG_COUNT", strconv.Itoa(len(configOverrides))); err != nil {
 		return fmt.Errorf("set git config override: %w", err)
 	}
+
+	// Read the stored commit graph: no replacement objects, no grafts.
+	for key, value := range map[string]string{"GIT_NO_REPLACE_OBJECTS": "1", "GIT_GRAFT_FILE": os.DevNull} {
+		if err := os.Setenv(key, value); err != nil {
+			return fmt.Errorf("set %s: %w", key, err)
+		}
+	}
 	return nil
 }

@@ -76,8 +76,8 @@ const (
 	// RefUnchanged: the local ref already matched, or a fast-forward was not
 	// requested.
 	RefUnchanged = "unchanged"
-	// RefDiverged: the remote's ref does not descend from the local one, so
-	// the local ref was left as it was.
+	// RefDiverged: the remote's ref does not descend from the local one, or
+	// the local ref is symbolic, so the local ref was left as it was.
 	RefDiverged = "diverged"
 )
 
@@ -122,11 +122,11 @@ func (g *Git) SyncGittufRefs(ctx context.Context, root, remote string, fastForwa
 		return nil, fmt.Errorf("fetch from %s: %w", remote, err)
 	}
 
-	fetched, err := g.refs(ctx, root, tracking)
+	fetched, _, err := g.refs(ctx, root, tracking)
 	if err != nil {
 		return nil, err
 	}
-	local, err := g.refs(ctx, root, gittufPrefix)
+	local, symbolic, err := g.refs(ctx, root, gittufPrefix)
 	if err != nil {
 		return nil, err
 	}
@@ -156,6 +156,10 @@ func (g *Git) SyncGittufRefs(ctx context.Context, root, remote string, fastForwa
 			u.Status = RefCreated
 			fmt.Fprintf(&tx, "create %s %s\n", localName, id)
 			changes++
+		case symbolic[localName]:
+			// A symbolic gittuf ref would redirect the write to its target,
+			// possibly outside refs/gittuf/, so it is never touched.
+			u.Status = RefDiverged
 		case u.Old == id || !fastForward:
 			u.Status = RefUnchanged
 		default:
@@ -176,7 +180,7 @@ func (g *Git) SyncGittufRefs(ctx context.Context, root, remote string, fastForwa
 	tx.WriteString("commit\n")
 
 	if changes > 0 {
-		if _, err := g.runInput(ctx, root, tx.String(), "update-ref", "--stdin"); err != nil {
+		if _, err := g.runInput(ctx, root, tx.String(), "update-ref", "--no-deref", "--stdin"); err != nil {
 			return nil, fmt.Errorf("update local gittuf refs: %w", err)
 		}
 	}
@@ -196,26 +200,31 @@ func (g *Git) isAncestor(ctx context.Context, root, ancestor, commit string) (bo
 	return false, fmt.Errorf("compare %s with %s: %w", ancestor, commit, err)
 }
 
-// refs lists the refs under prefix and their object IDs.
-func (g *Git) refs(ctx context.Context, root, prefix string) (map[string]string, error) {
-	out, err := g.run(ctx, root, "for-each-ref", "--format=%(refname) %(objectname)", "--", prefix)
+// refs lists the refs under prefix with their object IDs, and which of them
+// are symbolic.
+func (g *Git) refs(ctx context.Context, root, prefix string) (map[string]string, map[string]bool, error) {
+	out, err := g.run(ctx, root, "for-each-ref", "--format=%(refname) %(objectname) %(symref)", "--", prefix)
 	if err != nil {
-		return nil, fmt.Errorf("list %s: %w", prefix, err)
+		return nil, nil, fmt.Errorf("list %s: %w", prefix, err)
 	}
 
 	refs := map[string]string{}
+	symbolic := map[string]bool{}
 	scanner := bufio.NewScanner(bytes.NewReader(out))
 	for scanner.Scan() {
-		name, id, ok := strings.Cut(scanner.Text(), " ")
-		if !ok {
+		fields := strings.Fields(scanner.Text())
+		if len(fields) < 2 {
 			continue
 		}
-		refs[name] = id
+		refs[fields[0]] = fields[1]
+		if len(fields) > 2 {
+			symbolic[fields[0]] = true
+		}
 	}
 	if err := scanner.Err(); err != nil {
-		return nil, fmt.Errorf("list %s: %w", prefix, err)
+		return nil, nil, fmt.Errorf("list %s: %w", prefix, err)
 	}
-	return refs, nil
+	return refs, symbolic, nil
 }
 
 func (g *Git) run(ctx context.Context, root string, args ...string) ([]byte, error) {
@@ -225,7 +234,10 @@ func (g *Git) run(ctx context.Context, root string, args ...string) ([]byte, err
 // runInput runs git in root with the execution vectors of repository config
 // neutralised, and returns its stdout.
 func (g *Git) runInput(ctx context.Context, root, stdin string, args ...string) ([]byte, error) {
+	// --no-replace-objects and an empty graft file make git read the stored
+	// commit graph, so refs/replace/* or grafts cannot fake an ancestry.
 	full := append([]string{
+		"--no-replace-objects",
 		"-C", root,
 		"-c", "core.fsmonitor=false",
 		"-c", "core.hooksPath=" + os.DevNull,
@@ -236,6 +248,7 @@ func (g *Git) runInput(ctx context.Context, root, stdin string, args ...string) 
 	cmd := exec.CommandContext(ctx, g.path, full...)
 	cmd.Cancel = func() error { return interrupt(cmd.Process) }
 	cmd.WaitDelay = waitDelay
+	cmd.Env = append(os.Environ(), "GIT_GRAFT_FILE="+os.DevNull)
 	if stdin != "" {
 		cmd.Stdin = strings.NewReader(stdin)
 	}

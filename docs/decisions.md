@@ -335,7 +335,10 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   `refs/remotes/<remote>/gittuf/*`, then one `update-ref --stdin` transaction
   that `create`s missing local refs and `update`s existing ones only when
   `git merge-base --is-ancestor` shows the remote's descends from the local
-  value, each update checked against the value read. Diverged refs are left
+  value, each update checked against the value read. git reads the stored
+  commit graph (`--no-replace-objects`, no grafts) so replacement objects
+  cannot fake an ancestry, the transaction runs `--no-deref`, and symbolic
+  local gittuf refs are never touched (review 0005). Diverged refs are left
   alone, reported, and make the command exit 1. Running the command is the
   consent, so it does not prompt, and it applies the same repository config
   checks as the fetch. It is `user-owned` in agent-help, Entire's convention

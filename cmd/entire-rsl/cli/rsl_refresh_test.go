@@ -99,3 +99,45 @@ func TestRefreshRefusesUnsafeConfig(t *testing.T) {
 	assert.Equal(t, ExitFailure, res.code)
 	assert.Contains(t, res.stderr, "would make a fetch run programs")
 }
+
+func TestRefreshNeverWritesThroughASymbolicGittufRef(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	clone := sc.Clone(t, "origin")
+	require.Equal(t, ExitOK, execute(t, inRepo(clone), "refresh").code)
+	mainBefore := gitOut(t, clone, "rev-parse", "refs/heads/main")
+	gitOut(t, clone, "symbolic-ref", "refs/gittuf/policy", "refs/heads/main")
+
+	res := execute(t, inRepo(clone), "refresh", "--json")
+
+	assert.Equal(t, ExitFailure, res.code)
+	assert.Equal(t, "diverged", refreshStatuses(t, res.stdout)["refs/gittuf/policy"])
+	assert.Equal(t, mainBefore, gitOut(t, clone, "rev-parse", "refs/heads/main"))
+	assert.Equal(t, "refs/heads/main", gitOut(t, clone, "symbolic-ref", "refs/gittuf/policy"))
+}
+
+func TestRefreshIgnoresReplacementObjects(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	clone := sc.Clone(t, "origin")
+	require.Equal(t, ExitOK, execute(t, inRepo(clone), "refresh").code)
+
+	tree := gitOut(t, clone, "rev-parse", "refs/gittuf/reference-state-log^{tree}")
+	localTip := gitOut(t, clone, "-c", "user.name=Local", "-c", "user.email=local@example.com", "commit-tree", tree, "-p", "refs/gittuf/reference-state-log", "-m", "local only")
+	gitOut(t, clone, "update-ref", "refs/gittuf/reference-state-log", localTip)
+	sc.Commit("refs/heads/main", "remote only")
+	remoteTip := sc.Record(sc.Cluster, "refs/heads/main", nil).String()
+
+	// Fake the remote tip descending from the local one.
+	gitOut(t, clone, "fetch", "--quiet", "origin", "refs/gittuf/reference-state-log:refs/scratch")
+	gitOut(t, clone, "update-ref", "-d", "refs/scratch")
+	gitOut(t, clone, "replace", "--graft", remoteTip, localTip)
+
+	res := execute(t, inRepo(clone), "refresh", "--json")
+
+	assert.Equal(t, ExitFailure, res.code, res.stderr)
+	assert.Equal(t, "diverged", refreshStatuses(t, res.stdout)["refs/gittuf/reference-state-log"])
+	assert.Equal(t, localTip, gitOut(t, clone, "rev-parse", "refs/gittuf/reference-state-log"))
+}
