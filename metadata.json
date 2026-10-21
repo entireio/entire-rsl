@@ -1,0 +1,40 @@
+{
+  "cli_version": "0.11.5-nightly.202610140625.065c76361",
+  "checkpoint_id": "01M5FZCR3T2P3BZSEJ644DN1E9",
+  "strategy": "manual-commit",
+  "branch": "main",
+  "checkpoints_count": 1,
+  "files_touched": [
+    ".golangci.yaml",
+    "docs/decisions.md",
+    "go.mod",
+    "internal/clusters/clusters.go",
+    "internal/clusters/clusters_test.go",
+    "internal/entirefields/entirefields.go",
+    "internal/entirefields/entirefields_test.go",
+    "internal/refname/refname.go",
+    "internal/refname/refname_test.go",
+    "internal/rslread/rslread.go",
+    "internal/rslread/rslread_test.go",
+    "internal/rslread/signature.go",
+    "internal/sanitize/sanitize.go",
+    "internal/sanitize/sanitize_test.go",
+    "internal/testutil/scenario.go"
+  ],
+  "sessions": [
+    {
+      "metadata": "/0/metadata.json",
+      "transcript": "/0/full.jsonl",
+      "compact_transcript": "/0/transcript.jsonl",
+      "content_hash": "/0/content_hash.txt",
+      "prompt": ""
+    }
+  ],
+  "token_usage": {
+    "input_tokens": 38,
+    "cache_creation_tokens": 57518,
+    "cache_read_tokens": 8722423,
+    "output_tokens": 50254,
+    "api_call_count": 19
+  }
+}
