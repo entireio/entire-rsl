@@ -1,6 +1,7 @@
 package store
 
 import (
+	"context"
 	"errors"
 	"os"
 	"os/exec"
@@ -323,14 +324,68 @@ func TestOversizedBlobIsRefused(t *testing.T) {
 	t.Parallel()
 
 	r := testutil.NewRepo(t)
-	blob, err := r.Git.WriteBlob(make([]byte, maxBlobSize+1))
+	blob, err := r.Git.WriteBlob(make([]byte, 1024))
 	require.NoError(t, err)
+	s := open(t, r.Dir)
+	s.limits.blob = 1023
 
-	_, err = open(t, r.Dir).ReadBlob(blob)
+	_, err = s.ReadBlob(blob)
 
 	require.ErrorIs(t, err, ErrObjectTooLarge)
 	var objErr *ObjectError
 	require.ErrorAs(t, err, &objErr)
+}
+
+func TestOversizedNestedTreeIsRefusedWhenDiffing(t *testing.T) {
+	t.Parallel()
+
+	r := testutil.NewRepo(t)
+	parent := r.Commit("refs/heads/main", "parent")
+
+	var entries []gitinterface.TreeEntry
+	for i := range 50 {
+		blob, err := r.Git.WriteBlob([]byte{byte(i)})
+		require.NoError(t, err)
+		entries = append(entries, gitinterface.NewEntryBlob("dir/sub/file"+strings.Repeat("x", i), blob))
+	}
+	tree, err := r.Git.WriteTree(entries)
+	require.NoError(t, err)
+	merge := gitCmd(t, r.Dir, "commit-tree", tree.String(), "-p", parent.String(), "-m", "big subtree")
+	commit, err := githash.NewHash(merge)
+	require.NoError(t, err)
+
+	s := open(t, r.Dir)
+	s.limits.tree = 512
+
+	_, err = s.GetFilePathsChangedByCommit(commit)
+
+	require.ErrorIs(t, err, ErrObjectTooLarge)
+}
+
+func TestWalksStopWhenContextIsDone(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	s := open(t, sc.Dir).WithContext(cancelled(t))
+
+	_, err := s.GetCommitsBetweenRange(sc.TrailerCommit, nil)
+	require.ErrorIs(t, err, context.Canceled)
+
+	_, err = s.KnowsCommit(sc.TrailerCommit, sc.MainFirst)
+	require.ErrorIs(t, err, context.Canceled)
+
+	policyTip, err := sc.Git.GetReference(policy.Ref)
+	require.NoError(t, err)
+	_, err = s.GetFilePathsChangedByCommit(policyTip)
+	require.ErrorIs(t, err, context.Canceled)
+}
+
+func cancelled(t *testing.T) context.Context {
+	t.Helper()
+
+	ctx, cancel := context.WithCancel(t.Context())
+	cancel()
+	return ctx
 }
 
 func gitCmd(t *testing.T, dir string, args ...string) string {

@@ -1,6 +1,6 @@
 #!/bin/bash
 #MISE description="Check dependency licenses"
-set -e
+set -euo pipefail
 
 # Colors for output
 RED='\033[0;31m'
@@ -70,10 +70,16 @@ overrideLicense() {
     done
 }
 
-# Get licenses from dependencies
+# Get licenses from dependencies. pipefail makes a go-licenses failure fail the
+# check instead of leaving an empty list that passes. Its diagnostics stay on
+# stderr.
 TEMP_FILE=$(mktemp)
-# shellcheck disable=SC2312
-go-licenses csv ./cmd/entire-rsl 2>/dev/null | sort | uniq > "$TEMP_FILE"
+trap 'rm -f "$TEMP_FILE"' EXIT
+go-licenses csv ./cmd/entire-rsl | sort | uniq > "$TEMP_FILE"
+if [ ! -s "$TEMP_FILE" ]; then
+    echo -e "${RED}ERROR: go-licenses reported no dependencies${NC}"
+    exit 1
+fi
 
 # Check each dependency
 VIOLATIONS=()
@@ -105,7 +111,6 @@ done < "$TEMP_FILE"
 # Report results
 if [ ${#VIOLATIONS[@]} -eq 0 ]; then
     echo -e "${GREEN}✓ All dependency licenses are allowed${NC}"
-    rm "$TEMP_FILE"
     exit 0
 else
     echo -e "${RED}✗ Found ${#VIOLATIONS[@]} dependency(ies) with non-allowed licenses:${NC}"
@@ -117,6 +122,5 @@ else
     done
     echo ""
     echo "If these licenses are acceptable, add them to .allowed-licenses"
-    rm "$TEMP_FILE"
     exit 1
 fi

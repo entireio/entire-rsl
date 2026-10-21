@@ -9,6 +9,7 @@
 package store
 
 import (
+	"context"
 	"errors"
 	"fmt"
 	"io"
@@ -78,11 +79,28 @@ func (e *ObjectError) Error() string {
 
 func (e *ObjectError) Unwrap() error { return e.Err }
 
+// maxWalk caps the commits one history walk visits.
+const maxWalk = 10_000_000
+
+// ErrWalkLimit is returned when a history walk exceeds maxWalk commits.
+var ErrWalkLimit = errors.New("history walk exceeded its limit")
+
 // Store is a read-only gitstore.Storer over a go-git repository.
 type Store struct {
+	// ctx bounds the walks the Storer methods perform. gitstore.Storer methods
+	// take no context, so the store carries the invocation's.
+	ctx    context.Context //nolint:containedctx // gitstore.Storer methods take no context
 	repo   *gogit.Repository
+	limits limits
 	sha256 bool
 }
+
+// limits are the per-type object size caps.
+type limits struct {
+	commit, tag, tree, blob int64
+}
+
+var defaultLimits = limits{commit: maxCommitSize, tag: maxTagSize, tree: maxTreeSize, blob: maxBlobSize}
 
 // New wraps repo.
 func New(repo *gogit.Repository) (*Store, error) {
@@ -91,7 +109,14 @@ func New(repo *gogit.Repository) (*Store, error) {
 		return nil, &ObjectError{Op: "read repository config", Err: err}
 	}
 
-	return &Store{repo: repo, sha256: cfg.Extensions.ObjectFormat == "sha256"}, nil
+	return &Store{ctx: context.Background(), repo: repo, limits: defaultLimits, sha256: cfg.Extensions.ObjectFormat == "sha256"}, nil
+}
+
+// WithContext returns a copy of the store whose walks stop when ctx is done.
+func (s *Store) WithContext(ctx context.Context) *Store {
+	c := *s
+	c.ctx = ctx
+	return &c
 }
 
 // Repository returns the underlying go-git repository for reads the Storer
@@ -138,7 +163,7 @@ func (s *Store) GetReference(refName string) (githash.Hash, error) {
 
 // ReadBlob returns the contents of a blob.
 func (s *Store) ReadBlob(blobID githash.Hash) ([]byte, error) {
-	obj, err := s.encoded(blobID, plumbing.BlobObject, maxBlobSize)
+	obj, err := s.encoded(blobID, plumbing.BlobObject, s.limits.blob)
 	if err != nil {
 		return nil, err
 	}
@@ -237,18 +262,45 @@ func (s *Store) GetEntriesInTree(treeID githash.Hash) ([]gitstore.TreeEntry, err
 // GetAllFilesInTree returns the recursively flattened path to blob mapping of
 // a tree, nil for an empty tree.
 func (s *Store) GetAllFilesInTree(treeID githash.Hash) (map[string]githash.Hash, error) {
-	files := map[string]githash.Hash{}
-	if err := s.collectFiles(treeID, "", files); err != nil {
+	h, err := toGoGit(treeID)
+	if err != nil {
 		return nil, err
 	}
-	if len(files) == 0 {
+
+	leaves := map[string]leaf{}
+	if err := s.collectLeaves(h, "", leaves); err != nil {
+		return nil, err
+	}
+	if len(leaves) == 0 {
 		return nil, nil //nolint:nilnil // gitstore.Storer contract: an empty tree has no files, as gitinterface returns
+	}
+
+	files := make(map[string]githash.Hash, len(leaves))
+	for path, l := range leaves {
+		id, err := fromGoGit(l.hash)
+		if err != nil {
+			return nil, err
+		}
+		files[path] = id
 	}
 	return files, nil
 }
 
-func (s *Store) collectFiles(treeID githash.Hash, prefix string, files map[string]githash.Hash) error {
-	tree, err := s.tree(treeID)
+// leaf is a non-tree entry of a flattened tree.
+type leaf struct {
+	hash plumbing.Hash
+	mode filemode.FileMode
+}
+
+// collectLeaves records every non-tree entry under treeID. Submodule gitlinks
+// are leaves, matching ls-tree -r. Every subtree is read through treeObject,
+// so each one is size-checked.
+func (s *Store) collectLeaves(treeID plumbing.Hash, prefix string, leaves map[string]leaf) error {
+	if err := s.ctx.Err(); err != nil {
+		return fmt.Errorf("read tree: %w", err)
+	}
+
+	tree, err := s.treeObject(treeID)
 	if err != nil {
 		return err
 	}
@@ -259,18 +311,13 @@ func (s *Store) collectFiles(treeID githash.Hash, prefix string, files map[strin
 			path = prefix + "/" + e.Name
 		}
 
-		id, err := fromGoGit(e.Hash)
-		if err != nil {
-			return err
-		}
-
 		if e.Mode == filemode.Dir {
-			if err := s.collectFiles(id, path, files); err != nil {
+			if err := s.collectLeaves(e.Hash, path, leaves); err != nil {
 				return err
 			}
 			continue
 		}
-		files[path] = id
+		leaves[path] = leaf{hash: e.Hash, mode: e.Mode}
 	}
 	return nil
 }
@@ -459,6 +506,13 @@ func (s *Store) walk(from githash.Hash, visit func(plumbing.Hash) bool) error {
 		}
 		seen[h] = struct{}{}
 
+		if err := s.ctx.Err(); err != nil {
+			return fmt.Errorf("walk history: %w", err)
+		}
+		if len(seen) > maxWalk {
+			return fmt.Errorf("%w: more than %d commits from %s", ErrWalkLimit, maxWalk, from.String())
+		}
+
 		if !visit(h) {
 			continue
 		}
@@ -538,45 +592,40 @@ func (s *Store) GetFilePathsChangedByCommit(commitID githash.Hash) ([]string, er
 	return paths, nil
 }
 
-// changedPaths lists the paths that differ between parent's tree and
-// commit's, like diff-tree -r --name-only without rename detection.
+// changedPaths lists the paths whose mode or object differ between parent's
+// tree and commit's, like diff-tree -r --name-only without rename detection.
+// Both trees are flattened through collectLeaves rather than go-git's
+// DiffTree, which would load subtrees without the size checks.
 func (s *Store) changedPaths(parentID githash.Hash, commit *object.Commit) ([]string, error) {
 	parent, err := s.commit(parentID)
 	if err != nil {
 		return nil, err
 	}
 
-	from, err := s.treeObject(parent.TreeHash)
-	if err != nil {
+	from := map[string]leaf{}
+	if err := s.collectLeaves(parent.TreeHash, "", from); err != nil {
 		return nil, err
 	}
-	to, err := s.treeObject(commit.TreeHash)
-	if err != nil {
+	to := map[string]leaf{}
+	if err := s.collectLeaves(commit.TreeHash, "", to); err != nil {
 		return nil, err
 	}
 
-	changes, err := object.DiffTree(from, to)
-	if err != nil {
-		return nil, &ObjectError{Op: "diff trees", ID: commit.Hash.String(), Err: err}
+	var paths []string
+	for path, l := range from {
+		if other, ok := to[path]; !ok || other != l {
+			paths = append(paths, path)
+		}
 	}
-	if len(changes) == 0 {
+	for path := range to {
+		if _, ok := from[path]; !ok {
+			paths = append(paths, path)
+		}
+	}
+	if len(paths) == 0 {
 		return nil, nil
 	}
 
-	set := map[string]struct{}{}
-	for _, c := range changes {
-		if c.From.Name != "" {
-			set[c.From.Name] = struct{}{}
-		}
-		if c.To.Name != "" {
-			set[c.To.Name] = struct{}{}
-		}
-	}
-
-	paths := make([]string, 0, len(set))
-	for p := range set {
-		paths = append(paths, p)
-	}
 	slices.Sort(paths)
 	return paths, nil
 }
@@ -657,12 +706,21 @@ func (s *Store) encoded(id githash.Hash, want plumbing.ObjectType, limit int64) 
 }
 
 func (s *Store) encodedGoGit(h plumbing.Hash, want plumbing.ObjectType, limit int64) (plumbing.EncodedObject, error) {
+	op := "read " + want.String()
+
+	// The size comes from the object header, so an oversized object is refused
+	// before it is inflated.
+	size, err := s.repo.Storer.EncodedObjectSize(h)
+	if err != nil {
+		return nil, &ObjectError{Op: op, ID: h.String(), Err: err}
+	}
+	if size > limit {
+		return nil, &ObjectError{Op: op, ID: h.String(), Err: fmt.Errorf("%w: %d bytes, limit %d", ErrObjectTooLarge, size, limit)}
+	}
+
 	obj, err := s.repo.Storer.EncodedObject(want, h)
 	if err != nil {
-		return nil, &ObjectError{Op: "read " + want.String(), ID: h.String(), Err: err}
-	}
-	if obj.Size() > limit {
-		return nil, &ObjectError{Op: "read " + want.String(), ID: h.String(), Err: fmt.Errorf("%w: %d bytes, limit %d", ErrObjectTooLarge, obj.Size(), limit)}
+		return nil, &ObjectError{Op: op, ID: h.String(), Err: err}
 	}
 	return obj, nil
 }
@@ -676,7 +734,7 @@ func (s *Store) commit(id githash.Hash) (*object.Commit, error) {
 }
 
 func (s *Store) commitObject(h plumbing.Hash) (*object.Commit, error) {
-	obj, err := s.encodedGoGit(h, plumbing.CommitObject, maxCommitSize)
+	obj, err := s.encodedGoGit(h, plumbing.CommitObject, s.limits.commit)
 	if err != nil {
 		return nil, err
 	}
@@ -688,7 +746,7 @@ func (s *Store) commitObject(h plumbing.Hash) (*object.Commit, error) {
 }
 
 func (s *Store) tagObject(h plumbing.Hash) (*object.Tag, error) {
-	obj, err := s.encodedGoGit(h, plumbing.TagObject, maxTagSize)
+	obj, err := s.encodedGoGit(h, plumbing.TagObject, s.limits.tag)
 	if err != nil {
 		return nil, err
 	}
@@ -712,7 +770,7 @@ func (s *Store) treeObject(h plumbing.Hash) (*object.Tree, error) {
 		return &object.Tree{}, nil
 	}
 
-	obj, err := s.encodedGoGit(h, plumbing.TreeObject, maxTreeSize)
+	obj, err := s.encodedGoGit(h, plumbing.TreeObject, s.limits.tree)
 	if err != nil {
 		return nil, err
 	}
