@@ -1,0 +1,7 @@
+<task-notification>
+<task-id>bt934sasc</task-id>
+<tool-use-id>toolu_01VSPA9tWiAe5E62x7V9vjYk</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-gittuf/20849cfe-edd8-4d45-a1a1-b531a4274c7c/tasks/bt934sasc.output</output-file>
+<status>completed</status>
+<summary>Background command "S=/tmp/claude-1000/-home-coder-git-entireio-entire-gittuf/20849cfe-edd8-4d45-a1a1-b531a4274c7c/scratchpad; $S/codex-review.sh f1b172b 9da6db4 $S/review-0002.md; echo "exit=$?"" completed (exit code 0)</summary>
+</task-notification>
