@@ -17,6 +17,10 @@ var ErrUnsafeConfig = errors.New("the repository's git config would make a fetch
 // program during the fetch, or includes other config files. The same keys in
 // global or system config are the user's own and are allowed.
 func CheckFetchConfig(raw *config.Config, remote string) error {
+	if raw == nil {
+		return fmt.Errorf("%w: the config could not be read", ErrUnsafeConfig)
+	}
+
 	var found []string
 
 	check := func(section, subsection string, opts config.Options, keys ...string) {

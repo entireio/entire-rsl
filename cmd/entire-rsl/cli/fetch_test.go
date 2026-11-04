@@ -33,6 +33,59 @@ func TestNoRSLWithoutConsentDoesNotFetch(t *testing.T) {
 	assert.Empty(t, refs(t, clone, "refs/remotes/origin/gittuf/"))
 }
 
+func TestFetchWithWorktreeConfig(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+
+	t.Run("safe", func(t *testing.T) {
+		t.Parallel()
+
+		clone := sc.Clone(t, "origin")
+		enableWorktreeConfig(t, clone)
+		gitOut(t, clone, "config", "--worktree", "core.sparseCheckout", "true")
+
+		res := execute(t, inRepo(clone), "verify", "--fetch", "refs/heads/main")
+
+		require.Equal(t, ExitOK, res.code, res.stderr)
+		assert.Contains(t, res.stdout, "verified")
+	})
+
+	t.Run("unsafe", func(t *testing.T) {
+		t.Parallel()
+
+		clone := sc.Clone(t, "origin")
+		enableWorktreeConfig(t, clone)
+		gitOut(t, clone, "config", "--worktree", "core.sshCommand", "touch /tmp/pwned")
+
+		res := execute(t, inRepo(clone), "refresh")
+
+		assert.Equal(t, ExitFailure, res.code)
+		assert.Contains(t, res.stderr, "would make a fetch run programs")
+		assert.Contains(t, res.stderr, "core.sshCommand")
+		assert.Empty(t, refs(t, clone, "refs/remotes/origin/gittuf/"))
+	})
+}
+
+func TestVerifyWithWorktreeConfig(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	enableWorktreeConfig(t, sc.Dir)
+	gitOut(t, sc.Dir, "config", "--worktree", "core.sparseCheckout", "true")
+
+	res := execute(t, inRepo(sc.Dir), "verify", "refs/heads/main")
+
+	require.Equal(t, ExitOK, res.code, res.stdout+res.stderr)
+}
+
+func enableWorktreeConfig(t *testing.T, dir string) {
+	t.Helper()
+
+	gitOut(t, dir, "config", "core.repositoryformatversion", "1")
+	gitOut(t, dir, "config", "extensions.worktreeConfig", "true")
+}
+
 func TestFetchFlagFetchesAndVerifies(t *testing.T) {
 	t.Parallel()
 

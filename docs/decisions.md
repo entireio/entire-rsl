@@ -448,3 +448,19 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
 - **Rejected:** any protected ref as a container, which would let a
   checkpoint ref vouch for the commit that names it, and keeping the
   checkpoint as the subject of `verify <commit>`.
+
+## 2026-11-04: The repository's config is read from its files
+
+- **Context:** with `extensions.worktreeConfig=true` and a `config.worktree`
+  file, go-git v6.0.0-beta.1 returns a merged config whose `Raw` is nil:
+  `config.Merge` skips `Raw` and never rebuilds it, although its comment
+  says it does. `LookupConfig`, which gittuf calls during verification, and
+  the fetch config check both dereferenced it, so `verify` reported a panic
+  and `refresh` and `--fetch` crashed.
+- **Decision:** `store.RawConfig` reads `config` and, when the extension is
+  set, overlays `config.worktree` in the order git reads them, so its values
+  win. `LookupConfig` and the fetch check use it. The fetch check therefore
+  also refuses an unsafe key set only in `config.worktree`. It fails closed
+  on a nil config.
+- **Rejected:** using go-git's struct fields for the fetch check, which do
+  not cover every key the check needs, and waiting for an upstream fix.
