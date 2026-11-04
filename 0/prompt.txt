@@ -1,0 +1,56 @@
+fix the failing test in Windows:
+
+
+
+<pasted_content id="16fd">
+ading github.com/googleapis/enterprise-certificate-proxy v0.3.22
+go: downloading github.com/felixge/httpsnoop v1.1.0
+ok      github.com/entireio/entire-rsl/cmd/entire-rsl    0.101s
+--- FAIL: TestRefreshTextGolden (9.64s)
+    rsl_refresh_test.go:177: 
+            Error Trace:    D:/a/entire-rsl/entire-rsl/cmd/entire-rsl/cli/cli_test.go:91
+                                        D:/a/entire-rsl/entire-rsl/cmd/entire-rsl/cli/rsl_refresh_test.go:177
+            Error:          Not equal: 
+                            expected: "REF                              STATUS   LOCAL  REMOTE        COMMITS\r\nrefs/gittuf/policy               created  -      64af4e1b8af1  1 commit\r\nrefs/gittuf/policy-staging       created  -      64af4e1b8af1  1 commit\r\nrefs/gittuf/reference-state-log  created  -      1eab2edb244f  14 commits (entry #14)\r\n"
+                            actual  : "REF                              STATUS   LOCAL  REMOTE        COMMITS\nrefs/gittuf/policy               created  -      64af4e1b8af1  1 commit\nrefs/gittuf/policy-staging       created  -      64af4e1b8af1  1 commit\nrefs/gittuf/reference-state-log  created  -      1eab2edb244f  14 commits (entry #14)\n"
+                                +  "schema_version": 1,
+                                +  "entry": {
+                                +    "number": 9,
+                                +    "id": "2f3106dcfec619b4807b8fc24927c954cf17565e",
+                                +    "type": "reference",
+                                +    "ref": "refs/heads/main",
+                                +    "target": "8c9626aa9daaf78041a7db7045b058738597e154",
+                                +    "time": "1995-10-26T09:00:00Z",
+                                +    "signer": {
+                                +      "method": "ssh",
+                                +      "signature_valid": true,
+                                +      "key_id": "SHA256:REDACTED"
+                                +    },
+                                +    "committer_unverified": {
+                                +      "name": "Jane Doe",
+                                +      "email": "jane.doe@example.com"
+                                +    },
+                                +    "skipped": false,
+                                +    "entire": {
+                                +      "pusher": {
+                                +        "account_id": "01J9ZACCT000000000000000JD",
+                                +        "handle": "jane",
+                                +        "raw": "01J9ZACCT000000000000000JD (jane)"
+                                +      },
+                                +      "repository": "01J9ZREPQ0000000000000000R"
+                                +    },
+                                +    "custom_fields": {
+                                +      "custom.entire.io/pusher": "01J9ZACCT000000000000000JD (jane)",
+                                +      "custom.entire.io/repository": "01J9ZREPQ0000000000000000R"
+                                +    }
+                                +  }
+                                +}
+                                 
+                Test:           TestEntryGolden/entry_main.json
+FAIL
+FAIL    github.com/entireio/entire-rsl/cmd/entire-rsl/cli    206.061s
+</pasted_content id="16fd">
+
+---
+
+go
