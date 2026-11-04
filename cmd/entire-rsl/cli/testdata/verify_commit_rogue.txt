@@ -1,0 +1,12 @@
+Commit        65c4b696c0982d3456a1c360425af986a06ad193
+Verification  failed: no branch or tag that contains the commit verified (refs/heads/rogue: failed)
+Contained in  refs/heads/rogue, recorded by the RSL tip #15 4b540008d58d
+Checkpoint    01JC0FFEE0BADC0DE00000007Z (Entire-Checkpoint trailer), not verified because no verified branch or tag contains the commit
+
+Ref                  refs/heads/rogue
+Verification         failed: gittuf verification failed
+Detail               verifying Git namespace policies failed, gittuf policy verification failed
+Rules                authorize-rsl-signers
+Check tip            pass: the local ref matches the tip the RSL records (65c4b696c0982d3456a1c360425af986a06ad193, entry #15)
+Check root_of_trust  pass: anchored to Entire test root (SHA256:XoKzzUGnLJ4GK8IPQ+7CYaXXU5HjoVZaneZsu6w4Mtw), root version 1
+Check signer         fail: the latest RSL entry is signed by SHA256:ffaIKVVFWP8bX32cTwbiF9RI09A3/JD4U1fRkT897+Y, which is not a known Entire cluster key

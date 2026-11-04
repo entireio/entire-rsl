@@ -143,6 +143,25 @@ NUMBER  ENTRY         TARGET        TIME                  BY     SIGNER         
 `checkpoint` also takes a full commit ID and reads the checkpoint from its
 `Entire-Checkpoint` trailer: `entire rsl checkpoint "$(git rev-parse HEAD)"`.
 
+`verify` also takes a full commit ID. It verifies the commit, not just its
+checkpoint: a branch or tag that the RSL records as containing the commit
+must pass gittuf verification, and then so must the checkpoint its
+`Entire-Checkpoint` trailer names, if it has one. A commit that no verified
+branch or tag contains is rejected, even if its trailer names a good
+checkpoint:
+
+```console
+$ entire rsl verify "$(git rev-parse HEAD)"
+Commit        7de46d3dd2a157f83aa0163ac21eebbd6d748ee2
+Verification  verified: refs/heads/main contains the commit and gittuf verified it, and the checkpoint its Entire-Checkpoint trailer names, 01M6K3TFZF4PNGVATZ6JFR6PEF
+Contained in  refs/heads/main, recorded by the RSL tip #3 9dec33e898e4
+Checkpoint    01M6K3TFZF4PNGVATZ6JFR6PEF (Entire-Checkpoint trailer)
+
+Ref                  refs/heads/main
+Verification         verified: gittuf verified every RSL entry for the ref against the policy, and every check passed
+...
+```
+
 ### 6. Inspect a tag
 
 > [!WARNING]

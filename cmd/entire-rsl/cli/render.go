@@ -23,8 +23,11 @@ const shortIDLen = 12
 // none marks an empty cell.
 const none = "-"
 
-// labelRef labels a ref in detail views.
-const labelRef = "Ref"
+// Labels shared by detail views.
+const (
+	labelRef          = "Ref"
+	labelVerification = "Verification"
+)
 
 func shortID(h githash.Hash) string {
 	if len(h) == 0 {

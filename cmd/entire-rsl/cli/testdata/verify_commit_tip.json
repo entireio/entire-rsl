@@ -1,0 +1,99 @@
+{
+  "schema_version": 1,
+  "commit": "8c9626aa9daaf78041a7db7045b058738597e154",
+  "verification": {
+    "state": "verified",
+    "reason": "refs/heads/main contains the commit and gittuf verified it, and the checkpoint its Entire-Checkpoint trailer names, 01JC0FFEE0BADC0DE00000007Z"
+  },
+  "contained_in": [
+    {
+      "ref": "refs/heads/main",
+      "entry": {
+        "number": 9,
+        "id": "2f3106dcfec619b4807b8fc24927c954cf17565e"
+      },
+      "verification": {
+        "state": "verified",
+        "reason": "gittuf verified every RSL entry for the ref against the policy, and every check passed",
+        "verified_tip": "8c9626aa9daaf78041a7db7045b058738597e154",
+        "from_entry": "d424aa2b5963fed76767d1335a83938adc61a300",
+        "from_entry_number": 3,
+        "entries_checked": {
+          "first": {
+            "number": 3,
+            "id": "d424aa2b5963fed76767d1335a83938adc61a300"
+          },
+          "last": {
+            "number": 9,
+            "id": "2f3106dcfec619b4807b8fc24927c954cf17565e"
+          },
+          "count": 3,
+          "skipped": 0
+        },
+        "rules": [
+          "authorize-rsl-signers"
+        ],
+        "checks": [
+          {
+            "name": "tip",
+            "status": "pass",
+            "detail": "the local ref matches the tip the RSL records (8c9626aa9daaf78041a7db7045b058738597e154, entry #9)"
+          },
+          {
+            "name": "root_of_trust",
+            "status": "pass",
+            "detail": "anchored to Entire test root (SHA256:XoKzzUGnLJ4GK8IPQ+7CYaXXU5HjoVZaneZsu6w4Mtw), root version 1"
+          },
+          {
+            "name": "signer",
+            "status": "pass",
+            "detail": "signed by Entire test test-cluster (local) (SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE)"
+          }
+        ]
+      }
+    }
+  ],
+  "checkpoint": {
+    "id": "01JC0FFEE0BADC0DE00000007Z",
+    "ref": "refs/entire/checkpoints/7Z/01JC0FFEE0BADC0DE00000007Z",
+    "verification": {
+      "state": "verified",
+      "reason": "gittuf verified every RSL entry for the ref against the policy, and every check passed",
+      "verified_tip": "fe16799c32d2f19aeba4d415f9b42f37799acc3e",
+      "from_entry": "e0ff9ff266d46ca738826fd52b1db5dab6f46271",
+      "from_entry_number": 8,
+      "entries_checked": {
+        "first": {
+          "number": 8,
+          "id": "e0ff9ff266d46ca738826fd52b1db5dab6f46271"
+        },
+        "last": {
+          "number": 8,
+          "id": "e0ff9ff266d46ca738826fd52b1db5dab6f46271"
+        },
+        "count": 1,
+        "skipped": 0
+      },
+      "rules": [
+        "authorize-rsl-signers"
+      ],
+      "checks": [
+        {
+          "name": "tip",
+          "status": "pass",
+          "detail": "the local ref matches the tip the RSL records (fe16799c32d2f19aeba4d415f9b42f37799acc3e, entry #8)"
+        },
+        {
+          "name": "root_of_trust",
+          "status": "pass",
+          "detail": "anchored to Entire test root (SHA256:XoKzzUGnLJ4GK8IPQ+7CYaXXU5HjoVZaneZsu6w4Mtw), root version 1"
+        },
+        {
+          "name": "signer",
+          "status": "pass",
+          "detail": "signed by Entire test test-cluster (local) (SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE)"
+        }
+      ]
+    }
+  }
+}

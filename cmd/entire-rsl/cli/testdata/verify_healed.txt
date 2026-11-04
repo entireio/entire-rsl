@@ -1,8 +1,8 @@
-Ref                  refs/entire/checkpoints/7Z/01JC0FFEE0BADC0DE00000007Z
+Ref                  refs/heads/healed
 Verification         verified: gittuf verified every RSL entry for the ref against the policy, and every check passed
-Verified tip         fe16799c32d2f19aeba4d415f9b42f37799acc3e
-RSL entries checked  #8 e0ff9ff266d4 (1 entry)
+Verified tip         e8b5fbc5e35a5c53558f42e0890804a759d9e716
+RSL entries checked  #16 63ead609a1fb → #19 cb13d674d1b1 (3 entries, 1 skipped)
 Rules                authorize-rsl-signers
-Check tip            pass: the local ref matches the tip the RSL records (fe16799c32d2f19aeba4d415f9b42f37799acc3e, entry #8)
+Check tip            pass: the local ref matches the tip the RSL records (e8b5fbc5e35a5c53558f42e0890804a759d9e716, entry #19)
 Check root_of_trust  pass: anchored to Entire test root (SHA256:XoKzzUGnLJ4GK8IPQ+7CYaXXU5HjoVZaneZsu6w4Mtw), root version 1
 Check signer         pass: signed by Entire test test-cluster (local) (SHA256:gcwUs7YXVhN2BvHfrSDpsQ9TezZGQPjoNsAD2Iz3ApE)

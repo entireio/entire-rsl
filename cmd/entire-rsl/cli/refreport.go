@@ -209,7 +209,7 @@ func writeRefReport(w io.Writer, r refReport, st styles, lead ...field) error {
 	if r.Verification != nil {
 		fields = append(fields, verificationFields(*r.Verification, st)...)
 	} else {
-		fields = append(fields, field{"Verification", "skipped (--no-verify)"})
+		fields = append(fields, field{labelVerification, "skipped (--no-verify)"})
 	}
 
 	if err := writeFields(w, fields); err != nil {

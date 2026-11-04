@@ -80,7 +80,7 @@ func toVerificationJSON(r verify.Result) verificationJSON {
 // verificationFields describes a result for a detail view, the state green
 // when verified, red when failed or in error, yellow when unprotected.
 func verificationFields(r verify.Result, st styles) []field {
-	fields := []field{{"Verification", stateStyle(r.State, st) + ": " + sanitize.Line(redact.URLs(r.Reason))}}
+	fields := []field{{labelVerification, stateStyle(r.State, st) + ": " + sanitize.Line(redact.URLs(r.Reason))}}
 	if r.Err != nil {
 		fields = append(fields, field{"Detail", sanitize.Lines(redact.URLs(r.Err.Error()))})
 	}

@@ -408,3 +408,43 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   behind case.
 - **Rejected:** verifying only up to the matching entry, which would ignore
   later violations in the RSL the user is about to fetch.
+
+## 2026-11-04: verify of a commit needs a verified branch or tag
+
+- **Context:** `verify <full commit ID>` resolved the commit's
+  `Entire-Checkpoint` trailer and verified only the checkpoint ref, printing
+  that ref with no mention of the commit. Any commit, including one on a
+  branch that fails gittuf or on no ref at all, verified when its trailer
+  named a good checkpoint. A commit with no trailer was an error, even on a
+  verified branch.
+- **Decision:** a full commit ID verifies the commit. Every `refs/heads/*`
+  and `refs/tags/*` ref the RSL records is related to it with
+  `tipstate.Relate`. A ref contains the commit when it is `match` or
+  `behind`, that is when an unskipped entry records it or its push brought
+  it in. The containing refs are verified in name order, with the ref's own
+  local lookup so local drift fails as it does for `verify <branch>`, until
+  one is `verified`. Asked on 2026-11-04: the user chose heads and tags only,
+  and containment alone for a commit without a trailer. When the commit has
+  a trailer, the checkpoint it names must verify too, after containment.
+  Several distinct trailers are an error, as for `checkpoint`.
+- **Rejection:** no containing ref is `unprotected`. A commit only a revoked
+  push brought in (`tipstate.Revoked`) is `failed`, even when a later
+  verified entry keeps it as an ancestor, and the ref is named under
+  "Revoked in". Containing refs that all fail take the worst of their
+  states. A ref whose containment cannot be established (its RSL tip object
+  is missing locally, or the push is beyond `tipstate`'s search) makes a
+  rejection `error`, since it may hold the commit. It does not block a
+  verified container.
+- **Output:** the commit, its overall state and reason, the containing refs
+  with the entry that records each, then the full verification of every ref
+  verified for it. JSON has a separate shape (`commit`, `verification`,
+  `contained_in`, `revoked_in`, `unchecked_refs`, `checkpoint`) under the
+  same `schema_version`: the old output described a different ref, so no
+  consumer could rely on it for a commit.
+- **Known limits:** an annotated tag relates by exact match, so a commit
+  under an annotated tag is contained only through a branch. Relating walks
+  each ref's history, so the cost grows with the number of branches and
+  tags.
+- **Rejected:** any protected ref as a container, which would let a
+  checkpoint ref vouch for the commit that names it, and keeping the
+  checkpoint as the subject of `verify <commit>`.

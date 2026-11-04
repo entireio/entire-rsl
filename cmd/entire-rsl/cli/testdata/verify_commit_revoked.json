@@ -1,0 +1,18 @@
+{
+  "schema_version": 1,
+  "commit": "699c3e686153d9a00df452bb0aaed12d6a3405f2",
+  "verification": {
+    "state": "failed",
+    "reason": "the commit is only in pushes an annotation revoked, so no branch or tag vouches for it"
+  },
+  "contained_in": [],
+  "revoked_in": [
+    {
+      "ref": "refs/heads/healed",
+      "entry": {
+        "number": 17,
+        "id": "2389486e984b755b4d0d976b9d52bd8d95faaaff"
+      }
+    }
+  ]
+}

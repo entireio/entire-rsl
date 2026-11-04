@@ -13,9 +13,9 @@ import (
 // characters (entireio/cli cmd/entire/cli/checkpoint/refs_naming.go).
 const CheckpointsPrefix = "refs/entire/checkpoints/"
 
-// checkpointTrailer is the commit trailer linking a commit to its checkpoint
+// CheckpointTrailer is the commit trailer linking a commit to its checkpoint
 // (entireio/cli cmd/entire/cli/trailers/trailers.go).
-const checkpointTrailer = "Entire-Checkpoint"
+const CheckpointTrailer = "Entire-Checkpoint"
 
 var (
 	// legacyIDPattern is a legacy checkpoint ID: 12 lowercase hex characters.
@@ -29,7 +29,7 @@ var (
 	commitIDPattern = regexp.MustCompile(`^(?:[0-9a-f]{40}|[0-9a-f]{64})$`)
 	// trailerPattern matches an Entire-Checkpoint trailer line. It is
 	// anchored to a whole line, so an ID quoted in the body does not count.
-	trailerPattern = regexp.MustCompile(`(?m)^` + checkpointTrailer + `:[ \t]*([0-9A-Za-z]+)[ \t]*$`)
+	trailerPattern = regexp.MustCompile(`(?m)^` + CheckpointTrailer + `:[ \t]*([0-9A-Za-z]+)[ \t]*$`)
 )
 
 var (
@@ -37,9 +37,9 @@ var (
 	// ID nor a full commit ID.
 	ErrInvalidCheckpoint = errors.New("not a checkpoint ID (12 lowercase hex characters, or a 26 character ULID) or a full commit ID")
 	// ErrNoCheckpointTrailer is returned for a commit with no checkpoint.
-	ErrNoCheckpointTrailer = errors.New("commit has no " + checkpointTrailer + " trailer")
+	ErrNoCheckpointTrailer = errors.New("commit has no " + CheckpointTrailer + " trailer")
 	// ErrManyCheckpointTrailers is returned for a commit naming several.
-	ErrManyCheckpointTrailers = errors.New("commit has several " + checkpointTrailer + " trailers")
+	ErrManyCheckpointTrailers = errors.New("commit has several " + CheckpointTrailer + " trailers")
 )
 
 // IsCheckpointID reports whether s is a valid checkpoint ID.

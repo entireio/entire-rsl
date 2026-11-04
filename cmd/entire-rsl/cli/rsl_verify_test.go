@@ -28,7 +28,6 @@ func TestVerifyGolden(t *testing.T) {
 		{name: "verify_main.json", args: []string{"verify", "--json", "refs/heads/main"}, wantCode: ExitOK},
 		{name: "verify_fixed.txt", args: []string{"verify", "fixed"}, wantCode: ExitOK},
 		{name: "verify_checkpoint.txt", args: []string{"verify", testutil.CheckpointULID}, wantCode: ExitOK},
-		{name: "verify_checkpoint_commit.txt", args: []string{"verify", sc.TrailerCommit.String()}, wantCode: ExitOK},
 		{name: "verify_rogue.txt", args: []string{"verify", "rogue"}, wantCode: ExitVerification},
 		{name: "verify_rogue.json", args: []string{"verify", "--json", "rogue"}, wantCode: ExitVerification},
 		{name: "verify_tag_moved.txt", args: []string{"verify", "v1.0.0"}, wantCode: ExitVerification},
@@ -44,6 +43,123 @@ func TestVerifyGolden(t *testing.T) {
 			require.Equal(t, tt.wantCode, res.code, res.stderr)
 			assert.Empty(t, res.stderr, "the result is on stdout and the exit code carries it")
 			golden(t, tt.name, res.stdout)
+		})
+	}
+}
+
+func TestVerifyCommitGolden(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	trailer := "\n\nEntire-Checkpoint: " + testutil.CheckpointULID
+	onRogue := sc.Commit("refs/heads/rogue", "rogue claims a checkpoint"+trailer)
+	sc.Record(sc.Rogue, "refs/heads/rogue", nil)
+	dangling := sc.Commit("refs/heads/scratch", "dangling claims a checkpoint"+trailer)
+	sc.SetRef("refs/heads/scratch", sc.MainFirst)
+	sc.Commit("refs/heads/healed", "healed work")
+	sc.Record(sc.Cluster, "refs/heads/healed", nil)
+	revoked := sc.Commit("refs/heads/healed", "rogue work on healed")
+	sc.Annotate(sc.Cluster, true, "revoked: signed by an unknown key", sc.Record(sc.Rogue, "refs/heads/healed", nil))
+	sc.Commit("refs/heads/healed", "healed work")
+	sc.Record(sc.Cluster, "refs/heads/healed", nil)
+
+	tests := []struct {
+		name     string
+		args     []string
+		wantCode int
+	}{
+		{name: "verify_commit_tip.txt", args: []string{"verify", sc.TrailerCommit.String()}, wantCode: ExitOK},
+		{name: "verify_commit_tip.json", args: []string{"verify", "--json", sc.TrailerCommit.String()}, wantCode: ExitOK},
+		{name: "verify_commit_behind.txt", args: []string{"verify", sc.MainFirst.String()}, wantCode: ExitOK},
+		{name: "verify_commit_rogue.txt", args: []string{"verify", onRogue.String()}, wantCode: ExitVerification},
+		{name: "verify_commit_rogue.json", args: []string{"verify", "--json", onRogue.String()}, wantCode: ExitVerification},
+		{name: "verify_commit_dangling.txt", args: []string{"verify", dangling.String()}, wantCode: ExitVerification},
+		{name: "verify_commit_skipped.txt", args: []string{"verify", sc.RevokedCommit.String()}, wantCode: ExitVerification},
+		{name: "verify_commit_revoked.txt", args: []string{"verify", revoked.String()}, wantCode: ExitVerification},
+		{name: "verify_commit_revoked.json", args: []string{"verify", "--json", revoked.String()}, wantCode: ExitVerification},
+		{name: "verify_healed.txt", args: []string{"verify", "healed"}, wantCode: ExitOK},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			res := execute(t, inRepo(sc.Dir), tt.args...)
+
+			require.Equal(t, tt.wantCode, res.code, res.stderr)
+			assert.Empty(t, res.stderr, "the result is on stdout and the exit code carries it")
+			golden(t, tt.name, res.stdout)
+		})
+	}
+}
+
+func TestVerifyCommitNeedsItsCheckpoint(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	commit := sc.Commit("refs/heads/main", "fourth\n\nEntire-Checkpoint: "+testutil.CheckpointHex)
+	sc.Record(sc.Cluster, "refs/heads/main", nil)
+
+	res := execute(t, inRepo(sc.Dir), "verify", "--json", commit.String())
+
+	assert.Equal(t, ExitVerification, res.code, res.stderr)
+	var doc verifyCommitJSON
+	require.NoError(t, json.Unmarshal([]byte(res.stdout), &doc))
+	assert.Equal(t, "unprotected", doc.Verification.State)
+	require.Len(t, doc.ContainedIn, 1)
+	require.NotNil(t, doc.ContainedIn[0].Verification)
+	assert.Equal(t, "verified", doc.ContainedIn[0].Verification.State)
+	require.NotNil(t, doc.Checkpoint)
+	assert.Equal(t, testutil.CheckpointHex, doc.Checkpoint.ID)
+	assert.Equal(t, "unprotected", doc.Checkpoint.Verification.State)
+}
+
+func TestVerifyCommitWithUnknownContainment(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	sc.RecordAt(sc.Cluster, "refs/heads/ghost", mustHash(t, "0123456789abcdef0123456789abcdef01234567"), nil)
+	dangling := sc.Commit("refs/heads/scratch", "dangling")
+	sc.SetRef("refs/heads/scratch", sc.MainFirst)
+
+	res := execute(t, inRepo(sc.Dir), "verify", "--json", dangling.String())
+
+	assert.Equal(t, ExitFailure, res.code, "a ref that may hold the commit makes the outcome an error: %s", res.stderr)
+	var doc verifyCommitJSON
+	require.NoError(t, json.Unmarshal([]byte(res.stdout), &doc))
+	assert.Equal(t, "error", doc.Verification.State)
+	require.Len(t, doc.UncheckedRefs, 1)
+	assert.Contains(t, doc.UncheckedRefs[0], "refs/heads/ghost")
+
+	res = execute(t, inRepo(sc.Dir), "verify", sc.MainFirst.String())
+	assert.Equal(t, ExitOK, res.code, "a verified container decides even when another ref could not be compared: %s", res.stderr)
+}
+
+func TestVerifyCommitErrors(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	twoTrailers := sc.Commit("refs/heads/main", "fifth\n\nEntire-Checkpoint: "+testutil.CheckpointULID+"\nEntire-Checkpoint: "+testutil.CheckpointHex)
+	sc.Record(sc.Cluster, "refs/heads/main", nil)
+
+	tests := []struct {
+		name    string
+		target  string
+		wantErr string
+	}{
+		{name: "unknown commit", target: "0123456789abcdef0123456789abcdef01234567", wantErr: "read commit 0123456789abcdef0123456789abcdef01234567"},
+		{name: "several trailers", target: twoTrailers.String(), wantErr: "several Entire-Checkpoint trailers"},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+
+			res := execute(t, inRepo(sc.Dir), "verify", tt.target)
+
+			assert.Equal(t, ExitFailure, res.code, res.stderr)
+			assert.Empty(t, res.stdout)
+			assert.Contains(t, res.stderr, tt.wantErr)
 		})
 	}
 }
