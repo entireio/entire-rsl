@@ -12,26 +12,45 @@ it.
 
 ## Install
 
-From a release, once published:
+Using the plugin system:
 
 ```sh
+entire plugin index update
 entire plugin install rsl
 ```
 
-Each release publishes an SPDX SBOM per archive (`<archive>.sbom.json`), a
-`checksums.txt` covering archives and SBOMs, a Sigstore bundle for it
+Directly from a release, verifying it before installing. Each release
+publishes an SPDX SBOM per archive (`<archive>.sbom.json`), a `checksums.txt`
+covering archives and SBOMs, a Sigstore bundle for it
 (`checksums.txt.sigstore.json`) and a GitHub build provenance attestation.
-To verify a download by hand, with `TAG` set to the release tag:
+The steps below need `cosign` and `gh`. Set `TAG` to the release tag, and `OS`
+(`linux`, `darwin`) and `ARCH` (`amd64`, `arm64`) to your platform:
 
 ```sh
+TAG=v0.1.0 OS=linux ARCH=amd64
+ARCHIVE="entire-rsl_${TAG#v}_${OS}_${ARCH}.tar.gz"
+BASE="https://github.com/entireio/entire-rsl/releases/download/${TAG}"
+curl -fsSLO "${BASE}/${ARCHIVE}"
+curl -fsSLO "${BASE}/checksums.txt"
+curl -fsSLO "${BASE}/checksums.txt.sigstore.json"
 cosign verify-blob \
-  --certificate-identity "https://github.com/entireio/entire-rsl/.github/workflows/release.yml@refs/tags/$TAG" \
+  --certificate-identity "https://github.com/entireio/entire-rsl/.github/workflows/release.yml@refs/tags/${TAG}" \
   --certificate-oidc-issuer https://token.actions.githubusercontent.com \
   --bundle checksums.txt.sigstore.json \
   checksums.txt
-sha256sum --check --ignore-missing checksums.txt
-gh attestation verify entire-rsl_*.tar.gz --repo entireio/entire-rsl
+grep " ${ARCHIVE}\$" checksums.txt | sha256sum --check # shasum -a 256 --check on macOS
+gh attestation verify "${ARCHIVE}" \
+  --repo entireio/entire-rsl \
+  --signer-workflow entireio/entire-rsl/.github/workflows/release.yml
+tar -xzf "${ARCHIVE}" entire-rsl
+install -m 0755 entire-rsl ~/.local/bin/entire-rsl
 ```
+
+Stop if any check fails. Entire finds `entire-rsl` on `PATH`, so any
+directory on `PATH` works in place of `~/.local/bin`.
+`entire plugin install ./entire-rsl` links rather than copies, so the file
+must stay where it is. On Windows the archive is a `.zip` holding
+`entire-rsl.exe`.
 
 From a local build:
 
