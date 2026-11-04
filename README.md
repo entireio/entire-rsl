@@ -18,6 +18,21 @@ From a release, once published:
 entire plugin install rsl
 ```
 
+Each release publishes an SPDX SBOM per archive (`<archive>.sbom.json`), a
+`checksums.txt` covering archives and SBOMs, a Sigstore bundle for it
+(`checksums.txt.sigstore.json`) and a GitHub build provenance attestation.
+To verify a download by hand, with `TAG` set to the release tag:
+
+```sh
+cosign verify-blob \
+  --certificate-identity "https://github.com/entireio/entire-rsl/.github/workflows/release.yml@refs/tags/$TAG" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --bundle checksums.txt.sigstore.json \
+  checksums.txt
+sha256sum --check --ignore-missing checksums.txt
+gh attestation verify entire-rsl_*.tar.gz --repo entireio/entire-rsl
+```
+
 From a local build:
 
 ```sh

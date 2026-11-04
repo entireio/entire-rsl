@@ -47,11 +47,42 @@ checksum:
   name_template: checksums.txt
   algorithm: sha256
 
+# One SPDX JSON SBOM per archive, cataloged by syft from the Go build info
+# embedded in the binary. They run before the checksum step, so
+# checksums.txt covers them.
+sboms:
+  - artifacts: archive
+
+# Keyless Sigstore signature over checksums.txt, which covers every archive
+# and SBOM. cosign takes the identity from the workflow's OIDC token and
+# writes certificate, signature and Rekor entry into one bundle. Snapshots
+# skip this step (mise run snapshot).
+signs:
+  - cmd: cosign
+    artifacts: checksum
+    signature: "${artifact}.sigstore.json"
+    args:
+      - sign-blob
+      - "--bundle=${signature}"
+      - "${artifact}"
+      - --yes
+
 snapshot:
   version_template: "{{ incpatch .Version }}-next"
 
 changelog:
   disable: true
 
+# Immutable releases freeze a release's assets and tag once it is published.
+# goreleaser uploads every asset, signature and SBOM included, to a draft,
+# which stays a draft until a maintainer publishes it. Nothing is uploaded
+# after that.
 release:
   draft: true
+  # A re-run after a failure deletes the earlier run's draft instead of
+  # leaving a second one beside it.
+  replace_existing_draft: true
+  # Stop before building when the tag already has a published immutable
+  # release, which no run can change.
+  preflight:
+    fail_on_error: true

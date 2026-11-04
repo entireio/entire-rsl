@@ -545,3 +545,33 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   global config `testutil.IsolateGitConfig` writes rewrites to `file:///`.
 - **Rejected:** a case-insensitive match, and checking only the fetched
   remote.
+
+## 2026-11-04: Signed releases with SBOMs, safe under immutable releases
+
+- **Context:** releases shipped archives and `checksums.txt` only, with no
+  release workflow. The repository may enable GitHub immutable releases,
+  which freeze a release's assets and tag once it is published, so nothing
+  can be added after publishing and a published tag cannot be released
+  again.
+- **Decision:** `.github/workflows/release.yml` runs goreleaser on a `v*`
+  tag. syft writes one SPDX JSON SBOM per archive, before the checksum step,
+  so `checksums.txt` covers them. cosign signs `checksums.txt` keyless with
+  the workflow's OIDC identity into `checksums.txt.sigstore.json`.
+  `actions/attest` records build provenance for every file in
+  `checksums.txt`. The job then verifies the signature, the checksums and
+  the provenance. goreleaser uploads everything to a draft that a
+  maintainer publishes, so every asset is in place before the release
+  becomes immutable. Attestations live in GitHub's attestation API, not in
+  the release. `replace_existing_draft` keeps a re-run from leaving a second
+  draft, and `preflight.fail_on_error` stops a run for a tag that already
+  has an immutable release. cosign and syft are pinned in `mise.toml`.
+  `mise run snapshot` skips signing, which needs the CI identity.
+- **Consequences:** a published release cannot be fixed. A broken one needs a
+  new tag. Signing records the repository, workflow and tag in the public
+  Rekor log. Attestations in a private repository need GitHub Enterprise
+  Cloud.
+- **Rejected:** signing each archive (the signed checksums cover them),
+  CycloneDX (SPDX is goreleaser's default and what GitHub's dependency graph
+  exports), uploading signatures after goreleaser publishes (refused once
+  the release is immutable), and the mise-action cache in the release job
+  (zizmor `cache-poisoning`).

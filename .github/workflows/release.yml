@@ -1,0 +1,66 @@
+name: Release
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    permissions:
+      # Create the draft release and upload its assets.
+      contents: write
+      # Mint the OIDC token behind the keyless cosign signature and the
+      # provenance attestation.
+      id-token: write
+      attestations: write
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          # goreleaser reads the previous tag from history.
+          fetch-depth: 0
+          persist-credentials: false
+
+      # Installs goreleaser, cosign and syft at the versions in mise.toml.
+      # No cache, so nothing another workflow wrote ends up in a release.
+      - uses: jdx/mise-action@f10502fc09dadecfefb962fff68ce77213930204 # v4
+        with:
+          cache: false
+
+      # Uploads archives, SBOMs, checksums.txt and its Sigstore bundle to a
+      # draft release. See the release section of .goreleaser.yaml.
+      - name: Release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: goreleaser release --clean
+
+      # Stored by GitHub's attestation API, not as a release asset, so it
+      # works on a draft and needs no change to the release.
+      - name: Attest build provenance
+        uses: actions/attest@1e69f48acb82d1966a394da916b4c1698aa569d6 # v4.2.2
+        with:
+          subject-checksums: ./dist/checksums.txt
+
+      # Checks what users will check, before a maintainer publishes the
+      # draft and makes it immutable.
+      - name: Verify signature, checksums and provenance
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          WORKFLOW_REF: ${{ github.workflow_ref }}
+        working-directory: dist
+        run: |
+          cosign verify-blob \
+            --certificate-identity "https://github.com/${WORKFLOW_REF}" \
+            --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+            --bundle checksums.txt.sigstore.json \
+            checksums.txt
+          sha256sum --check --strict checksums.txt
+          for f in *.tar.gz *.zip; do
+            gh attestation verify "$f" \
+              --repo "$GITHUB_REPOSITORY" \
+              --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml"
+          done
