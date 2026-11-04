@@ -1,0 +1,15 @@
+{
+  "tool_use_id": "toolu_01AEkpJnBHcNYbdbbmQNgnXE",
+  "agent_id": "a9bcd1b3bdb2344b5",
+  "subagent_type": "general-purpose",
+  "task_description": "2551 B conformance",
+  "token_usage": {
+    "input_tokens": 64,
+    "cache_creation_tokens": 113523,
+    "cache_read_tokens": 2976768,
+    "output_tokens": 26348,
+    "api_call_count": 31
+  },
+  "started_at": "2026-11-04T15:49:10.061105612Z",
+  "completed_at": "2026-11-04T15:59:01.855053675Z"
+}

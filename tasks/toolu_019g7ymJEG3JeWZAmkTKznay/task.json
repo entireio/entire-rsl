@@ -1,0 +1,15 @@
+{
+  "tool_use_id": "toolu_019g7ymJEG3JeWZAmkTKznay",
+  "agent_id": "a40cc60e7945ee522",
+  "subagent_type": "general-purpose",
+  "task_description": "2511 A review-pr",
+  "token_usage": {
+    "input_tokens": 58,
+    "cache_creation_tokens": 92465,
+    "cache_read_tokens": 2479227,
+    "output_tokens": 16497,
+    "api_call_count": 28
+  },
+  "started_at": "2026-11-04T15:51:10.746694136Z",
+  "completed_at": "2026-11-04T15:54:45.470035384Z"
+}

@@ -1,0 +1,15 @@
+{
+  "tool_use_id": "toolu_01An95Ra5HEVM5y6GVAWmo7w",
+  "agent_id": "aba9a880ee590b54e",
+  "subagent_type": "general-purpose",
+  "task_description": "2502 C adversarial",
+  "token_usage": {
+    "input_tokens": 46,
+    "cache_creation_tokens": 100837,
+    "cache_read_tokens": 2040831,
+    "output_tokens": 18364,
+    "api_call_count": 23
+  },
+  "started_at": "2026-11-04T15:49:29.886789139Z",
+  "completed_at": "2026-11-04T15:54:44.898400044Z"
+}

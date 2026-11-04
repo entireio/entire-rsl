@@ -1,0 +1,1270 @@
+Run /go-git-review for all open prs from hiddeco in both go-git and go-git-fixtures
+
+---
+
+<task-notification>
+<task-id>ab0f9bd88f2612ce5</task-id>
+<tool-use-id>toolu_01BSo3GpeSjJXatZzQKxmuAh</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/ab0f9bd88f2612ce5.output</output-file>
+<status>completed</status>
+<summary>Agent "2505 B conformance" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Agent B (git-conformance) on PR 2505, range 500c64d6..f263a1b8: nothing blocking, nothing major. There are 3 nits, and none of them comes from this PR.
+
+- **Counter:** `paintQueue.active` matches upstream's per-side counters (`paint_count_update` and `paint_queue_put`, commit-reach.c:97-135). It stops at the same point as upstream (commit-reach.c:167-170). The returned objects are the same as with the base `allStale` loop.
+- **New doc commit f263a1b8:** the comment is accurate. `git rev-list --objects` only excludes the trees of edge commits (builtin/rev-list.c:973 and list-objects.c:236-253). Have tips are dropped from `revs-&gt;commits` at revision.c:1480, so their trees are not excluded. go-git also excludes the have trees, which gives a subset of Git's objects that is still complete for the receiver.
+- **C1** (object_walk.go:348): a commit counts as stale as soon as both sides paint it. Upstream waits until it is popped (commit-reach.c:229-245). Output is unaffected.
+- **C2** (object_walk.go:319): there is no ENQUEUED-style dedupe, so a parent is queued again whenever its flags change.
+- **C3** (object_walk.go:208): termination follows `paint_down_to_common`, not rev-list's SLOP rule. Under clock skew go-git can return fewer objects than Git.
+- **Prior review:** the required rebase is resolved, and the PR now merges cleanly onto origin/main ae4b49cd. C1-C3 and the corrupt-parent edge case when every starting commit is already stale are still present, because object_walk.go is identical to the prior head 73b4e01f.
+- `go test ./plumbing/revlist/` passes, and the worktree is clean at f263a1b8.
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2505-B.md
+- 2505-B.json</result>
+<usage><subagent_tokens>95559</subagent_tokens><tool_uses>14</tool_uses><duration_ms>101668</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>acd232f3f2b0934f8</task-id>
+<tool-use-id>toolu_01WuejpZWUar1o7JY51ioy8e</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/acd232f3f2b0934f8.output</output-file>
+<status>completed</status>
+<summary>Agent "103 B conformance fixtures" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>No findings in this conformance review (0 blocking, 0 major, 0 minor, 0 nit). The commit-graph files in all five archives are byte-for-byte what upstream Git 2.56.0 writes for the same history.
+
+- **How I checked:** I rebuilt all five repositories with Git 2.56.0, running my own commands from the README recipe rather than the PR's `generate.sh`. The `objects/info` directories, loose-object sets, `refs/heads/main`, `HEAD` and `config` match the extracted archives exactly. `commit-graph verify` and `fsck --strict` pass on every archive.
+- **256-base wrap:** upstream writes the header base count with `hashwrite_u8(..., num_commit_graphs_after - 1)` (`commit-graph.c:2192`), so 256 wraps to 0, as in the 257-layer fixture. Its BASE chunk is exactly 256 hashes (`:2184`). The loader reads only header bytes 0-6 (`:390-414`), so the corrected README wording is accurate.
+- **New chain test (e18c805):** it checks that each layer's trailer equals its chain ID and that its BASE chunk lists all older layers, oldest first. These are the same checks Git's `add_graph_to_chain` makes (`:570-597`). The test is slightly stricter on BASE length, but that matches what Git writes.
+- **Expected IDs:** `commit_graph_entries.go` has 269 entries, and they match `git log` of the rebuilt repositories.
+- **Tests:** `go test ./...` passes, and the worktree is clean at e18c805.
+- **Prior findings:** both are resolved by e18c805. C1 was the wrong reason given for the Git 2.54 requirement. R1 was the chain test not checking trailers and BASE contents against the chain.
+- **Not checked:** archive file hashes depend on the tar, gzip and zlib builds, so I couldn't confirm them. That isn't Git behaviour, and the graph and object bytes above are verified.
+
+The archives are unchanged since bb637ec. The full report is at `/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw/103-B.md`, and the findings file `/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw/103-B.json` is an empty array.</result>
+<usage><subagent_tokens>84104</subagent_tokens><tool_uses>14</tool_uses><duration_ms>84782</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>af9a248e0f432cfe1</task-id>
+<tool-use-id>toolu_01PWHXDPWtU1QinimmMFvTC4</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/af9a248e0f432cfe1.output</output-file>
+<status>completed</status>
+<summary>Agent "2505 C adversarial" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>**Agent C, PR 2505: risk low.** 1 major, 0 minor, 2 nits.
+
+- **A1** (major, other, new): commit f263a1b8 adds a doc paragraph to `Objects` in `plumbing/revlist/revlist.go:19`. It explains how the objects `Objects` excludes differ from `git rev-list --objects`. That is outside the PR's stated purpose (counting stale entries), and the PR body doesn't mention it, so it should be split out or named in the body. The text is accurate: I checked it against the walk code (`object_walk.go:149-150` and `251-256`) and against upstream Git (`rev-list.c:973`, `revision.c:436` and `:1480`, `list-objects.c:283`). It's harmless. It gets major only because of the rule for hunks the stated purpose doesn't need.
+- **A2** (nit, still present from the prior review): when every initial queue entry is already stale, the new loop processes no commit. A corrupt parent of that commit therefore no longer raises an error. The output is unchanged.
+- **A3** (nit, still present, not introduced by this PR): `insertSorted` still does an O(n) memmove on every push (`object_walk.go:450`).
+
+**Prior findings:** the merge conflict with #2527 is resolved by the rebase, and both test sets are kept. The other two prior findings are still present (A2 and A3 above).
+
+**Checks:**
+- The two code commits are identical to the previously approved head 73b4e01f apart from the rebase.
+- vet, gofmt and `go test -race` on the package pass.
+- At width=1000 the benchmark takes 1.04 s on the base and 51 ms with the PR.
+- Making `pop` undercount the stale entries makes the test suite fail, so the tests catch that bug.
+- Nothing suspicious turned up: no dependency, CI or build changes, no new exported API, and no hidden Unicode.
+- #2472, the author's other open PR touching `plumbing/revlist`, merges cleanly with this one and doesn't affect the counter.
+
+The worktree is clean at f263a1b8. Report: /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw/2505-C.md. Findings JSON: /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw/2505-C.json.</result>
+<usage><subagent_tokens>102448</subagent_tokens><tool_uses>16</tool_uses><duration_ms>135017</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>acf9440dc55e7bb51</task-id>
+<tool-use-id>toolu_012R2sTJK8immWAyTgniGbqM</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/acf9440dc55e7bb51.output</output-file>
+<status>completed</status>
+<summary>Agent "2502 B conformance" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>I've reviewed PR 2502 for conformance with C Git. It introduces one new divergence. The other four findings were already in the prior review and are still present, and none of them is caused by this PR.
+
+**Counts:** 0 blocking, 3 major, 2 nit.
+
+- **C5 (major, new, caused by this PR), `internal/transport/drain.go:29`:** the new junk check fails every fetch that has pack data after the pack trailer, with "pack has junk at the end". In C Git the result depends on timing, and usually the fetch succeeds:
+  - index-pack only checks for junk when its input is a regular file (`builtin/index-pack.c:1302-1306`). Reading from fetch's pipe, it drops whatever follows the trailer.
+  - The fetch fails only if the extra data arrives after index-pack has exited. Then it dies with "error in sideband demultiplexer" (`fetch-pack.c:1070-1104`).
+  - So the PR body's "as such a fetch fails in Git" is overstated, and the error message is index-pack's regular-file wording, not fetch's.
+  - It doesn't affect interop, because real upload-pack never sends pack data after the pack. Suggestion: keep the check, which fails closed, and reword the doc and PR body.
+- **Still present, not introduced:**
+  - C1 (major): a clean EOF before the closing flush-pkt counts as success (`demux.go:116` vs `sideband.c:325-331`).
+  - C2 (major): v0/v1 asks for side-band only when there is a progress writer (`negotiate.go:95` vs `fetch-pack.c:1184-1191`).
+  - C3 (nit): band-3 errors use the prefix "unexpected error:" instead of "remote: ".
+  - C4 (nit): a delim or response-end packet inside side-band is an error; Git treats it as a flush. Partly introduced, since the new drain makes it reachable.
+- **Prior findings resolved:** the 1s timeouts in the cancel test (R1) are fixed. The silently discarded junk after the trailer (A3) is now handled, but the fix goes further than Git does (C5).
+
+The race tests pass for `sideband`, `transport` and `internal/transport`. Breaking the junk check makes both new junk tests fail. I didn't test against a real `git daemon`, so C5's timing argument comes from reading the source. The worktree is clean at b56b5a5d.
+
+Files are in `/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw/`:
+- 2502-B.md
+- 2502-B.json</result>
+<usage><subagent_tokens>98422</subagent_tokens><tool_uses>14</tool_uses><duration_ms>136545</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>acf37f26693ea126e</task-id>
+<tool-use-id>toolu_015SRR7cJJJpmgKV3PUCJXJH</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/acf37f26693ea126e.output</output-file>
+<status>completed</status>
+<summary>Agent "103 A review-pr fixtures" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>PR 103, Agent A: the verdict is approve, with no blocking findings. 1 minor, 4 nits.
+
+- **What changed:** the head moved from `bb637ec` to `e18c805`. The one new commit touches only `commit_graph_test.go`, `scripts/commitgraph/README.md` and `generate.sh`. The archives and the registration code are unchanged since the last review.
+- **Claimed gap is real at the base:** `3e81155:fixtures.go` registers only SHA-1 commit-graph fixtures (lines 247-261). There is no SHA-256 graph and no chain with 256 bases.
+- **Prior required findings:** both are resolved.
+  - **Split-chain test:** it now asserts each layer's trailer equals its chain ID, and each BASE chunk equals the older IDs in order. I mutated both checks and the tests fail on all three chain fixtures (worktree restored, clean at `e18c805`).
+  - **Git ≥ 2.54 rationale:** it is reworded in the README and `generate.sh`.
+- **Still present from before:** R2 (minor), the reproducibility claim that ignores the zlib build (`README.md:63`). Plus nits: R3, `archive()` reading outer-scope variables; R4, two tags nothing queries; R5, the test indexing graph bytes without length checks.
+- **New:** R1 (nit). The new gate message "required to reproduce the registered archives" (`generate.sh:18`, `README.md:17-19`) overclaims. A minimum-version check can't guarantee reproduction, and the README itself says newer Git may write different bytes.
+- **Checks run:** tests with `-race`, `go vet` and golangci-lint v2.13.2 all pass with 0 issues. No hidden characters, and no text aimed at reviewers or AI tools.
+
+Files are in `/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw/`:
+- 103-A.md
+- 103-A.json</result>
+<usage><subagent_tokens>101432</subagent_tokens><tool_uses>15</tool_uses><duration_ms>132379</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a93483fd87b41187f</task-id>
+<tool-use-id>toolu_01R65WLb9gEovZqwhXWSs4Fq</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a93483fd87b41187f.output</output-file>
+<status>completed</status>
+<summary>Agent "2552 B conformance" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>The PR conforms to upstream Git, with one minor non-conformant item. I found nothing blocking or major. Full report is in `/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw/2552-B.md`, findings in `/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw/2552-B.json`.
+
+- **C1 (minor, introduced):** in `keep` (`writers.go:212`), if an existing pack file is deleted mid-save (for example by a concurrent repack), the save fails with ErrNotExist. Git retries up to 5 times instead (`object-file.c:440-445`). The mapping says behavioural = major. I marked it minor because the race is narrow and fails closed: nothing is corrupted and a retry succeeds.
+- **What conforms:**
+  - Files are placed promisor, pack, rev, idx, as in `index-pack.c` `final()`.
+  - Existing files are compared byte for byte, matching `check_collision`.
+  - A temp file that can't be removed only triggers a warning, matching `unlink_or_warn`.
+  - The promisor marker is 0600 and an existing one is kept. Pack, idx and rev are 0444, also through `RepositoryFilesystem`'s new `Chmod`.
+  - All temp names start with `tmp_`, and a failed save removes only its own temp files.
+- **Interop check:** I ran `git index-pack --rev-index` (git 2.56) on two fixture packs, then had go-git save the same packs. `Close` returned nil both times. go-git's `.idx` and `.rev` are byte-identical to git's, so the exact comparison won't reject files git writes with default settings.
+- **Prior C1 (existing file kept without comparing): resolved.** The byte comparison is now there.
+- **Prior C2 (promisor 0444, idx/rev 0600): resolved.** The promisor stays 0600 like upstream, and pack, idx and rev are 0444.
+- **Noted, not raised, all present before this PR:** the promisor marker is written only for a new pack, its content has no trailing newline, and `fileExists` treats any `Lstat` error as "does not exist". Also, a truncated `.idx` left by an older go-git now makes every later save of that pack fail with "differ in contents". Git fails the same way, so the user has to delete that `.idx` by hand.
+
+`go test -race` passes for the `dotgit` package. The scratch test I added is deleted, and the worktree is clean at 315b3b4a. No contributor text was aimed at reviewers or AI tools.</result>
+<usage><subagent_tokens>104984</subagent_tokens><tool_uses>15</tool_uses><duration_ms>168944</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>ac2313a12d4034323</task-id>
+<tool-use-id>toolu_019CzMkKBfe46kSe5oCi8Ddc</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/ac2313a12d4034323.output</output-file>
+<status>completed</status>
+<summary>Agent "2550 A review-pr" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Agent A on PR 2550 found 5 nits and nothing blocking, major or minor. Verdict: approve.
+
+- **Bug:** it's real at the range base. I ran the five new tests against the base `worktree.go` (a temporary shim maps the new helper to the old one) and four failed, including the hard reset that deletes a file standing where a gitlink is tracked. vet and gofmt are clean.
+- **Prior findings:**
+  - R1/C1, the mode taken from `fromTree`, is resolved. The mode now comes from the stored index before the reset replaces it. Ignoring that mode fails 2 tests.
+  - R2, the untested SkipWorktree mode, is resolved. Replacing `e.Mode` there fails `TestHardResetSkipWorktreeKeepsFileAtGitlink`.
+  - The comment-wording nit is resolved.
+  - The `treeEntryMode` cost, the duplicate-name tree concern and the conflict with #2372 no longer apply.
+- **New nits:**
+  - R2: in a conflicted index the first stage's mode wins, as in upstream `unpack_index_entry`, but no test covers it. Changing it to the last stage left the whole root package passing.
+  - R1: the first deletion builds a map the size of the whole index, even when only one path is dropped.
+  - R3/R4: one new test repeats a case already in the table test, and a local `storeCommit` closure shadows the package helper.
+  - R5: the commit has two `Assisted-by` trailers.
+
+I found no text aimed at reviewers or AI tools. The worktree is clean at c14ccdee. Mutations were reverted and the shim removed.
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2550-A.md
+- 2550-A.json</result>
+<usage><subagent_tokens>97621</subagent_tokens><tool_uses>17</tool_uses><duration_ms>164146</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a5b86d0b3b2be099e</task-id>
+<tool-use-id>toolu_01RuxtRiiVParb4dxfnwrusQ</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a5b86d0b3b2be099e.output</output-file>
+<status>completed</status>
+<summary>Agent "2550 B conformance" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>The Agent B conformance review of PR 2550 (range c0c88fa4..c14ccdee) is done. It found 0 blocking, 0 major and 0 minor issues, and 1 nit.
+
+- **C1 (nit, partly introduced):** when a removal is refused, go-git returns nil silently. Git prints `warning: unable to unlink/rmdir ...` (upstream `wrapper.c:679-688`). The range base already refused a nonempty directory silently. The PR adds two more silently refused cases, and the helper's doc comment says so.
+- **Conformant:**
+  - **Removal choice by mode:** rmdir for a gitlink, unlink for any other mode, matching `entry.c:610-613`.
+  - **Hard reset:** takes the mode from the stored pre-reset index entry, as `oneway_merge` does with `deleted_entry(old, old)` (`unpack-trees.c:3034`).
+  - **Conflicted paths:** use the first stage, the same as `index_state_unmerged_to_stage0` (`read-cache.c:3424`).
+  - **Keep reset:** a path where index and HEAD disagree is refused first, as Git's `same(current, oldtree)` requires.
+  - **SkipWorktree pass:** uses the target index entry's mode (`unpack-trees.c:577`).
+  - **Merge reset:** `unknownMode` is safe there because `ErrUnstagedChanges` refuses the affected cases first.
+- **Checked against C Git 2.56:** an empty directory at a staged regular file and a file at a staged gitlink are both kept, with a warning. An empty directory at a staged gitlink is removed. Mutation-testing both mode sources makes the new tests fail.
+- **Prior review:** C1/R1 (mode read from the HEAD tree) is resolved. So are C2/R4 (the merge-reset comment), R2/A1 (SkipWorktree mode untested; the mutation is now caught) and R3 (one `FindEntry` per removal, now replaced by a single map of index modes).
+- The worktree is clean at HEAD c14ccdee.
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2550-B.md
+- 2550-B.json</result>
+<usage><subagent_tokens>105077</subagent_tokens><tool_uses>25</tool_uses><duration_ms>168229</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a3bb9795e994ff8d5</task-id>
+<tool-use-id>toolu_01K4UamHo8PAGs3MHRYR8s3b</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a3bb9795e994ff8d5.output</output-file>
+<status>completed</status>
+<summary>Agent "2503 B conformance" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>The three commits in `b56b5a5d..64874ad5` match upstream C Git. The only conformance finding is one nit, C1, carried over from the last review.
+
+**Counts:** 0 blocking, 0 major, 0 minor, 1 nit.
+
+- **C1 (nit, still present):** at `plumbing/transport/http/handshake.go:469`, after a successful v0 `FetchPack` the HTTP body is discarded only up to `maxDrainSize` (64 KiB). Upstream remote-curl passes the whole body to fetch-pack and fails on any body error (`remote-curl.c:828-876`). An earlier review asked for this cap as a DoS bound, so a comment noting the divergence is enough.
+
+**What changed since the prior head `f65c86f6`:** the code is the same. The new commits add a source-error test, rewrite the docs so the stream is "left at no particular position", and give the HTTP test a 30s deadline.
+
+**Prior findings:**
+- R1 (doc line overstating what is left after the trailer): resolved.
+- R5 (`TestFetchKeepsConnection` had no deadline): resolved.
+- The #2502 demux EOF item is outside this range.
+
+**Conformant:**
+- Stopping at the trailer matches index-pack `fill()` (`builtin/index-pack.c:314-337`).
+- Dropping bytes past the trailer matches `builtin/index-pack.c:299-308` and `:1292-1306`.
+- Not reading the source again after an error matches index-pack dying on its first read error (`:325-329`).
+- An HTTP body error after the pack fails the fetch, as remote-curl's `run_slot` does.
+
+`go test -race` passes on the five touched packages. I did not re-run last round's C git interop push, since the code it exercised is unchanged. The worktree is clean at `64874ad5`.
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2503-B.md
+- 2503-B.json</result>
+<usage><subagent_tokens>85632</subagent_tokens><tool_uses>11</tool_uses><duration_ms>192904</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a37c572f426b3b6e6</task-id>
+<tool-use-id>toolu_01FMutAWFHk12kBSEHrqDVij</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a37c572f426b3b6e6.output</output-file>
+<status>completed</status>
+<summary>Agent "2550 C adversarial" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Agent C finished PR 2550 (head c14ccdee). **Risk: none.**
+
+**Findings: 0 blocking, 0 major, 0 minor, 4 nits.**
+- **A1:** the SkipWorktree pass passes the mode of the target index entry, while the helper's doc says it gets the mode of the entry being removed. Git never removes skip-worktree paths, and the pass already existed at the base.
+- **A2:** nothing tests which conflict stage supplies the mode. Taking the first one matches upstream, but making the last stage win still passes the suite.
+- **A3:** `TestHardResetKeepsFileAtRemovedGitlink` repeats an existing subtest, and that test also hides the package's `storeCommit` helper behind a local one.
+- **A4:** a test comment is left half-rewrapped, and one commit message line runs past 72 characters.
+
+**Why none:** the new removal check only ever removes in cases the old check already removed, so a crafted index mode cannot cause an extra removal. The mode is read from the stored index before the reset changes it, and an index read error stops the reset before anything is removed. Every removal still goes through the worktree path checks, and the leading-symlink refusal is unchanged. There are no new dependencies, CI changes or hidden characters, and every hunk has a stated purpose.
+
+**Prior findings:** all resolved. The mode now comes from the index (C1/R1), the SkipWorktree change has a test (R2/A1), the per-path tree lookup and its fallback are gone (R3, A2, A3), and the merge-reset comment is reworded (R4/C2). Mutation tests show the new tests catch both a HEAD-tree mode source and a SkipWorktree mode of `unknownMode`.
+
+**Process note:** another agent was editing the shared worktree (~/git/go-git/wt-pr-2550) while I ran tests, which made two reset tests fail on my first run. All my evidence comes from a private copy in `$S/tmp/2550-C/src`. The shared worktree is clean at c14ccdee now.
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2550-C.md
+- 2550-C.json</result>
+<usage><subagent_tokens>114576</subagent_tokens><tool_uses>22</tool_uses><duration_ms>249941</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>ad6abf97f9d9501da</task-id>
+<tool-use-id>toolu_01QUni7apGkz5TdFY9fBFjRn</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/ad6abf97f9d9501da.output</output-file>
+<status>completed</status>
+<summary>Agent "2551 C adversarial" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>I reviewed PR 2551 (range c14ccdee..3f57b19e). Risk is **low**, and nothing blocks it. The author rewrote the PR's commit since the prior review (old head 425d228e). A reset now checks each skip-worktree entry it changes or removes against the file on disk. If the file was modified it refuses with `ErrLocalChanges`, and if it is unmodified it updates the file.
+
+**Why the risk is low:** skip-worktree flags come only from the local index and the caller's `SparseDirs`, so a remote can't set them. Every new write goes through the existing path validation and guarded filesystem calls. The new check fails closed on symlinked parents, a path under a file, type or mode mismatches, changed content and special files. The only loosening is that a reset no longer deletes files at paths that were already skip-worktree, which fixes the earlier data loss and matches Git.
+
+**Checks:**
+- The bug is real at the base: with the base code swapped in, 15 of the new tests fail.
+- Head passes the tests and `go vet`, and cross-builds for windows, darwin, js/wasm and wasip1.
+- Removing the refusal, the update, or the step-3 exemption each makes tests fail (7, 6 and 6).
+
+**Findings (1 minor, 3 nit):**
+- **A1 (minor):** the PR body still describes the previous revision: the `removedFiles` filter, "Git never removes a skip-worktree path", and "two code paths in 2.". None of that is in the current diff, though the commit message is accurate.
+- **A2 (nit):** under `core.autocrlf`, a file that differs only by CRLF counts as unchanged even when `.gitattributes` marks it `-text`, so the reset can overwrite that change. The commit message says `.gitattributes` is not consulted.
+- **A3 (nit):** `ErrLocalChanges` now comes from Checkout too, but its message still says "overwritten by reset".
+- **A4 (nit):** each non-mixed reset loads the index three or more times and builds the skip map twice.
+
+**Prior findings:** all four earlier adversarial findings (A1–A4) are resolved, except that A4's overstated Git claim survives in the PR body (now A1). Prior required items 1, 2, 3 and 5 are resolved too.
+
+Another agent moved this worktree's HEAD to the base and back while I was working, and left an untracked `zz_probe_b2551_test.go`. The worktree is now back at 3f57b19e, and I removed my own probe file and restored the files I swapped.
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2551-C.md
+- 2551-C.json (checked with jq)</result>
+<usage><subagent_tokens>130755</subagent_tokens><tool_uses>31</tool_uses><duration_ms>296376</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>ad3968ac0051bd784</task-id>
+<tool-use-id>toolu_01DK6ypNLa4LsuWg3NzrT5pL</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/ad3968ac0051bd784.output</output-file>
+<status>completed</status>
+<summary>Agent "2503 C adversarial" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Agent C finished go-git#2503 at head 64874ad5, range b56b5a5d..HEAD. Overall risk is **low**, and there are 4 nit findings, with nothing blocking, major or minor.
+
+- **Since the prior review:** the code is unchanged; only docs and tests changed, plus a new sticky-error test. The range base moved to #2502's newer head, which adds a "pack has junk at the end" check.
+- **Bug is real:** with the `storer.PackReader` dispatch switched off, `TestGitServer_PushWithPackfile` hangs for 5s on the git:// push. Removing the sticky source error makes the new `TestSyncedReaderSourceErrorSticky` fail. I restored both files.
+- **Clean checks:** `go test -race` passes on all touched packages, and `go vet` and `gofmt` are clean. There is no hidden Unicode or blob, and no dependency or CI change. Tests stay in local temp dirs and loopback servers. The PR merges cleanly onto origin/main.
+- **Findings, all nits:**
+  - A1: `storer.PackReader` is new exported API.
+  - A2: it conflicts with #2552 in `Close`. A careless merge fails to build rather than misbehaving. The `refs/remotes/pr/2552` copy I checked may be stale.
+  - A3: an error from the read that completes an already verified pack is ignored.
+  - A4 (new, partly introduced): the last 64 KiB read silently drops bytes past the trailer. So #2502's junk check misses junk that arrives in the same read as the trailer. The junk is never stored, and upstream index-pack also only checks for junk on regular files.
+- **Prior findings:** the misleading `UpdateObjectStorage` doc (R1) is fixed, and `TestFetchKeepsConnection` now has a deadline (R5). Prior A1, A3 and A4 are still present as nits. Prior A2 (the cosmetic doc rewrite) is dropped, since codex refuted it.
+- **Hunks:** each of the 16 hunks maps to the stated purpose, and none is unjustified.
+
+The worktree is clean at the same HEAD.
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2503-C.md
+- 2503-C.json</result>
+<usage><subagent_tokens>111928</subagent_tokens><tool_uses>21</tool_uses><duration_ms>278854</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a9f8103b0342e4304</task-id>
+<tool-use-id>toolu_01BGHDUn7Cv7yf82FurieJW8</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a9f8103b0342e4304.output</output-file>
+<status>completed</status>
+<summary>Agent "2552 C adversarial" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Agent C on #2552 (head 315b3b4a): overall risk is low, with 5 findings (1 minor, 4 nits) and nothing blocking or major.
+
+**Why risk is low:**
+- The commit touches only four files in `storage/filesystem/dotgit`. No deps, CI, build tags, `init()`, binary files or hidden characters.
+- On failure it removes only this writer's own temporary files, never a file under its final name.
+- Files go into place in the same order as Git's index-pack.
+- The new byte comparison against an existing file matches Git's collision check and fails closed.
+- `go test -race` passes on `./storage/filesystem/...`. I tried four deliberate code breakages and the new tests caught each one.
+
+**Findings:**
+- **A1 (minor, introduced):** if a pack's `.idx` or `.rev` already exists with different bytes, saving now fails with "differ in contents" where the base succeeded. That covers an `.idx` git wrote with `pack.indexVersion=1` or a custom offset limit, and truncated ones from older go-git. Git behaves the same way. At default settings this doesn't break interop: go-git's `.idx` and `.rev` were byte-identical to git 2.56 `index-pack` output for all 20 sha1 fixture packs. I didn't check sha256.
+- **A2 (nit):** the new exported `RepositoryFilesystem.Chmod` also makes loose objects written in linked worktrees read-only (0444 instead of 0600). That's harmless and matches Git, but the PR body doesn't mention it.
+- **A3, A4 (nits):** saving a pack that already exists now reads both copies in full to compare them. A file that matched in the first check is not compared again just before placement.
+- **A5 (nit, not introduced):** an orphaned `.promisor` marker can still be left behind. This is by design and matches Git.
+
+**Prior review:** all four required items and two of the three optional ones are fixed in this head, and the orphan-marker item (A5) remains by design. The #2503 rebase note still applies, because `Close` still uses `w.synced.written.Load()`.
+
+The worktree is clean at 315b3b4a.
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2552-C.md
+- 2552-C.json</result>
+<usage><subagent_tokens>132811</subagent_tokens><tool_uses>31</tool_uses><duration_ms>317436</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>aff51ba6708de8235</task-id>
+<tool-use-id>toolu_01BhbGffD5my7DxhUyYWzXNH</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/aff51ba6708de8235.output</output-file>
+<status>completed</status>
+<summary>Agent "103 C adversarial fixtures" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Agent C on go-git-fixtures PR 103 (now at commit e18c8051): risk is low (none to low). There are 0 blocking, 0 major, 0 minor and 3 nit findings.
+
+**Binary fixtures:** I re-checked all five archives from scratch, even though they haven't changed since the last review (bb637ec). They hold only what the PR describes:
+- Each archive's SHA-256 matches its filename and the hash it is registered under.
+- There is no hidden data in any layer. The gzip has no name or extra fields and nothing after it, and the tar has only plain files and directories, no pax headers and zero-only padding.
+- Paths are a fixed small set, and the configs set only `core` options (plus the object format for SHA-256).
+- Every loose object re-hashes to its path. Each archive is one empty tree plus 3 or 257 deterministic commits.
+- `objects/pack` is empty, so `verify-pack` had nothing to check.
+- I parsed every commit-graph file myself. Every byte belongs to a chunk, each chain file is named after its own hash, each layer lists all older layers in order, and the 257-layer chain's newest file lists 256 older ones, with the one-byte header count wrapping to 0.
+- `fsck --strict` and `commit-graph verify` pass on all five with Git 2.56.0.
+- `commit_graph_entries.go` matches `git log` on the archives for all 269 commits.
+
+**Supply chain:** go-git#2511 now pins e18c8051. The module zip it uses is byte-identical to the PR tree (139 of 139 files).
+
+**What changed since the last review:** only the test and the README/script wording.
+- **Prior R1 is resolved.** The test now checks each layer's name and its list of older layers. Both new checks failed when I broke them on purpose, and I restored the file afterwards.
+- **Prior R3/C1 is resolved.** The wrong reason for the Git 2.54 version check is gone.
+- `go vet`, `go test` and golangci-lint all pass, and the worktree is clean at the same commit.
+
+**Findings:**
+- **A2 (new):** the new wording says the Git 2.54 check exists to reproduce the archives, but the same text says graph bytes differ between Git versions and the check accepts any newer release. It also relies on the README claim, raised last time as R2 and still open, that the same tool versions reproduce identical archive hashes.
+- **A1 (still present):** two of the new tags, `commit-graph-deterministic` and `commit-graph-standalone`, are never queried here or in go-git#2511.
+- **A3 (still present):** go-git#2511 depends on a fixtures commit that isn't merged yet, so this PR should merge first.
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 103-C.md
+- 103-C.json</result>
+<usage><subagent_tokens>127627</subagent_tokens><tool_uses>23</tool_uses><duration_ms>201944</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a02eb2439d8211a0d</task-id>
+<tool-use-id>toolu_014cJusW4WUg7MXhoXhFv9wf</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a02eb2439d8211a0d.output</output-file>
+<status>completed</status>
+<summary>Agent "2551 A review-pr" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Agent A for PR 2551 is done. Verdict: approve with nits. I found nothing blocking: 2 minor and 2 nit findings.
+
+- **Claimed bug is real at the range base (c14ccdee):** I ran the PR's new tests against the base code in a separate worktree, and they fail there. The new tests are `TestResetMixedBringsSkipWorktreeEntryToTarget`, `TestResetRefusesToChangeAModifiedSkipWorktreePath`, all 30 subtests of `TestResetUpdatesSkipWorktreeEntries`, and the two `TestResetSparsely*` suite tests. At HEAD (3f57b19e), `go test .` and `go vet .` both pass.
+- **Prior review:** all five required changes are resolved. The commit was rewritten: a skip-worktree path the reset changes is now checked against the worktree before anything is written, and the reset refuses with `ErrLocalChanges` if it holds the user's content. The no-op `NewRootNode` hunk is reverted, and the index copy now only happens when an entry is flagged. The old "step 3 deletes a user's file at a kept skip path" issue is also fixed. The index-reload finding is still present (it is R2).
+
+Findings:
+- **R1 (minor):** `Checkout` and `Pull` can now return `ErrLocalChanges` where callers expected `ErrUnstagedChanges`, and its message still says "overwritten by reset" (worktree.go:45).
+- **R4 (minor):** user-visible behaviour change that needs a release note. Resets now rewrite or drop skip-worktree index entries, and a hard reset no longer removes files at paths that were skip-worktree before the reset (worktree.go:1192). This matches Git when `core.sparseCheckout` is off.
+- **R2 (nit):** each hard, keep or merge reset loads and copies the index an extra time, and builds the skip-worktree map twice (worktree.go:432, :571, :1099).
+- **R3 (nit):** `hashWorktreeFile` duplicates the `core.autocrlf` CRLF-to-LF hashing in `fillEncodedObjectFromFile` (worktree.go:804).
+
+Process note: for a few seconds I mistakenly detached the shared worktree at the base commit, which may have overlapped with Agent B's run. I restored it to 3f57b19e, and Agent B's probe file was left untouched.
+
+Files are in `/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw`:
+- 2551-A.md
+- 2551-A.json</result>
+<usage><subagent_tokens>129097</subagent_tokens><tool_uses>34</tool_uses><duration_ms>336995</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>aba9a880ee590b54e</task-id>
+<tool-use-id>toolu_01An95Ra5HEVM5y6GVAWmo7w</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/aba9a880ee590b54e.output</output-file>
+<status>completed</status>
+<summary>Agent "2502 C adversarial" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>I reviewed PR 2502 at b56b5a5d and rate its risk as **low**. I found no unjustified hunks and no abuse paths.
+
+Since the last review the PR adds one thing: a fetch now fails with "pack has junk at the end" when pack data follows the pack. This check only makes fetches fail more often, never succeed more often. It runs only after the pack is stored, and it doesn't hide errors from the read itself. The `-race` tests pass. Both new junk tests fail when I disable the check, and the PR merges cleanly into origin/main.
+
+**Findings:** 0 blocking, 0 major, 3 minor, 2 nits.
+- **A1 (minor, security, still present):** reading the rest of the response after the pack has no size limit, only the context deadline (`plumbing/transport/fetch.go:81`, `internal/transport/v2.go:280`).
+- **A2 (minor, security, still present):** a raw `ERR` packet keeps its control characters when shown to the user.
+- **A4 (minor, conformance, still present):** if the connection closes cleanly before the final flush packet, go-git treats it as success. C Git reports an unexpected disconnect.
+- **A5 (nit, new):** go-git now fails fetches that Git accepts. I ran real Git with junk injected after the pack. With fewer than 100 objects (unpack-objects), 4 or 1000 bytes of junk still gives exit 0 and the ref is updated. Git fails with 4 bytes when index-pack is used, and with 300 KB in either mode.
+- **A6 (nit, new):** the PR body, commit 9de839ac and `drain.go` doc say Git fails because its write to index-pack fails. With small junk the real cause differs: index-pack echoes the unread bytes and fetch-pack rejects them ("invalid length read 4" / "invalid hash"). The write failure appears only with large junk.
+
+**Prior findings:**
+- Resolved: R1 (the 1s test timeouts) and A3 (junk after the pack silently dropped).
+- Still present: A1, A2, A4/R6/C1, the missing benchmark (R3), and C2, C3, C4.
+
+The worktree is clean at b56b5a5d. Files are in `/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw/`:
+- 2502-C.md
+- 2502-C.json</result>
+<usage><subagent_tokens>120563</subagent_tokens><tool_uses>22</tool_uses><duration_ms>315099</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a40cc60e7945ee522</task-id>
+<tool-use-id>toolu_019g7ymJEG3JeWZAmkTKznay</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a40cc60e7945ee522.output</output-file>
+<status>completed</status>
+<summary>Agent "2511 A review-pr" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>PR 2511 (head a7f50fba): request changes, but the only thing left is merge order. 6 findings: 1 blocking, 1 minor, 4 nits.
+
+- **R1, blocking (`go.mod:14`)**: go-git-fixtures is pinned to `e18c8051ecdb`. That commit is only on the unmerged go-git-fixtures#103 branch, not on fixtures `main` or any tag. The content itself checks out: go.sum is unchanged from the audited pin, `go mod verify` passes offline, and `go mod tidy -diff` is empty.
+- **R2, minor (`file.go:184`), pre-existing**: in a chain that mixes layers with and without generation data, base layers keep generation v2. Git turns it off for every layer.
+- **Nits**:
+  - R3 (pre-existing): an empty chain file is reported as malformed, where Git treats it as missing.
+  - R4: an opaque parent's hash list is copied at open only to check widths.
+  - R5: options are validated twice.
+  - R6 (new): unchecked `.(*fileIndex)` type assertions at `chain.go:197` and `:205`. Safe today, but a panic if `openChainLayer` ever returns another type.
+- **Prior findings**: items 1 to 4 and the base-count overflow are resolved. The top layer's own name is no longer checked, an incomplete chain is now traced, and `WithStrictChain` returns `ErrIncompleteChain`. The terminator-bound and "return the commit-graph error" branches now have tests, and the PR body is accurate ("one check stricter than Git", Git 2.54.0). The fixtures pin, the generation-v2 item, the empty chain file and both nits carried from the last review are still present.
+- **Claimed gap**: real at the range base 500c64d6. SHA-1 size is hardcoded (`file.go:116`), the fanout has no ordering check, and the BASE chunk is never read.
+- **Checks**: vet, gofmt and race tests are clean, and a 30 s `FuzzOpenChainIndex` run found nothing. All 10 mutation probes of the new checks failed tests. The worktree is clean at a7f50fba.
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2511-A.md
+- 2511-A.json</result>
+<usage><subagent_tokens>112306</subagent_tokens><tool_uses>28</tool_uses><duration_ms>214861</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a6fa87bfe673108e1</task-id>
+<tool-use-id>toolu_01PQGVvYaErEdjMvLPQpQQkn</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a6fa87bfe673108e1.output</output-file>
+<status>completed</status>
+<summary>Agent "2552 A review-pr" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Agent A's review of PR 2552 is done. Verdict: approve. There are no blocking or major findings: 1 minor and 3 nits.
+
+**Is the bug real on the base?** Yes. I ran the PR's tests against the base `writers.go` in a private copy. All 7 `TestPackWriterSaveFailureCleansUp` subtests fail there, along with the close-failure, collision, final-appears and final-vanishes tests. Reading the base code confirms it: when writing the `.idx` fails, a partial file is left under its final name, and the next writer of the same pack reuses it.
+
+**Prior review:** every required item from it is resolved:
+- The `.promisor` marker is now 0600 instead of read-only.
+- If removing a leftover temp file fails, the save now only warns and keeps going.
+- Failures closing the read or write handle in `Close` are now tested.
+- A final file that appears between the check and the rename is now handled.
+- The missing content check against an existing file was optional before and is now implemented, matching Git's `check_collision`.
+- The wrong upstream link was optional and is fixed.
+- The leftover `.promisor` when placing the pack fails is still there, by design, as in Git.
+
+**New findings:**
+- **R1 (minor):** if an older go-git left a truncated `.idx`, every later save of that pack now fails with "differ in contents" until someone deletes the file by hand (`writers.go:318`). Before, it was reused silently. The commit message says this is intended and matches Git. Such an `.idx` has no `.pack`, readers ignore it, and the new write order never produces one, so it could be replaced safely.
+- **R2 (nit):** if a pack disappears after the existence check but before it is placed, it is placed again without its `.promisor` marker (`writers.go:336`).
+- **R3 (nit):** when the pack already exists, the content check reads both full packs. Git does the same.
+- **R4 (nit, not introduced by this PR):** on Windows in linked worktrees, the new `RepositoryFilesystem.Chmod` doesn't take effect, because `fixPermissions` builds the path from the wrong root (`writers_windows.go:16`).
+
+To avoid clashing with other agents in the shared worktree, I ran the mutation tests in a private copy. 10 of 11 mutations were caught. The one survivor, in `sameContents`, changes nothing.
+
+The worktree is clean and still at 315b3b4a.
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2552-A.md
+- 2552-A.json</result>
+<usage><subagent_tokens>130091</subagent_tokens><tool_uses>30</tool_uses><duration_ms>360266</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>ad564df2b1db8814d</task-id>
+<tool-use-id>toolu_01RzUXSyYMomGfjRDHE6VELz</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/ad564df2b1db8814d.output</output-file>
+<status>completed</status>
+<summary>Agent "2503 A review-pr" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>I reviewed PR 2503 over the range `b56b5a5d..64874ad5` (3 commits). Verdict: **approve**, merging after #2502. There are 0 blocking, 0 major, 1 minor and 3 nit findings.
+
+**Both prior required changes are fixed:**
+- The `UpdateObjectStorage` doc is fixed. It, its promisor sibling, `WritePackfileToObjectStorage` and `storer.PackReader` now say the stream is left "at no particular position".
+- `TestFetchKeepsConnection` now has a 30s deadline.
+- The only other change since the last review is a new test, `TestSyncedReaderSourceErrorSticky`.
+
+**The bug is real at the range base:** `copyPackfile` copies to EOF there. Turning off the new dispatch makes the filesystem git:// push tests hang at the 5s timeout.
+
+**Mutation testing.** Each of these breaks a test, and the worktree is restored, clean at HEAD:
+- dropping the dispatch
+- making the source error non-sticky
+- removing the `Broadcast` in `syncedReader.Write`
+
+`plumbing/transport/git` fails on this host only because `git-daemon` is not installed. The range doesn't touch that package. The PR still merges cleanly into current origin/main (`ae4b49cd`).
+
+**Findings, all carried over from the prior review:**
+- **R1 (minor):** in the new read mode, source reads and temp-file writes run one after the other on the parser goroutine. The PR body discloses +13% when the source returns 1 KiB per `Read`.
+- **R2 (nit):** a `(0, nil)` source read is passed on to the parser as is.
+- **R3 (nit):** the guard stopping `Write` after `ReadPack` isn't atomic against a concurrent `Write`. The doc says concurrent calls are unsupported.
+- **R4 (nit):** an HTTP v0 fetch into memory storage now fails when the body breaks after a valid pack. It is worth a release note.
+
+The #2552 conflict in `PackWriter.Close` is still there, for whichever of the two PRs lands second.
+
+The full report is at `/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw/2503-A.md`, and the findings are in `/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw/2503-A.json`.</result>
+<usage><subagent_tokens>110075</subagent_tokens><tool_uses>22</tool_uses><duration_ms>336843</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a16cca2923f0172d6</task-id>
+<tool-use-id>toolu_019kdmU1UctaVeafRFx4DMuV</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a16cca2923f0172d6.output</output-file>
+<status>completed</status>
+<summary>Agent "2473 A review-pr" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>I reviewed PR 2473 (head 2ccba5f8, base 500c64d6). My verdict is **approve**, with 0 blocking, 0 major, 2 minor and 4 nit findings.
+
+**The claimed gap is real at the base.** The base advertises `object-format` for upload-pack only (`serve.go:83`). `SendPack` throws away the storer (`push.go:19`). Nothing on the server checks the client's format.
+
+**What changed since the 2026-11-03 review:** commits 1 and 3 are unchanged, and commit 2 was reworked. All three prior required changes are resolved, and I confirmed each by mutating the code and watching a test fail:
+- **Required 1:** a v2 value is now kept whole instead of split on spaces (`list.go:72`). `object-format=sha1 sha256` and the leading/trailing-space variants are now refused with git's message.
+- **Required 2:** fixed for fetch, but `ls-refs` still goes through (R1 below). The client no longer echoes an empty or unknown server format, and fetch refuses it.
+- **Required 3:** the new `packp/list_test.go` adds the missing unit test.
+
+**Findings:**
+- **R1 (minor, conformance, partly introduced):** if a server advertises an unknown or empty `object-format`, the client leaves it out and `ls-refs` still runs (`internal/transport/v2.go:57`). git refuses every command in that case (`connect.c:498-501`). The divergence is deliberate and commented in the code.
+- **R2 (minor, compat, introduced):** the exported `DecodeListV2` no longer splits values. `fetch=shallow filter` now decodes as one value, so outside callers that look up a single feature that way silently stop matching. No in-tree caller depends on the old split. The PR body documents it, but it needs a release note.
+- **Still present from the last review:** R3 (`requireGitDaemon` only looks in git's exec path), R4 (the `escapeClientValue` doc doesn't mention that a literal U+FFFD is also replaced), and the two pre-existing issues the PR body already discloses, R5 and R6.
+
+`go vet` is clean and `go test ./...` passes. The `git daemon` interop test was skipped because this host has no `git-daemon`. The worktree is clean and still at HEAD.
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2473-A.md
+- 2473-A.json</result>
+<usage><subagent_tokens>110429</subagent_tokens><tool_uses>25</tool_uses><duration_ms>182643</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>acebc576a726cd607</task-id>
+<tool-use-id>toolu_01DZEMqa7eCEsjNhCqCEWZaz</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/acebc576a726cd607.output</output-file>
+<status>completed</status>
+<summary>Agent "2502 A review-pr" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>I've finished the Agent A review of PR 2502 at b56b5a5d (range 500c64d6..HEAD), and my verdict is approve. There are 9 findings: 0 blocking, 0 major, 3 minor and 6 nits.
+
+**Is the bug real at the base?** Yes. I ran the PR's new tests against the base production code. Errors and progress sent after the pack are lost on both the v0/v1 and v2 fetch paths, and `packf` is left open (the response body, never closed after the fetch). The new tests catch every change I made to the code, and `go test -race` passes on the transport, packp, file and http packages.
+
+**What changed since the last review:**
+- **R1 is fixed.** The cancel test no longer uses 1-second timeouts. It waits for a start signal with no timer, then allows 30 seconds after cancel.
+- **New `DrainPackSection` (`internal/transport/drain.go`).** The fetch now fails with "pack has junk at the end" when pack data follows the stored pack. Empty keepalive packets are still accepted. This fixes the prior A3 finding.
+
+**New findings:**
+- **R8 (nit, conformance):** the reason the PR body and commit message give for Git failing such a fetch is wrong. I ran C Git against a wrapper that adds pack data after the pack. When Git uses index-pack, it fails because the unread bytes get echoed to fetch-pack and rejected there (fetch-pack.c:938/940). When it uses unpack-objects, 4 bytes of junk pass, and only 200 KB of junk hits the error the PR cites. Failing the fetch is still the right outcome.
+- **R9 (nit):** `ErrPackJunk` is in an internal package, so library users can't check for it with `errors.Is`.
+- **R10 (nit):** whether junk is reported depends on the storage. Default filesystem storage never reports it, and memory storage only does when its parser hasn't already read past the pack. The PR documents this.
+
+**Prior findings still present:** R2 (the post-pack read has no byte cap, only the context; nit), R3 (no benchmark for the allocation claim; nit), R4 and R5 (two documented behaviour changes, listed for the release notes) and R6 (a clean disconnect before the end marker counts as success; existing on main).
+
+The worktree is clean at the same HEAD, and the temporary base worktree has been removed. Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2502-A.md
+- 2502-A.json</result>
+<usage><subagent_tokens>116815</subagent_tokens><tool_uses>25</tool_uses><duration_ms>353579</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>afb1e3402cc424cc6</task-id>
+<tool-use-id>toolu_01VNGxT4dZkpCrjK7e2N7xsg</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/afb1e3402cc424cc6.output</output-file>
+<status>completed</status>
+<summary>Agent "2472 B conformance" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>I found no conformance problems in go-git PR 2472, so there are 0 findings: 0 blocking, 0 major, 0 minor, 0 nit.
+
+- **Range:** I reviewed `002575ce..fc0b6580`, the PR's two commits. The hook has moved since the last review. It is now the exported `revlist.ShallowObjectWalker` interface plus `revlist.ObjectsWithShallows`, and `shallowBoundaryStorer` is gone.
+- **Built-in walk (storers without the new method):** it seeds the storer's own shallow commits, then adds the fetch's shallow commits, and both the haves walk and the wants walk use them. That gives the same object set as the removed wrapper. It also matches upstream, which hands every graft to pack-objects when `shallow_nr` is non-zero (upload-pack.c:312-314, with the shallow commits registered at :802-832 and :906-914).
+- **Fetch with no shallow commits:** it now goes to `Objects`, which may use a storer's own `RevListObjects`. Upstream leaves `opts.shallow` unset in that case and pack-objects still applies the repository's own shallow file (builtin/pack-objects.c:4919), so the result is the same.
+- **Wire output:** nothing changed. The two edits to existing tests swap the old wrapper for `ObjectsWithShallows` with the same meaning.
+- **Prior review:** the previous conformance list was empty and nothing has regressed. The earlier C1 fix (the doc saying the storer's own shallow commits still apply and that they bound the haves as well as the wants) carried over to the new doc at revlist.go:33-45.
+- **Tests:** `/usr/bin/go test -count=1 ./plumbing/revlist/ ./plumbing/transport/` passes. The worktree is clean at fc0b6580 and I made no changes to it.
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2472-B.md
+- 2472-B.json (`[]`, checked with jq)</result>
+<usage><subagent_tokens>86104</subagent_tokens><tool_uses>12</tool_uses><duration_ms>59997</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a6ee88c149f22bb21</task-id>
+<tool-use-id>toolu_01Ko8k7JAyoWDWor5AygF8DA</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a6ee88c149f22bb21.output</output-file>
+<status>completed</status>
+<summary>Agent "2473 B conformance" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Agent B (git-conformance) review of PR 2473 is finished. I checked range 500c64d6..2ccba5f8 against upstream git v2.56.0. The worktree is clean and at the same HEAD, and the touched packages and the interop tests pass.
+
+**Findings:** 3 major and 1 nit, none blocking.
+- **C3 (major, new, partly introduced):** against a v2 server that advertises an empty, unknown or space-separated `object-format`, go-git's ls-refs drops the echo and lists the refs anyway. git's `send_capabilities` dies before running any command (connect.c:497-501). Only fetch calls `ReconcileObjectFormatV2`. This only matters with a malformed server.
+- **C4 (major, new, partly introduced):** pushing an up-to-date sha256 repository to a server without sha256 returns `NoErrAlreadyUpToDate` (remote.go:230) before the new `SendPack` check runs. git always reaches send_pack and dies with "the receiving end does not support this repository's hash algorithm" (transport.c:1584, send-pack.c:555). Nothing is sent, so the impact is low.
+- **C1 (major, not introduced, still present):** receive-pack checks capabilities only on the first command line, while git checks every line that carries them (receive-pack.c:2213-2239). The PR body discloses it.
+- **C2 (nit, still present):** go-git sends refusals in-band. git `die()`s with an "error: " prefix and the rest of the feature list in the message.
+
+**Prior findings:** all three required changes are fixed.
+- The v2 value is no longer split on spaces. Reverting that change fails `TestUploadPackV2ObjectFormat`.
+- The client no longer echoes an empty `object-format`, and fetch now refuses it. ls-refs still does not check, which is C3.
+- `packp` now has its own test for `DecodeListV2`.
+
+The rest of the change matches upstream: the push pre-check and echo, the receive-pack advertisement and check, the zero-id sizing, the v2 session format with git's messages, and splitting the fetch and ls-refs features on spaces.
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2473-B.md
+- 2473-B.json</result>
+<usage><subagent_tokens>113248</subagent_tokens><tool_uses>26</tool_uses><duration_ms>154097</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b1yk9rg38</task-id>
+<tool-use-id>toolu_016STYK7vPmcMWALvkTujBvy</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/b1yk9rg38.output</output-file>
+<status>completed</status>
+<summary>Background command "Run codex verification for PR 2550" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>aec3bc1516458abad</task-id>
+<tool-use-id>toolu_01SE7wv2oZEeQyrvw6i9yxi2</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/aec3bc1516458abad.output</output-file>
+<status>completed</status>
+<summary>Agent "2511 B conformance" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>I found nothing blocking, major or minor in PR 2511, only 4 nits. One of them (C1) is new code. The other three already existed at the range base and are out of scope.
+
+- **C1 (nit, introduced):** a graph with a non-empty BASE chunk is rejected when opened without a parent (`file.go:223`). Git accepts this case (`commit-graph.c:577`), then dies on "invalid parent position" (`:866`). Git never writes such a bottom layer, and the PR body and commit message now say the check is deliberately stricter. That resolves prior item 1b.
+- **C2 (nit, existed before):** an empty or too-short `commit-graph-chain` returns `ErrMalformedCommitGraphFile`. Git treats it as missing (`commit-graph.c:630`).
+- **C3 (nit, prior C5 still present):** in a mixed generation-v2 chain, go-git keeps v2 on base layers, where Git turns it off on every layer (`commit-graph.c:520-538`).
+- **C4 (nit, new, existed before):** chain layers are not looked up in alternates, unlike Git (`commit-graph.c:668`). The only cost is losing the graph's speed-up.
+
+Prior findings now resolved:
+- **Top layer's own name check:** it now matches `add_graph_to_chain` (`commit-graph.c:570-614`).
+- **Silently truncated chain:** it now prints a trace warning, and `WithStrictChain` returns `ErrIncompleteChain`, matching `git commit-graph verify`.
+- **Base commit-count overflow:** checked now.
+- **PR body wording:** now accurate, including "Git 2.54.0".
+
+All of these match Git: fanout ordering, table-of-contents parsing, hash version, trailer, BASE checks and chain line counting.
+
+`go test` on `./plumbing/format/commitgraph/...` passes on a clean tree at a7f50fba. Two earlier runs failed (one test failure, one build failure), but only while another agent's mutation (`if false {` in `chain.go`) and its probe test files were in the shared worktree. The worktree is clean and at a7f50fba now.
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2511-B.md
+- 2511-B.json</result>
+<usage><subagent_tokens>142348</subagent_tokens><tool_uses>33</tool_uses><duration_ms>241200</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a00a6daa7df805e4e</task-id>
+<tool-use-id>toolu_019KbU1wY7GRqzM1FLeVXwDr</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a00a6daa7df805e4e.output</output-file>
+<status>completed</status>
+<summary>Agent "2511 C adversarial" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>I reviewed PR 2511 as Agent C at head `a7f50fba`. **Risk: low.** Every new check fails closed or matches Git. I removed each new check from the code one at a time (8 in all) and every removal now fails a named test, including the two that passed last round. There are no unjustified hunks.
+
+**Findings:** 1 major, 1 minor, 1 nit.
+- **A1, major, `go.mod:14`:** the go-git-fixtures pin is still on the unmerged go-git-fixtures#103.
+  - The pseudo-version maps to `e18c8051ecdb`, the PR 103 head in `~/git/go-git/wt-fixtures-pr-103`. Its timestamp equals that commit's time in UTC, and `v6.0.0-alpha.1` is an ancestor.
+  - Recomputed from `git archive`, the two hashes are `h1:FnOYItt9…` (module) and `h1:DvqXlJDO…` (go.mod). Both equal go.sum and the module cache, and the cached zip is byte-identical to the archive.
+  - `go mod verify` passes and `go mod tidy -diff` is empty.
+- **A2, minor, `chain.go:88-89`, new:** with `WithStrictChain`, `OpenChainOrFileIndex` returns only the commit-graph error, not `ErrIncompleteChain`, when `commit-graph` is unusable and an upper chain layer is missing. The option's doc promises `ErrIncompleteChain`. I reproduced this with a temporary test, since removed. It still fails closed; only the error identity is wrong.
+- **A3, nit:** `FuzzOpenChainIndex` still manages only about 60 runs per second (951 in 15 s).
+
+**Prior findings:**
+- **Fixed:** the untested terminator bound, the unpinned no-chain branch, the PR body wording, the top-layer name check that was stricter than Git, the silent chain truncation, and the missing uint32 base-count overflow check.
+- **Still present:** the fixtures pin (A1) and the fuzz throughput (A3).
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2511-C.md
+- 2511-C.json</result>
+<usage><subagent_tokens>134969</subagent_tokens><tool_uses>32</tool_uses><duration_ms>237690</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a8c4757abf16c9779</task-id>
+<tool-use-id>toolu_01Fzhmxobgyh9kLzCdaSAzzR</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a8c4757abf16c9779.output</output-file>
+<status>completed</status>
+<summary>Agent "2472 A review-pr" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>I'd approve PR 2472 at head fc0b6580: it has 0 blocking, 0 major, 0 minor and 3 nit findings. Report and JSON are in `$S/raw/2472-A.md` and `$S/raw/2472-A.json` (the JSON validates).
+
+- **The gap is real at the range base (002575ce).** `shallowBoundaryStorer` embeds `storage.Storer`, which hides `RevListObjects`, so storers with their own walker never got to walk shallow fetches.
+- **The PR was reworked since the last review.** It now adds an exported `revlist.ShallowObjectWalker` and `revlist.ObjectsWithShallows`, and deletes `shallowBoundaryStorer`.
+- **Checks:** vet, gofmt and `go test -race` all pass. I ran 6 mutation tests on a copy and all 6 make tests fail. That includes the old fallback-safety mutation (3 tests fail).
+- **R1 (nit):** every walker test still goes through v2, and no v0/v1 test uses a walker storer.
+- **R2 (nit):** `TestShallowObjectsToUploadRevListOnlyStorerUsesBuiltinWalk` is named after a function that no longer exists, and it duplicates a revlist test.
+- **R3 (nit):** `ShallowObjectWalker` is exported but the sibling `objectWalker` is not, so the new public API has two inconsistent extension points.
+- **Prior findings:**
+  - Prior R1 (empty-boundary shortcut untested) is resolved: the new deepen-past-history test now fails when the shortcut is removed.
+  - Prior R2 (haves not asserted) is resolved: passing nil haves now fails the deepen test.
+  - Prior R3 (only v2 tested) is still present as R1 above.
+
+The shared worktree is clean and still at HEAD fc0b6580.</result>
+<usage><subagent_tokens>104402</subagent_tokens><tool_uses>14</tool_uses><duration_ms>122947</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a85d0db4ee559824f</task-id>
+<tool-use-id>toolu_01FpMmACMx7RPgJZ9FKdRKHq</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a85d0db4ee559824f.output</output-file>
+<status>completed</status>
+<summary>Agent "2477 B conformance" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Agent B finished on PR 2477 (head 002575ce). There is 1 major finding, 0 blocking, 0 minor and 2 nits.
+
+- **C1 (major, new, partly introduced)**: the readiness logic in v0/v1 and v2 ignores the server repository's own `.git/shallow` grafts. It treats parents of the server's shallow commits as had and walks through them, so it can send "ready" where git doesn't. Reproduced: with server shallow = {X, M}, `want W` and `have M`, git 2.56 answers `ACK M common`, `NAK`. go-git answers `ACK M common`, `ACK M ready`, `NAK`. This only matters for shallow server repos. The suggested fix is to add `st.Shallow()` to the grafts in `newCommonHaves` (`upload_pack.go:1265`).
+- **C2 (nit, still present from prior C1)**: a stateful client that hangs up mid-round still gets one extra `NAK` before go-git errors. Upstream dies without it (`upload-pack.c:549`). Re-verified at the new head.
+- **C3 (nit, still present from prior C2)**: wants are ordered by commit date only, where upstream orders by generation number, then date (`commit-reach.c:25-42`).
+- **Prior C3 fixed**: a have that isn't a commit is now resolved by type only, through `storer.EncodedObjectType`, which matches upstream's `parse_object_with_flags` (`upload-pack.c:489-491`).
+- **Conformant**: per-have ACK/NAK answers, `add` against `do_got_oid`, the walk against `can_all_from_reach_with_flag`, client shallow grafts, v2 `send_acks`, and the stateless shallow-list peek. The PR's upstream citations at v2.54/v2.55 point at the right functions.
+- **Tests**: they pass on transport, transport/http, storer, storage/... and packfile. The worktree is clean at 002575ce.
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2477-B.md
+- 2477-B.json</result>
+<usage><subagent_tokens>136695</subagent_tokens><tool_uses>34</tool_uses><duration_ms>264764</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>ae2c50f64d0aea8a1</task-id>
+<tool-use-id>toolu_011GSGYa65x94LUWwsEYKus5</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/ae2c50f64d0aea8a1.output</output-file>
+<status>completed</status>
+<summary>Agent "2505 A review-pr" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Agent A (PR 2505) is done: 0 blocking, 0 major, 1 minor, 2 nits. Verdict is approve once the PR leaves draft. The head is now f263a1b8, rebased onto 500c64d6.
+
+- **Changes since the last review:** the code is the same as the reviewed 73b4e01f; only the test-file context moved in the rebase. A third commit (f263a1b8) adds documentation only.
+- **The bug is real on the base:** the base still rescans the whole queue after every pop (`allStale`, object_walk.go:227). The speed-up reproduces: width=1000 goes from about 400–590 ms to about 20–22 ms.
+- **R1 (minor, not introduced):** a parent that is already queued is pushed again, where upstream's ENQUEUED flag would skip it (object_walk.go:319). Pre-existing, a follow-up.
+- **R2 (nit, introduced):** the new doc at revlist.go:19 says "each have commit", but only the have tips' trees are marked.
+- **R3 (nit, introduced):** the PR body doesn't mention the documentation commit.
+- **New doc comment checked against upstream Git:** its claim about `git rev-list --objects` is correct (revision.c:1480, list-objects.c:283-321).
+- **Prior findings:** the merge conflict with main is fixed, and the PR now merges cleanly onto main (ae4b49cd). The ENQUEUED dedupe, A1, A3 and C1–C3 are still present and non-blocking.
+- **Tests:** gofmt, vet and `go test -race` on revlist, transport and the root package pass. `./plumbing/transport/git` fails the same way on the base, so the cause is this environment (its git daemon), not the PR.
+- **Worktree:** clean and still at f263a1b8. The temporary base worktree is removed.
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2505-A.md
+- 2505-A.json</result>
+<usage><subagent_tokens>98214</subagent_tokens><tool_uses>15</tool_uses><duration_ms>433168</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a6049e56acbd7f0ea</task-id>
+<tool-use-id>toolu_019yR7ahm1ZxhMXwjMhTEb6G</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a6049e56acbd7f0ea.output</output-file>
+<status>completed</status>
+<summary>Agent "2472 C adversarial" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>The risk on PR 2472 is low. I found no abuse path and no unjustified hunk. All three findings are small: 0 blocking, 0 major, 1 minor, 2 nits.
+
+- **Change since the prior review:** the unexported walker hook in transport has been replaced by two exported pieces in `plumbing/revlist`, `ShallowObjectWalker` and `ObjectsWithShallows`. The old `shallowBoundaryStorer` is deleted. For in-tree storers the walk is the same as at the base: the storer's own shallow commits plus the plan's grafts, then the built-in walk. The fallback for a storer that only has `RevListObjects` still uses the bounded walk, and making it use the plain walk fails 9 tests.
+- **A1 (minor):** the PR adds permanent exported v6 API. The previous version did the same job unexported, and the prior review dropped its request to export it, so a maintainer should sign off on this deliberately.
+- **A2 (nit):** no test checks that the storer's own shallow commits still bound the walk when grafts are passed, although the new doc promises it. Dropping them passes every test, and the same change at the base also passes, so this gap is not new.
+- **A3 (nit):** every walker test runs over protocol v2, none over v0/v1. This was already raised last round.
+- **Prior required items:** both are fixed. Haves now reach the storer's walker, and removing the empty-boundary short-circuit fails the new `DeepenPastHistory` test. Prior A2 (tests don't check pack contents) is only partly fixed.
+- **Other checks:** `go vet`, gofmt and `go test -race` on `plumbing/revlist` and `plumbing/transport` pass. There are no dependency, CI or hidden-character changes. #2505's overlap in `revlist.go` is doc-only. The shared worktree is clean at fc0b6580.
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2472-C.md
+- 2472-C.json</result>
+<usage><subagent_tokens>103017</subagent_tokens><tool_uses>14</tool_uses><duration_ms>133594</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bgwb9fqek</task-id>
+<tool-use-id>toolu_01NPxvWP7g1x3BhA2ZTAj5bi</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/bgwb9fqek.output</output-file>
+<status>completed</status>
+<summary>Background command "Merge PR 103 findings and run codex" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a36e14ea631820640</task-id>
+<tool-use-id>toolu_01SosPNZs4i6b7dtfe6Az61P</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a36e14ea631820640.output</output-file>
+<status>completed</status>
+<summary>Agent "2473 C adversarial" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>I found no abuse path in this PR, and every change in this round makes go-git stricter. Overall risk is low. Since the last review only commit 2 changed; commits 1 and 3 are byte-identical.
+
+- **Counts:** 0 blocking, 0 major, 1 minor, 1 nit.
+- **A2 (minor, pre-existing, still present):** receive-pack accepts 40- or 64-hex command ids whatever object format the client declared (`updreq_decode.go:224`). The PR body discloses it, and the object-existence check limits the impact.
+- **A1 (nit, not introduced):** a v2 `ls-refs` still runs against a server that advertises an unknown or empty object format. Git refuses that server for every command. The new comment at `v2.go:62` documents the gap.
+- **Prior findings:** the empty-value echo (A1) is fixed, the missing `packp` test (A2) is fixed with `list_test.go`, and A3 is still present (it is A2 above). The prior required change to check the whole v2 value is also fixed.
+- **Main new change:** the v2 capability decoder now keeps values whole, a behaviour change for external callers that the PR body discloses. I checked both places in the tree that use it. Fetch and ls-refs feature detection was moved to the new `commandSupports`, and nothing relied on the old splitting for a safety decision.
+- **Every hunk is justified.** There are no dependency, CI or hidden-content changes, and the test code stays on loopback with HOME and git config isolated.
+- **Tests:** the relevant packages and the interop tests pass. Five mutations on a copy of the tree, one per new check, each fail a test. The shared worktree is clean and still at `2ccba5f8`.
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2473-C.md
+- 2473-C.json</result>
+<usage><subagent_tokens>130790</subagent_tokens><tool_uses>25</tool_uses><duration_ms>184624</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bp6gtolmd</task-id>
+<tool-use-id>toolu_01VJ7X2Emy1yALBhGVwnw4ZK</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/bp6gtolmd.output</output-file>
+<status>completed</status>
+<summary>Background command "Merge PR 2552 findings and run codex" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a56bd85025300b24f</task-id>
+<tool-use-id>toolu_01XQDheMvWKAQyuu3f65zDCf</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a56bd85025300b24f.output</output-file>
+<status>completed</status>
+<summary>Agent "2384 B conformance" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>I found no blocking conformance issues in PR 2384. All four divergences fail closed and are deliberate and commented in the code. The upstream walk, `is_git_directory`, `validate_headref`, the commondir read and realpath behaviour all match.
+
+**Counts:** 0 blocking, 0 major, 3 minor, 1 nit. C1–C3 are behavioural, which your mapping makes major. I rated them minor because they only show up with pathological names or hand-edited commondir files, so re-map them if you want the mapping strictly.
+
+- **C1** (dotgit.go:1971): names with more than 255 components are refused, and Git has no such limit. This is the deliberate cap on repeat-access cost from the prior review.
+- **C2** (dotgit.go:2276): a commondir that uses `..` after a symlink is an error. Git follows the link first (abspath.c:120-123, 165-182), so it can accept such a path. Reproduced in a scratch copy.
+- **C3** (dotgit.go:2150): an absolute commondir outside the repository's filesystem roots is always an error. Git resolves any host path (setup.c:333-337). Reproduced in a scratch copy.
+- **C4, nit** (dotgit.go:2090): any existing `objects` or `refs` entry counts. Git requires `access(X_OK)` (setup.c:428, 435).
+
+**Prior findings:**
+- C1 (`x/../lib/hooks` bypass) is resolved: the name check from the #2376 base rejects `..` components.
+- C2 (missing intermediate commondir component accepted) is resolved: it now errors with "invalid path".
+- C3 (`submodule.go:146`) is still present but was there before this PR and is outside its range.
+
+Package tests pass in a scratch copy. I did not touch the shared worktree, which is still at b44afee6.
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2384-B.md
+- 2384-B.json</result>
+<usage><subagent_tokens>107652</subagent_tokens><tool_uses>22</tool_uses><duration_ms>159631</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bvimin7wh</task-id>
+<tool-use-id>toolu_01EARzudLGHZHA31HAi6mzsP</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/bvimin7wh.output</output-file>
+<status>completed</status>
+<summary>Background command "Merge PR 2502 findings and run codex" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bjse2fvto</task-id>
+<tool-use-id>toolu_01BLa3MBf6nVvSjiEu4gvrz4</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/bjse2fvto.output</output-file>
+<status>completed</status>
+<summary>Background command "Merge PR 2511 findings and run codex" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bccmruc1v</task-id>
+<tool-use-id>toolu_018WmQjmajwo3AMQhvtojC4b</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/bccmruc1v.output</output-file>
+<status>completed</status>
+<summary>Background command "Merge PR 2472 findings and run codex" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bykd9com2</task-id>
+<tool-use-id>toolu_01YVggMbjUUbV1bZZqGpAUaj</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/bykd9com2.output</output-file>
+<status>completed</status>
+<summary>Background command "Merge PR 2503 findings and run codex" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b1iikgwf9</task-id>
+<tool-use-id>toolu_01Hqcu22DsbbpeD9YUgPraaS</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/b1iikgwf9.output</output-file>
+<status>completed</status>
+<summary>Background command "Merge PR 2505 findings and run codex" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a9bcd1b3bdb2344b5</task-id>
+<tool-use-id>toolu_01AEkpJnBHcNYbdbbmQNgnXE</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a9bcd1b3bdb2344b5.output</output-file>
+<status>completed</status>
+<summary>Agent "2551 B conformance" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>PR 2551, Agent B (git-conformance) is done. Reviewed `c14ccdee..3f57b19e` against Git 2.56. I compared C Git with go-git HEAD on the same scenarios, and the worktree is left clean at 3f57b19e.
+
+**Counts:** 0 blocking, 0 major, 4 minor, 3 nit. Two minors are rated below the "behavioural = major" mapping, and the report says why: C1 is a choice the code documents, and C2 makes go-git refuse where Git would lose data, not the other way round.
+
+**Conformant:** with the flag-only setup (core.sparseCheckout off), go-git and C Git give the same result for a present file, recorded or modified, in reset `--hard`, `--keep`, `--merge`, `--mixed`, checkout and `checkout -f`. Skipped index entries follow the target and keep the flag.
+
+**Most important findings:**
+- **C1 (minor, deliberate):** when a skipped path is absent and the target modifies it, go-git updates only the index, while flag-only Git writes the file. This matches Git's sparse mode and is documented, so no change is recommended.
+- **C2 (minor, safe direction):** with core.sparseCheckout on, Git's `reset --hard` overwrites a user-modified skipped file and then removes it. go-git refuses instead.
+- **C4 (minor, safe direction):** if a skipped submodule entry's directory holds files and the target puts a file there, Git removes the directory and its files. go-git refuses.
+- **C6 (minor, pre-existing):** widening `SparseDirs` on a merge reset or non-force checkout, for a path the target leaves unchanged, clears the flag without writing the file.
+- **C7 (nit):** the PR body still describes the earlier version ("Git never removes a skip-worktree path"). The commit message is accurate.
+
+**Prior findings:** C1 and C2 are resolved. C3 is partly resolved and its remainder is now C6. C4 is resolved in the code and commit message but still present in the PR body (C7).
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2551-B.md
+- 2551-B.json</result>
+<usage><subagent_tokens>132275</subagent_tokens><tool_uses>30</tool_uses><duration_ms>591889</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a0b0d18a03e3eee65</task-id>
+<tool-use-id>toolu_01R97vfaRKpqHMy4L5Z1gY6S</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a0b0d18a03e3eee65.output</output-file>
+<status>completed</status>
+<summary>Agent "2384 C adversarial" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Agent C for #2384 (range `2b34ce5d..b44afee6`, 20 commits): risk is low, with 0 blocking, 0 major, 1 minor and 2 nit findings.
+
+**Risk:** the range only adds code. The 10 removed lines are all the old `Module` doc comment. No existing check is loosened, reordered or removed, and the new code only adds refusals. Every commondir resolution error fails closed. There are no dependency, CI, `go:generate` or `init()` changes and no hidden Unicode. Tests and `go vet` (linux and windows) pass, and both fuzzers ran 20s each without a failure. Combined with #2376 or #2552, nothing new becomes possible.
+
+**Findings:**
+- **A1 (minor, security, local-only), `dotgit.go:2091-2107`:** without a commondir, a Stat error on `objects`/`refs` other than not-exist or ENOTDIR counts the prefix as "not a Git directory". I reproduced it on a copy of the tree: with `modules/lib/{objects,refs}` symlinked outside the root, `Module("lib/hooks")` returns nil on both BoundOS and the default osfs. Git would follow the links and refuse. With a commondir, the same error fails closed. Exploiting it needs write access to `.git/modules`.
+- **A2 (nit):** the PR body doesn't mention the 255-component limit or the new exported `ErrModuleNameTooDeep`. Git accepts deeper names, so this is a go-git-only refusal.
+- **A3 (nit, still present from prior):** the regular-file check and the `Open` are separate calls, for both HEAD and commondir. A local swap to a named pipe between them can still block the caller.
+
+**Prior findings:**
+- **A1 (repeat-access cost): resolved** by the depth cap. A 255-segment name now takes about 50ms worst case.
+- **A2 (unelided commondir errors): resolved.**
+- **A4 (the "cost follows the directories" claim): resolved,** since the cap now bounds the cost.
+- **A5 (conflict with #2376): resolved.** The PR is now stacked on #2376, whose name check closes the `x/../lib/hooks` bypass. I checked this with a probe.
+- **A3: still present** (above).
+
+The shared worktree is left clean at `b44afee6`. My probes ran on a copy.
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2384-C.md
+- 2384-C.json</result>
+<usage><subagent_tokens>108747</subagent_tokens><tool_uses>21</tool_uses><duration_ms>221429</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>b2b010mls</task-id>
+<tool-use-id>toolu_01Xr5LsSfdGXXbVUyybq4Rky</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/b2b010mls.output</output-file>
+<status>completed</status>
+<summary>Background command "Merge PR 2473 findings and run codex" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a68a1540bdc50b2f6</task-id>
+<tool-use-id>toolu_017Tt9B9ZQHF1HBrHcbPUAm8</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a68a1540bdc50b2f6.output</output-file>
+<status>completed</status>
+<summary>Agent "2372 B conformance" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Agent B (git-conformance) on go-git PR 2372, range `500c64d6..c0c88fa4`, compared against C Git v2.56.0: two conformance findings, both `major` (behavioural), neither blocking. The scoped tests pass and the shared worktree is clean at c0c88fa4.
+
+- **C1 (major, partly introduced, still present):** if a subtree that hasn't changed is missing from the object store, `Status` and `MixedReset` now fail with "object not found". `git status` and `git reset` succeed in that case because they skip the subtree using the cache-tree (`unpack-trees.c:764-771`, `:882-897`). At the range base go-git returned a silently wrong `A  sub/f` instead, so the PR is closer to git. Matching git fully needs cache-tree support. I reproduced all three behaviours: the PR head, the base, and real git.
+- **C2 (major, not introduced, still present):** when deleting a tracked file fails, go-git aborts the hard or keep reset. Git only warns and finishes the reset (`entry.c:598-606`, `unpack-trees.c:462-467`). The failure now happens before the index or HEAD change, so the repo stays consistent and a retry succeeds.
+
+Prior conformance findings now resolved:
+- **Old C1, index and HEAD out of sync after a failed write:** the index is now built in memory and stored only after the worktree writes succeed. A new test covers it.
+- **Old C2, DiffTree failing on an identical missing subtree:** subtrees with the same hash are now skipped, as `git diff-tree` does. A new test covers it.
+- **Old C5, misleading comment and commit message:** the comment now describes the real order.
+- **Prior required change 1, files deleted before the target's paths are validated:** paths are now validated before anything is removed. A test covers both hard reset and forced checkout.
+
+I found no text in the PR aimed at reviewers or AI tools.
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2372-B.md
+- 2372-B.json</result>
+<usage><subagent_tokens>118390</subagent_tokens><tool_uses>25</tool_uses><duration_ms>206822</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a40cc2ee2ce4b037e</task-id>
+<tool-use-id>toolu_014NM5W4ACAHava1PbPpmVKX</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a40cc2ee2ce4b037e.output</output-file>
+<status>completed</status>
+<summary>Agent "2403 B conformance" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Agent B found 5 conformance findings in go-git#2403: 3 major, 2 nit, none blocking.
+
+- **C1 (major):** go-git reads either `~/.gitconfig` or the XDG file for the global policy, never both. Git reads both (`config.c:1590-1598`). I tested this: with an empty `~/.gitconfig`, an XDG `protocol.file.allow=never` is enforced by git and ignored by go-git. The gap is older than the PR, but the PR now decides policy from it and keeps a comment that misdescribes Git (`x/plugin/config/auto.go:109`, :147).
+- **C2 (major):** `[include]` and `[includeIf]` are not followed, so a policy set in an included file is ignored. Tested: git enforces it, go-git does not. The PR documents this, but it is a security setting that fails open (`config/config.go:771`, upstream `config.c:2304`).
+- **C3 (major):** `-c` settings passed through the environment (`GIT_CONFIG_COUNT`/`GIT_CONFIG_PARAMETERS`) are ignored. Tested: git refuses, go-git lists the refs. This is an older go-git gap that now affects the policy (`repository.go:778`, upstream `config.c:1613`).
+- **C4 (nit, still present):** `GIT_PROTOCOL_FROM_USER` values git accepts, such as `1k`, are rejected. **C5 (nit, still present):** the refusal message differs from git's.
+
+From the prior review: the old C1 (caller's policy replacing the whole config) and C2 (archive and storer-less Remote skipping global/system config) are fixed. The map-order part of the old C4 is fixed too.
+
+Lookup order, defaults, env handling, redirects, submodules and the unreadable-file handling all match Git. Tests pass in the affected packages except `plumbing/transport/git`, which fails only because this host has no `git daemon`. The worktree is clean and unchanged.
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2403-B.md
+- 2403-B.json</result>
+<usage><subagent_tokens>123096</subagent_tokens><tool_uses>30</tool_uses><duration_ms>291006</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a27ef78f460a3e081</task-id>
+<tool-use-id>toolu_01Dao2e9VkCrsxJ95UrZCu9G</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a27ef78f460a3e081.output</output-file>
+<status>completed</status>
+<summary>Agent "2477 A review-pr" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Agent A's review of PR 2477 (range `500c64d6..002575ce`): I recommend approving it with minor suggestions. There are no blocking or major findings: 1 minor and 6 nits.
+
+**Prior required changes:** all 3 are fixed. I re-measured the first two.
+- **Readiness walk:** 16,000 alternating pairs now take 1.65s and 53 MiB, down from 90s and 142 GB.
+- **Have type lookup:** a have naming a delta of a 32 MiB blob in a pack costs 388µs and 79 KiB, down from about 3 GB per 21 such haves.
+- **`LargeObjectThreshold` wording:** it is gone from the code comment and the commit messages.
+
+**Prior optional items:** 4 are still present (R2, R3, R4, R5).
+
+**The bugs the PR claims are real at the base:**
+- Every request walks all objects reachable from the wants.
+- "ready" is sent for haves the server lacks.
+- The shallow-clone fix is covered: with it removed, both of its tests fail.
+
+Build, vet, gofmt and `-race` tests pass, and all 208 targeted tests run against git 2.56 with none skipped.
+
+**Findings:**
+- **R1 (minor, security):** `storage/filesystem/object.go:633`. When a packed object is a delta against a base in another pack, the type lookup falls back to rebuilding the whole object. I didn't trace whether go-git's receive-pack can leave such packs on disk.
+- **R7 (nit):** `upload_pack.go:1449`. A want that can't be resolved, including on a storage error or a corrupt commit, is silently skipped. Upstream answers "not ready" in that case.
+- **R2, R3, R4, R5, R6 (nits):**
+  - R2: no ctx check in the v2 haves loop.
+  - R3: `isCommit` is reused with two meanings.
+  - R4: unknown haves are kept for a whole stateful session.
+  - R5: a stateful client that hangs up mid-round still gets that round answered.
+  - R6: a storer that embeds the filesystem or memory storage and overrides `EncodedObject` has the new type method bypass its override.
+
+The worktree is clean at 002575ce.
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2477-A.md
+- 2477-A.json</result>
+<usage><subagent_tokens>153311</subagent_tokens><tool_uses>40</tool_uses><duration_ms>476372</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a4b498091e77e595a</task-id>
+<tool-use-id>toolu_01WYJtnL2cXpEseQKwouHQee</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a4b498091e77e595a.output</output-file>
+<status>completed</status>
+<summary>Agent "2376 B conformance" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Agent B (git-conformance) report for PR 2376, range 500c64d6..2b34ce5d (3 commits). The PR changes Git-observable behaviour, so this is a full review.
+
+**Counts:** 0 blocking, 6 major, 1 nit, 7 findings in all. None of them breaks interop. Each one is either stricter than Git or applies only on Windows. C2, C8, C11 and C12 are documented as deliberate in the PR.
+
+**New in this round:**
+- **C11 (major, partly introduced):** `Status` and `Clean` skip `.GIT` in any case, whatever `core.ignorecase` says. With `core.ignorecase=false`, git 2.56 lists `?? .GIT/f` and `git clean` removes it (dir.c:2439). At the base, go-git failed with `invalid path component` instead.
+- **C12 (major, introduced):** on Windows, `DotGit.Module` applies `Win32ValidPath` even when `core.protectNTFS=false`. Upstream's `is_valid_win32_path` returns 1 with that setting off (compat/mingw.c:3352-3353).
+
+**Prior findings:**
+- **Fixed:** C1 (dot-dot aliases in tree and worktree paths), C3 (mingw citations), C6 (`git~1` refused without protectNTFS), C7 (`Clean` aborting on an alias) and C10 (how alias directories are listed). All six required changes from the prior review are addressed.
+- **Still present:** C2 (storage names stricter than `check_submodule_name`, though `...` is now accepted), C8 (`.gitmodules` stanzas dropped for paths Git keeps), C4 (backslash on Windows, existed before the PR), C5 (HFS check on malformed UTF-8, existed before, nit) and C9 (multibyte drive letter, existed before).
+
+**Checks:** I ran probes on head and base `git archive` copies and compared them against real git 2.56. The tests for the affected packages pass, and `GOOS=windows go vet` is clean. The shared worktree was not touched and is still clean at 2b34ce5d.
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2376-B.md
+- 2376-B.json (validated with jq)</result>
+<usage><subagent_tokens>134297</subagent_tokens><tool_uses>24</tool_uses><duration_ms>254841</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a148e6978d76c6bc8</task-id>
+<tool-use-id>toolu_01ERDRmbK7mkRcyewnsq5V6H</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a148e6978d76c6bc8.output</output-file>
+<status>completed</status>
+<summary>Agent "2372 A review-pr" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Agent A review of PR 2372 is done. Verdict: approve once rebased. Nothing is blocking.
+
+**Findings:** 0 blocking, 0 major, 4 minor, 3 nits.
+- **R2 (minor):** the head conflicts with origin/main ae4b49cd in `worktree_status_test.go`. Both sides append a test at the end of the file, so the fix is to keep both.
+- **R3 (minor):** user-visible changes need a release note:
+  - hard reset and forced checkout now take deletions from the index;
+  - tree lookup and the tree walker return different error identities;
+  - `filesystem.Options.ObjectFormat` is a new exported field.
+- **R4 (minor, carried over):** status and mixed reset still fail on a missing subtree that is unchanged against the index. Git skips that subtree through cache-tree.
+- **R5 (minor, not caused by this PR):** the overlap with #2550 is still open. Whichever lands second must take the mode from `ch.From`.
+- **R1, R6, R7 (nits):**
+  - `copyIndex` copies every index entry on every reset.
+  - The 886bc10e message doesn't say that `treeNoder.Children` no longer validates subtree names.
+  - The `ObjectFormat` field doc doesn't tell outside callers to set it.
+
+**Prior findings:** all five required changes from the 2026-11-03 review are resolved. They are: validate before deleting, store the index last, prune equal hashes before counting children, test a write failure, and correct the ordering comment and commit message. Undoing each fix makes its new test fail. The old "nil means compute it" nit is also resolved.
+
+**Claimed bugs:** all are real at the range base 500c64d6. These are the EOF swallow (`tree.go:727`), HEAD moving before the reset (`worktree.go:403`), hard reset reading the old HEAD tree (`worktree.go:390`), and SHA-1 hashing in `filesystem/node.go`. Reverting the SHA-1 fix alone makes the SHA-256 status test fail.
+
+`go vet` and `go test` pass for `.`, `./plumbing/object/` and `./utils/merkletrie/...`. The shared worktree is unchanged at c0c88fa4.
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2372-A.md
+- 2372-A.json</result>
+<usage><subagent_tokens>135468</subagent_tokens><tool_uses>32</tool_uses><duration_ms>296214</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a53868ea6a7468a9e</task-id>
+<tool-use-id>toolu_01Pj1YS7o43Qz9pbQBPjHqav</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a53868ea6a7468a9e.output</output-file>
+<status>completed</status>
+<summary>Agent "2376 A review-pr" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>I found 6 issues in PR 2376: 1 major, 1 minor and 4 nits. All 7 required items from the 2026-11-03 review are resolved. Verdict: approve after a rebase onto main and the minor items.
+
+- **R1, major: merging with main breaks the build.** The PR adds a patch argument to `gitAtLeast` (worktree_fs_test.go:1218). Main added two callers that still pass two numbers: repository_test.go:4204, which merges without a conflict, and worktree_status_test.go:340. Even after the `worktree_status_test.go` conflict is resolved, `go vet` fails on both lines. I reproduced this on a merged copy.
+- **R2, minor: `Clean` lost its leading-symlink check.** It now removes files through the raw filesystem (worktree.go:1353, :1379, :1386), bypassing the wrapper's symlink guard. I could not make it escape the worktree without a race, so this is a defence-in-depth loss rather than a working exploit.
+- **R3–R6, nits:**
+  - R3: the licence header in the ported `volume.go` links to Go's licence instead of including it, and a copied comment there is now wrong.
+  - R4: `DotGit.Module` returns `ErrModuleNameEscape` for names that don't escape, such as one containing a NUL.
+  - R5: the 791731a2 commit message reads as several squashed messages, and no commit mentions #2322, #2325 or #2489.
+  - R6: the exported merkletrie filesystem package now skips `.git` in any case for every caller, not just Status and Clean.
+
+The bugs the PR claims to fix are real at the range base:
+- `aux.c` is refused on POSIX.
+- `DotGit.Module("")` returns a writable view of all of `.git/modules`.
+- `Status` errors on an untracked `git~1/` directory.
+- `Clean` stops at `dir/git~1`.
+
+Tests pass on a copy of the PR head (`go vet`, the root package and every changed package). I ran nothing on Windows or HFS+. Prior items 1–7 are resolved; the optional item about referencing #2322 and the overlapping PRs is still open (R5).
+
+The shared worktree is untouched and still at 2b34ce5d.
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2376-A.md
+- 2376-A.json</result>
+<usage><subagent_tokens>143419</subagent_tokens><tool_uses>39</tool_uses><duration_ms>322402</duration_ms></usage>
+</task-notification>

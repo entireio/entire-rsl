@@ -1,0 +1,15 @@
+{
+  "tool_use_id": "toolu_01BhbGffD5my7DxhUyYWzXNH",
+  "agent_id": "aff51ba6708de8235",
+  "subagent_type": "general-purpose",
+  "task_description": "103 C adversarial fixtures",
+  "token_usage": {
+    "input_tokens": 46,
+    "cache_creation_tokens": 107483,
+    "cache_read_tokens": 2025327,
+    "output_tokens": 17902,
+    "api_call_count": 23
+  },
+  "started_at": "2026-11-04T15:51:07.560659738Z",
+  "completed_at": "2026-11-04T15:54:29.225799839Z"
+}

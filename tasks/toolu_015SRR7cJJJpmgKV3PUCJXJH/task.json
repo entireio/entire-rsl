@@ -1,0 +1,15 @@
+{
+  "tool_use_id": "toolu_015SRR7cJJJpmgKV3PUCJXJH",
+  "agent_id": "acf37f26693ea126e",
+  "subagent_type": "general-purpose",
+  "task_description": "103 A review-pr fixtures",
+  "token_usage": {
+    "input_tokens": 34,
+    "cache_creation_tokens": 81940,
+    "cache_read_tokens": 1201330,
+    "output_tokens": 9828,
+    "api_call_count": 16
+  },
+  "started_at": "2026-11-04T15:49:38.591901657Z",
+  "completed_at": "2026-11-04T15:51:50.820195447Z"
+}
