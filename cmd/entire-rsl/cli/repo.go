@@ -16,6 +16,8 @@ import (
 	"github.com/entireio/entire-rsl/internal/repo"
 	"github.com/entireio/entire-rsl/internal/rslread"
 	"github.com/entireio/entire-rsl/internal/sanitize"
+	"github.com/gittuf/gittuf/pkg/policy"
+	pkgrsl "github.com/gittuf/gittuf/pkg/rsl"
 )
 
 // maxAnswer caps how much of a typed answer is kept.
@@ -169,7 +171,30 @@ func (a *app) syncGittufRefs(ctx context.Context, r *repo.Repo, remote string, f
 	}
 	a.logger.DebugContext(ctx, "fetching gittuf refs", slog.String("remote", remote), slog.Bool("fast_forward", fastForward))
 	fmt.Fprintf(a.opts.Stderr, "Fetching gittuf refs from %s...\n", sanitize.Line(remote))
-	return git.SyncGittufRefs(ctx, r.Root, remote, fastForward)
+	updates, err := git.SyncGittufRefs(ctx, r.Root, remote, fastForward)
+	if err != nil {
+		return nil, err
+	}
+	warnMissingGittufRefs(a.opts.Stderr, remote, updates)
+	return updates, nil
+}
+
+// warnMissingGittufRefs warns when the remote has no RSL or no policy. Both
+// are missing when RSL is not enabled for the repository, or the remote is
+// not hosted on Entire.
+func warnMissingGittufRefs(w io.Writer, remote string, updates []gitcli.RefUpdate) {
+	var missing []string
+	for _, ref := range []string{pkgrsl.Ref, policy.Ref} {
+		if !slices.ContainsFunc(updates, func(u gitcli.RefUpdate) bool { return u.Ref == ref }) {
+			missing = append(missing, ref)
+		}
+	}
+	if len(missing) == 0 {
+		return
+	}
+	name := sanitize.Line(remote)
+	fmt.Fprintf(w, "Warning: %s has no %s. RSL may not be enabled for the repository, or %s may not be hosted on Entire.\n",
+		name, strings.Join(missing, " or "), name)
 }
 
 // fetchLatest syncs the gittuf refs from the remote --fetch names, or the

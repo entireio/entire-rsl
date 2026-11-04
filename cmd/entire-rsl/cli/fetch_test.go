@@ -260,6 +260,49 @@ func TestPromptToFetch(t *testing.T) {
 	assert.Contains(t, res.stdout, "refs/heads/fixed")
 }
 
+func TestFetchWarnsWhenTheRemoteHasNoRSL(t *testing.T) {
+	t.Parallel()
+
+	plain := testutil.NewRepo(t)
+	plain.Commit("refs/heads/main", "no gittuf")
+	clone := plain.Clone(t, "origin")
+
+	for _, args := range [][]string{{"refresh"}, {"refresh", "--json"}, {"verify", "--fetch", "main"}} {
+		res := execute(t, inRepo(clone), args...)
+
+		assert.Contains(t, res.stderr, "Warning: origin has no refs/gittuf/reference-state-log or refs/gittuf/policy. RSL may not be enabled for the repository, or origin may not be hosted on Entire.", args)
+	}
+
+	res := executeInteractive(t, inRepo(clone), true, "y\n", "log", "--limit", "1")
+	assert.Contains(t, res.stderr, "Warning: origin has no refs/gittuf/reference-state-log or refs/gittuf/policy.")
+}
+
+func TestFetchWarnsAboutEachMissingGittufRef(t *testing.T) {
+	t.Parallel()
+
+	plain := testutil.NewRepo(t)
+	main := plain.Commit("refs/heads/main", "policy only")
+	plain.SetRef("refs/gittuf/policy", main)
+	clone := plain.Clone(t, "origin")
+
+	res := execute(t, inRepo(clone), "refresh")
+
+	assert.Contains(t, res.stderr, "Warning: origin has no refs/gittuf/reference-state-log. RSL may not be enabled")
+	assert.NotContains(t, res.stderr, "or refs/gittuf/policy")
+}
+
+func TestFetchDoesNotWarnWhenTheRemoteHasTheRSLAndPolicy(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	clone := sc.Clone(t, "origin")
+
+	res := execute(t, inRepo(clone), "refresh")
+
+	require.Equal(t, ExitOK, res.code, res.stderr)
+	assert.NotContains(t, res.stderr, "Warning")
+}
+
 func TestPickRemoteWhenSeveral(t *testing.T) {
 	t.Parallel()
 
