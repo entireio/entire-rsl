@@ -1,0 +1,57 @@
+fix rebase conflict
+
+---
+
+go
+
+---
+
+<pasted_content id="5775">
+TAG=v0.1.0-rc.2 OS=linux ARCH=amd64
+ARCHIVE="entire-rsl_${TAG#v}_${OS}_${ARCH}.tar.gz"
+BASE="https://github.com/entireio/entire-rsl/releases/download/${TAG}"
+curl -fsSLO "${BASE}/${ARCHIVE}"
+curl -fsSLO "${BASE}/checksums.txt"
+curl -fsSLO "${BASE}/checksums.txt.sigstore.json"
+cosign verify-blob \
+  --certificate-identity "https://github.com/entireio/entire-rsl/.github/workflows/release.yml@refs/tags/${TAG}" \
+  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+  --bundle checksums.txt.sigstore.json \
+  checksums.txt
+grep " ${ARCHIVE}\$" checksums.txt | sha256sum --check # shasum -a 256 --check on macOS
+gh attestation verify "${ARCHIVE}" \
+  --repo entireio/entire-rsl \
+  --signer-workflow entireio/entire-rsl/.github/workflows/release.yml
+curl: (22) The requested URL returned error: 404
+curl: (22) The requested URL returned error: 404
+curl: (22) The requested URL returned error: 404
+zsh: command not found: cosign
+grep: checksums.txt: No such file or directory
+sha256sum: 'standard input': no properly formatted checksum lines found
+✗ Loading digest for entire-rsl_0.1.0-rc.2_linux_amd64.tar.gz failed
+
+Error: failed to open local artifact: open entire-rsl_0.1.0-rc.2_linux_amd64.tar.gz: no such file or directory
+</pasted_content id="5775">
+
+---
+
+entire plugin install rsl
+install plugin: no matching release asset for linux/amd64 at https://github.com/entireio/entire-rsl v0.0.1
+
+---
+
+On the readme:
+
+Install continues after failed checks
+
+Medium Severity
+
+The direct-install block runs tar and install after cosign verify-blob, sha256sum --check, and gh attestation verify without stopping on a failed status. Pasting the recipe still copies entire-rsl onto PATH when a check fails. The stop-on-failure note comes after the script, so a bad archive can be installed.
+
+---
+
+In parallel, add a message “repository may not have RSL enabled” or something around the upstream not being Entire, when fetch doesn’t return the RSL/policy namespaces
+
+---
+
+go ahead with both
