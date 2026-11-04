@@ -1,0 +1,5 @@
+Add a new commit that makes configuration validation block schemes that are not https:// or entire:// (remote.<name>.url)
+
+---
+
+go ahead
