@@ -35,7 +35,7 @@ var fetchAllowlist = map[string]allowed{
 		"repositoryformatversion", "filemode", "bare", "logallrefupdates",
 		"ignorecase", "precomposeunicode", "symlinks",
 	}},
-	"extensions": {keys: []string{"objectformat", "refstorage"}},
+	"extensions": {keys: []string{"objectformat", "refstorage", "worktreeconfig"}},
 	"remote": {subsection: true, keys: []string{
 		"url", "pushurl", "fetch", "push", "tagopt", "mirror", "prune",
 		"prunetags", "promisor", "partialclonefilter", "entiredb-original-url",

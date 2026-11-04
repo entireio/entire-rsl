@@ -22,6 +22,7 @@ func TestCheckFetchConfigAllowsAFreshClone(t *testing.T) {
 		{"core.repositoryformatversion", "1"},
 		{"extensions.objectformat", "sha1"},
 		{"extensions.refstorage", "files"},
+		{"extensions.worktreeConfig", "true"},
 		{"remote.origin.pushurl", "https://example.com/push"},
 		{"remote.origin.push", "refs/heads/main"},
 		{"remote.origin.tagopt", "--no-tags"},
@@ -62,7 +63,6 @@ func TestCheckFetchConfigRefuses(t *testing.T) {
 		{key: "includeIf.gitdir:/tmp/.path", value: "/tmp/evil.config", want: "includeif.gitdir:/tmp/.path"},
 		{key: "core.foo", value: "bar", want: "core.foo"},
 		{key: "core.fsmonitor", value: "touch /tmp/pwned", want: "core.fsmonitor"},
-		{key: "extensions.worktreeConfig", value: "true", want: "extensions.worktreeconfig"},
 		{key: "remote.origin", value: "x", want: "remote.origin"},
 		{key: "branch.rebase", value: "true", want: "branch.rebase"},
 	}
@@ -137,7 +137,7 @@ func TestCheckFetchConfigReadsWorktreeConfig(t *testing.T) {
 	err := newGit(t).CheckFetchConfig(t.Context(), dir)
 
 	require.ErrorIs(t, err, ErrUnsafeConfig)
-	assert.Contains(t, err.Error(), "core.sshcommand")
+	assert.Contains(t, err.Error(), ": core.sshcommand.", "the worktree key is refused and the extension is not")
 }
 
 func TestCheckFetchConfigTrustsGlobalConfig(t *testing.T) {

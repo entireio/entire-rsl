@@ -506,8 +506,8 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   scopes are checked. Global and system config are the user's own, and the
   `command` scope holds entire-rsl's overrides. Allowed: `core`
   `repositoryformatversion`, `filemode`, `bare`, `logallrefupdates`,
-  `ignorecase`, `precomposeunicode`, `symlinks`; `extensions.objectformat`
-  and `refstorage`; `remote.<name>` `url`, `pushurl`, `fetch`, `push`,
+  `ignorecase`, `precomposeunicode`, `symlinks`; `extensions.objectformat`,
+  `refstorage` and `worktreeconfig`; `remote.<name>` `url`, `pushurl`, `fetch`, `push`,
   `tagopt`, `mirror`, `prune`, `prunetags`, `promisor`,
   `partialclonefilter`, `entiredb-original-url`; every `branch.<name>` key,
   since git reads them only to pick upstreams and editors add their own;
@@ -520,7 +520,7 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   override: the user can fetch the gittuf refs with git.
 - **Defence in depth:** the runner also passes `-c core.alternateRefsCommand=`,
   which a test shows makes git list an alternate's refs itself.
-- **Consequence:** `extensions.worktreeConfig` is not allowed, so a
-  repository using per-worktree config cannot fetch through entire-rsl. Its
-  read-only commands are unaffected.
+- **Per-worktree config:** `extensions.worktreeConfig` is allowed. It only
+  makes git read `config.worktree`, whose keys are listed in the `worktree`
+  scope and checked against the same allowlist.
 - **Rejected:** extending the denylist, and an override flag.

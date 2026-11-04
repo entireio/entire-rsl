@@ -35,19 +35,37 @@ func TestNoRSLWithoutConsentDoesNotFetch(t *testing.T) {
 	assert.Empty(t, refs(t, clone, "refs/remotes/origin/gittuf/"))
 }
 
-func TestFetchRefusesWorktreeConfig(t *testing.T) {
+func TestFetchWithWorktreeConfig(t *testing.T) {
 	t.Parallel()
 
 	sc := testutil.NewScenario(t)
-	clone := sc.Clone(t, "origin")
-	enableWorktreeConfig(t, clone)
-	gitOut(t, clone, "config", "--worktree", "core.sshCommand", "touch /tmp/pwned")
 
-	res := execute(t, inRepo(clone), "refresh")
+	t.Run("allowed keys", func(t *testing.T) {
+		t.Parallel()
 
-	assert.Equal(t, ExitFailure, res.code)
-	assert.Contains(t, res.stderr, "will not fetch with: extensions.worktreeconfig, core.sshcommand. Remove them, or fetch the gittuf refs with git yourself")
-	assert.Empty(t, refs(t, clone, "refs/remotes/origin/gittuf/"))
+		clone := sc.Clone(t, "origin")
+		enableWorktreeConfig(t, clone)
+		gitOut(t, clone, "config", "--worktree", "user.name", "Jane Doe")
+
+		res := execute(t, inRepo(clone), "verify", "--fetch", "refs/heads/main")
+
+		require.Equal(t, ExitOK, res.code, res.stderr)
+		assert.Contains(t, res.stdout, "verified")
+	})
+
+	t.Run("refused key", func(t *testing.T) {
+		t.Parallel()
+
+		clone := sc.Clone(t, "origin")
+		enableWorktreeConfig(t, clone)
+		gitOut(t, clone, "config", "--worktree", "core.sshCommand", "touch /tmp/pwned")
+
+		res := execute(t, inRepo(clone), "refresh")
+
+		assert.Equal(t, ExitFailure, res.code)
+		assert.Contains(t, res.stderr, "will not fetch with: core.sshcommand. Remove them, or fetch the gittuf refs with git yourself")
+		assert.Empty(t, refs(t, clone, "refs/remotes/origin/gittuf/"))
+	})
 }
 
 func TestFetchRefusesAlternateRefsCommand(t *testing.T) {
