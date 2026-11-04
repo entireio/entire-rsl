@@ -77,7 +77,7 @@ func TestFetchRefusesAlternateRefsCommand(t *testing.T) {
 	other.Commit("refs/heads/main", "other")
 	marker := filepath.Join(t.TempDir(), "marker")
 	require.NoError(t, os.WriteFile(filepath.Join(clone, ".git", "objects", "info", "alternates"), []byte(filepath.Join(other.Dir, ".git", "objects")+"\n"), 0o600))
-	gitOut(t, clone, "config", "core.alternateRefsCommand", "touch "+marker+"; true")
+	gitOut(t, clone, "config", "core.alternateRefsCommand", "touch '"+filepath.ToSlash(marker)+"'; true")
 
 	for _, args := range [][]string{{"refresh"}, {"verify", "--fetch", "main"}} {
 		res := execute(t, inRepo(clone), args...)

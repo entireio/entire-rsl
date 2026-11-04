@@ -202,7 +202,7 @@ func TestSyncSkipsAlternateRefsCommand(t *testing.T) {
 
 	marker := filepath.Join(root, "marker")
 	require.NoError(t, os.WriteFile(filepath.Join(clone, ".git", "objects", "info", "alternates"), []byte(filepath.Join(alternate, ".git", "objects")+"\n"), 0o600))
-	gitIn(t, clone, "config", "core.alternateRefsCommand", "touch "+marker+"; true")
+	gitIn(t, clone, "config", "core.alternateRefsCommand", "touch '"+filepath.ToSlash(marker)+"'; true")
 
 	_, err := newGit(t).SyncGittufRefs(t.Context(), clone, "origin", true)
 
