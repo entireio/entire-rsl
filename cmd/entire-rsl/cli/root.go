@@ -60,9 +60,11 @@ a branch, tag or Entire checkpoint, when, and whether gittuf verification
 passes for it.
 
 entire-rsl is read-only. It never writes refs, objects or git config, except
-when the repository has no local RSL and you agree to fetch it: then it
-creates the missing refs/gittuf/* refs, never overwriting existing ones, and
-updates refs/remotes/<remote>/gittuf/*.
+when it fetches gittuf refs: with --fetch, with refresh, or when the
+repository has no local RSL and you agree to fetch it. Then it updates
+refs/remotes/<remote>/gittuf/*, creates missing refs/gittuf/* refs and, with
+--fetch or refresh, fast-forwards existing ones. A local gittuf ref the
+remote's does not descend from is left as it was.
 
 Exit codes:
   0  success, or verification passed
@@ -87,7 +89,7 @@ Exit codes:
 		return usageError(err)
 	})
 	root.PersistentFlags().BoolVar(&a.debug, "debug", false, "print diagnostics to stderr (also ENTIRE_LOG_LEVEL=debug)")
-	root.PersistentFlags().StringVar(&a.fetchFrom, "fetch", "", "when the repository has no local RSL, fetch the gittuf refs from this remote without asking (--fetch alone picks the only remote)")
+	root.PersistentFlags().StringVar(&a.fetchFrom, "fetch", "", "fetch the latest gittuf refs from this remote first, as refresh does (--fetch alone picks the only remote)")
 	root.PersistentFlags().Lookup("fetch").NoOptDefVal = fetchAnyRemote
 
 	root.AddCommand(

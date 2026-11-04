@@ -29,9 +29,9 @@ sources are in `docs/decisions.md`.
 - **Read-only.** Nothing writes refs, objects, config or the RSL. The go-git
   store returns `ErrReadOnly` from every write method, and `internal/guard`
   fails on write APIs outside its allowlist, which holds only the gittuf ref
-  sync in `internal/gitcli/fetch.go`, used by `refresh` and by fetching a
-  missing RSL. It never changes a local ref except by fast-forward. Do not add
-  a write path.
+  sync in `internal/gitcli/fetch.go`, used by `refresh`, `--fetch` and by
+  fetching a missing RSL. It never changes a local ref except by
+  fast-forward. Do not add a write path.
 - **Fail closed.** `verified` needs gittuf's full verification to pass and the
   tip, root of trust and signer checks to pass. Any error is `error`. A ref
   without policy, entries or a covering rule is `unprotected`. Custom fields

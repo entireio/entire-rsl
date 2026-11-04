@@ -14,6 +14,8 @@ All notable changes to this project are documented here. The format follows
   `agent-help` and `version`, each with `--json`.
 - Verification in four states with tip, root of trust and signer checks, and
   `--root-key` for self-managed roots.
-- Fetching a missing RSL from a remote with consent (`--fetch`).
+- Fetching a missing RSL from a remote with consent.
+- `--fetch` to fetch the latest gittuf refs before any command, as `refresh`
+  does.
 - `refresh` to fetch the latest gittuf refs from a remote, fast-forward only.
 - Green and red colouring of verification outcomes on a terminal.

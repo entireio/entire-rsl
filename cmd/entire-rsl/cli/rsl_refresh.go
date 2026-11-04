@@ -229,7 +229,7 @@ func writeRefreshTable(cmd *cobra.Command, st styles, updates []gitcli.RefUpdate
 
 	for _, u := range updates {
 		if u.Status == gitcli.RefDiverged {
-			fmt.Fprintf(cmd.ErrOrStderr(), "Warning: %s was left at %s: the remote's %s does not descend from it\n", sanitize.Line(u.Ref), u.Old, u.New)
+			warnDiverged(cmd.ErrOrStderr(), u)
 		}
 	}
 	return nil

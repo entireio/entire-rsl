@@ -36,16 +36,27 @@ type session struct {
 	reader *rslread.Reader
 }
 
-// open opens the repository and its RSL, offering to fetch the RSL when the
-// repository has none.
+// open opens the repository and its RSL. With --fetch it first brings the
+// local gittuf refs up to date with the remote's. Without it, it offers to
+// fetch the RSL when the repository has none.
 func (a *app) open(ctx context.Context) (*session, error) {
 	r, err := a.openRepo(ctx)
 	if err != nil {
 		return nil, err
 	}
 
+	if a.fetchFrom != "" {
+		if err := a.fetchLatest(ctx, r); err != nil {
+			return nil, err
+		}
+		// Reopen so the store sees the objects the fetch added.
+		if r, err = a.openRepo(ctx); err != nil {
+			return nil, err
+		}
+	}
+
 	reader, err := rslread.Open(r.Store)
-	if errors.Is(err, rslread.ErrNoRSL) {
+	if errors.Is(err, rslread.ErrNoRSL) && a.fetchFrom == "" {
 		if err := a.offerFetch(ctx, r); err != nil {
 			return nil, err
 		}
@@ -166,21 +177,54 @@ func (a *app) syncGittufRefs(ctx context.Context, r *repo.Repo, remote string, f
 	return git.SyncGittufRefs(ctx, r.Root, remote, fastForward)
 }
 
-// offerFetch fetches the gittuf refs from a remote, with the user's consent:
-// --fetch, or a yes or a pick at a prompt on a terminal.
-func (a *app) offerFetch(ctx context.Context, r *repo.Repo) error {
+// fetchLatest syncs the gittuf refs from the remote --fetch names, or the
+// only remote, as refresh does: missing local refs are created and existing
+// ones fast-forwarded. A diverged ref is left alone with a warning, and the
+// command goes on with the local refs.
+func (a *app) fetchLatest(ctx context.Context, r *repo.Repo) error {
 	want := a.fetchFrom
 	if want == fetchAnyRemote {
 		want = ""
 	}
-	choice, err := a.chooseRemote(r, want,
+	choice, err := a.chooseRemote(r, want, errNoRemote, "several remotes are configured, run again with --fetch=<remote>")
+	if err != nil {
+		return err
+	}
+
+	updates, err := a.syncGittufRefs(ctx, r, choice.name, true)
+	if err != nil {
+		return err
+	}
+	for _, u := range updates {
+		switch u.Status {
+		case gitcli.RefCreated:
+			fmt.Fprintf(a.opts.Stderr, "Created %s\n", sanitize.Line(u.Ref))
+		case gitcli.RefUpdated:
+			fmt.Fprintf(a.opts.Stderr, "Updated %s\n", sanitize.Line(u.Ref))
+		case gitcli.RefDiverged:
+			warnDiverged(a.opts.Stderr, u)
+		}
+	}
+	return nil
+}
+
+// warnDiverged explains that a local gittuf ref was left as it was.
+func warnDiverged(w io.Writer, u gitcli.RefUpdate) {
+	fmt.Fprintf(w, "Warning: %s was left at %s: the remote's %s does not descend from it\n", sanitize.Line(u.Ref), u.Old, u.New)
+}
+
+// offerFetch fetches the gittuf refs from a remote when the repository has
+// no RSL and --fetch was not given, with the user's consent: a yes or a pick
+// at a prompt on a terminal.
+func (a *app) offerFetch(ctx context.Context, r *repo.Repo) error {
+	choice, err := a.chooseRemote(r, "",
 		fmt.Errorf("%w: %w", rslread.ErrNoRSL, errNoRemote),
 		rslread.ErrNoRSL.Error()+": several remotes could hold it, run again with --fetch=<remote>")
 	if err != nil {
 		return err
 	}
 
-	if a.fetchFrom == "" && !choice.picked {
+	if !choice.picked {
 		if !a.interactive() {
 			return fmt.Errorf("%w: run again with --fetch to fetch it from %s", rslread.ErrNoRSL, choice.name)
 		}
