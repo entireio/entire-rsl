@@ -1,0 +1,169 @@
+add a quickstart section on readme that:
+- shows steps to verify / inspect: default branch, tags and checkpoints
+- for tags, add a caveat that tags usigned tags are currently not supported (refer to issues 1 and 2)
+- leans on https://docs.entire.com/quickstart for repo creation, entire enablement, checkpoint pushes
+
+---
+
+change "refresh entire" with "refresh" (remote name is optional, defaults to origin)
+
+the default examples start with an empty repo, so we need to account for user having to pushing something, then fetching.
+
+We could show output from commands:
+(empty repo)
+
+
+<pasted_content id="fe5d">
+entire rsl refresh
+Fetching gittuf refs from origin...
+REF                              STATUS   LOCAL  REMOTE        COMMITS
+refs/gittuf/policy               created  -      6cb81fc8b792  1 commit
+refs/gittuf/reference-state-log  created  -      37d1fc96740f  1 commit (entry #1)
+</pasted_content id="fe5d">
+
+
+
+
+<pasted_content id="fe5d">
+[entire] Pushing 1 checkpoint ref(s) to origin... done
+Enumerating objects: 7, done.
+Counting objects: 100% (7/7), done.
+Delta compression using up to 24 threads
+Compressing objects: 100% (5/5), done.
+Writing objects: 100% (7/7), 1.04 KiB | 1.04 MiB/s, done.
+Total 7 (delta 1), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Receiving objects: 1.0 KiB (73.1 KiB/s), done.
+remote: Storing objects: 7 (3 replicas), done.
+remote: RSL: entry #3 recorded
+To entire://aws-eu-west-2.entire.io/et/paulo/rsl-demo
+ * [new branch]      main -> main
+branch 'main' set up to track 'origin/main' by rebasing.
+ ~/git/tmp/rsl-demo   claude●    main  entire rsl refresh
+Fetching gittuf refs from origin...
+REF                              STATUS     LOCAL         REMOTE        COMMITS
+refs/gittuf/policy               unchanged  6cb81fc8b792  6cb81fc8b792  -
+refs/gittuf/reference-state-log  updated    37d1fc96740f  9dec33e898e4  +2 commits (entry #1 → #3)
+ ~/git/tmp/rsl-demo   claude●    main  entire rsl verify main
+Ref                  refs/heads/main
+Verification         verified: gittuf verified every RSL entry for the ref against the policy, and every check passed
+Verified tip         7de46d3dd2a157f83aa0163ac21eebbd6d748ee2
+RSL entries checked  #3 9dec33e898e4 (1 entry)
+Rules                authorize-rsl-signers
+Check tip            pass: the local ref matches the tip the RSL records (7de46d3dd2a157f83aa0163ac21eebbd6d748ee2, entry #3)
+Check root_of_trust  pass: anchored to Entire prod root (SHA256:REDACTED), root version 1
+Check signer         pass: signed by Entire aws-eu-west-2 (SHA256:REDACTED)
+ ~/git/tmp/rsl-demo   claude●    main  entire rsl branch main
+Ref                  refs/heads/main
+Local tip            7de46d3dd2a157f83aa0163ac21eebbd6d748ee2
+RSL tip              7de46d3dd2a157f83aa0163ac21eebbd6d748ee2 (entry #3)
+Pushed by            pjbgf, as recorded by Entire
+Time                 2026-11-04T11:07:08Z (asserted by the signer)
+Signer               SHA256:REDACTED (Entire aws-eu-west-2), signature valid
+Verification         verified: gittuf verified every RSL entry for the ref against the policy, and every check passed
+Verified tip         7de46d3dd2a157f83aa0163ac21eebbd6d748ee2
+RSL entries checked  #3 9dec33e898e4 (1 entry)
+Rules                authorize-rsl-signers
+Check tip            pass: the local ref matches the tip the RSL records (7de46d3dd2a157f83aa0163ac21eebbd6d748ee2, entry #3)
+Check root_of_trust  pass: anchored to Entire prod root (SHA256:REDACTED), root version 1
+Check signer         pass: signed by Entire aws-eu-west-2 (SHA256:REDACTED)
+
+History (1 of 1 entries, newest first)
+NUMBER  ENTRY         TARGET        TIME                  BY     SIGNER                SKIPPED
+3       9dec33e898e4  7de46d3dd2a1  2026-11-04T11:07:08Z  pjbgf  Entire aws-eu-west-2  -
+</pasted_content id="fe5d">
+
+
+
+
+<pasted_content id="fe5d">
+entire rsl verify 01M6K3TFZF4PNGVATZ6JFR6PEF
+Ref                  refs/entire/checkpoints/EF/01M6K3TFZF4PNGVATZ6JFR6PEF
+Verification         verified: gittuf verified every RSL entry for the ref against the policy, and every check passed
+Verified tip         a6d81192ca2eb54b0b14d4745c35a1b6239de363
+RSL entries checked  #2 033a6d58d3d8 (1 entry)
+Rules                authorize-rsl-signers
+Check tip            pass: the local ref matches the tip the RSL records (a6d81192ca2eb54b0b14d4745c35a1b6239de363, entry #2)
+Check root_of_trust  pass: anchored to Entire prod root (SHA256:REDACTED), root version 1
+Check signer         pass: signed by Entire aws-eu-west-2 (SHA256:REDACTED)
+ ~/git/tmp/rsl-demo   claude●    main  entire rsl checkpoint 01M6K3TFZF4PNGVATZ6JFR6PEF
+Checkpoint           01M6K3TFZF4PNGVATZ6JFR6PEF
+Ref                  refs/entire/checkpoints/EF/01M6K3TFZF4PNGVATZ6JFR6PEF
+Local tip            a6d81192ca2eb54b0b14d4745c35a1b6239de363
+RSL tip              a6d81192ca2eb54b0b14d4745c35a1b6239de363 (entry #2)
+Pushed by            pjbgf, as recorded by Entire
+Time                 2026-11-04T11:07:08Z (asserted by the signer)
+Signer               SHA256:REDACTED (Entire aws-eu-west-2), signature valid
+Verification         verified: gittuf verified every RSL entry for the ref against the policy, and every check passed
+Verified tip         a6d81192ca2eb54b0b14d4745c35a1b6239de363
+RSL entries checked  #2 033a6d58d3d8 (1 entry)
+Rules                authorize-rsl-signers
+Check tip            pass: the local ref matches the tip the RSL records (a6d81192ca2eb54b0b14d4745c35a1b6239de363, entry #2)
+Check root_of_trust  pass: anchored to Entire prod root (SHA256:REDACTED), root version 1
+Check signer         pass: signed by Entire aws-eu-west-2 (SHA256:REDACTED)
+
+History (1 of 1 entries, newest first)
+NUMBER  ENTRY         TARGET        TIME                  BY     SIGNER                SKIPPED
+2       033a6d58d3d8  a6d81192ca2e  2026-11-04T11:07:08Z  pjbgf  Entire aws-eu-west-2  -
+</pasted_content id="fe5d">
+
+---
+
+Here's more to improve the tag documentation:
+
+
+<pasted_content id="fe5d">
+git tag -s v0.1.0 -m "v0.1.0"
+ ~/git/tmp/rsl-demo   claude●    main  git tag v0.1.1
+ ~/git/tmp/rsl-demo   claude●    main  git push origin v0.1.0 v0.1.1
+Enumerating objects: 1, done.
+Counting objects: 100% (1/1), done.
+Writing objects: 100% (1/1), 381 bytes | 381.00 KiB/s, done.
+Total 1 (delta 0), reused 0 (delta 0), pack-reused 0 (from 0)
+remote: Receiving objects: 381 B (25.5 KiB/s), done.
+remote: Storing objects: 1 (3 replicas), done.
+remote: RSL: entry #4 recorded
+remote: RSL: entry #5 recorded
+To entire://aws-eu-west-2.entire.io/et/paulo/rsl-demo
+ * [new tag]         v0.1.0 -> v0.1.0
+ * [new tag]         v0.1.1 -> v0.1.1
+ ~/git/tmp/rsl-demo   claude●    main  entire rsl verify v0.1.0
+Ref           refs/tags/v0.1.0
+Verification  unprotected: the RSL has no entries for the ref, so nothing protects it. The repository's RSL coverage may exclude it
+ ✘  ~/git/tmp/rsl-demo   claude●    main  entire rsl refresh
+Fetching gittuf refs from origin...
+REF                              STATUS     LOCAL         REMOTE        COMMITS
+refs/gittuf/policy               unchanged  6cb81fc8b792  6cb81fc8b792  -
+refs/gittuf/reference-state-log  updated    9dec33e898e4  58a2e19f9e49  +2 commits (entry #3 → #5)
+ ~/git/tmp/rsl-demo   claude●    main  entire rsl verify v0.1.0
+Ref                  refs/tags/v0.1.0
+Verification         failed: gittuf verification failed
+Detail               verifying tag entry failed, gittuf policy verification failed: verifying tag object's signature failed
+Rules                authorize-rsl-signers
+Check tip            pass: the local ref matches the tip the RSL records (9be4e7507d9880fa8ba63de2d9ff0942168148f4, entry #4)
+Check root_of_trust  pass: anchored to Entire prod root (SHA256:REDACTED), root version 1
+Check signer         pass: signed by Entire aws-eu-west-2 (SHA256:REDACTED)
+ ✘  ~/git/tmp/rsl-demo   claude●    main  entire rsl verify v0.1.1
+Ref                  refs/tags/v0.1.1
+Verification         failed: gittuf verification failed
+Detail               verifying tag entry failed, gittuf policy verification failed: verifying tag object's signature failed
+Rules                authorize-rsl-signers
+Check tip            pass: the local ref matches the tip the RSL records (7de46d3dd2a157f83aa0163ac21eebbd6d748ee2, entry #5)
+Check root_of_trust  pass: anchored to Entire prod root (SHA256:REDACTED), root version 1
+Check signer         pass: signed by Entire aws-eu-west-2 (SHA256:REDACTED)
+</pasted_content id="fe5d">
+
+---
+
+unfortunately, only the cluster can sign tags that are verifiable. so my caveat is nuanced.
+
+---
+
+Drop "Entire cluster" and instead "signed by key in policy".
+
+---
+
+commit changes
+
+---
+
+go ahead
