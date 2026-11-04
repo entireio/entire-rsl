@@ -221,7 +221,7 @@ func TestFetchFlagWithSeveralRemotes(t *testing.T) {
 
 	sc := testutil.NewScenario(t)
 	clone := sc.Clone(t, "origin")
-	testutil.AddRemote(t, clone, "upstream", sc.Dir)
+	testutil.AddRemote(t, clone, "upstream", testutil.LocalURL(sc.Dir))
 
 	res := execute(t, inRepo(clone), "log", "--fetch")
 
@@ -268,7 +268,7 @@ func TestPickRemoteWhenSeveral(t *testing.T) {
 	empty.Commit("refs/heads/main", "unrelated")
 
 	clone := empty.Clone(t, "aaa-empty")
-	testutil.AddRemote(t, clone, "zzz-scenario", sc.Dir)
+	testutil.AddRemote(t, clone, "zzz-scenario", testutil.LocalURL(sc.Dir))
 
 	res := execute(t, inRepo(clone), "log")
 	assert.Equal(t, ExitFailure, res.code)
@@ -339,6 +339,8 @@ func TestFetchRefusesUnsafeRepositoryConfig(t *testing.T) {
 		"credential helper": {"credential.helper", "!touch /tmp/pwned"},
 		"include":           {"include.path", "/tmp/evil.config"},
 		"askpass":           {"core.askPass", "/tmp/evil"},
+		"local path remote": {"remote.origin.url", sc.Dir},
+		"file remote":       {"remote.origin.url", "file://" + filepath.ToSlash(sc.Dir)},
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()

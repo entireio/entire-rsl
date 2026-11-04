@@ -15,8 +15,10 @@ import (
 var update = flag.Bool("update", false, "rewrite golden files")
 
 func TestMain(m *testing.M) {
-	testutil.IsolateGitConfig()
-	os.Exit(m.Run())
+	cleanup := testutil.IsolateGitConfig()
+	code := m.Run()
+	cleanup()
+	os.Exit(code)
 }
 
 type testEnv map[string]string

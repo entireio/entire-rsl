@@ -524,3 +524,24 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   makes git read `config.worktree`, whose keys are listed in the `worktree`
   scope and checked against the same allowlist.
 - **Rejected:** extending the denylist, and an override flag.
+
+## 2026-11-04: The fetch accepts only https:// and entire:// remote URLs
+
+- **Context:** the fetch gate allowed `remote.<name>.url` with any value. A
+  repository's own config could point the remote at a local path, `file://`,
+  ssh or scp-like syntax, `git://`, plain `http://`, or another remote
+  helper such as `fd::`. Entire's remotes are `https://`, or `entire://`
+  through the Entire CLI's remote helper.
+- **Decision:** before a fetch, every `remote.<name>.url` value in the
+  `local` and `worktree` scopes must start with `https://` or `entire://`,
+  for every remote, not only the one fetched. The prefix matches
+  case-sensitively, as git picks a transport or remote helper by the scheme
+  as written. A key without a value is refused. The key is named with
+  `(not an https:// or entire:// URL)`, and the URL is never shown, since
+  it can hold credentials. `pushurl` is not checked, as a fetch never uses
+  it. A rewrite through `url.<base>.insteadOf` is still refused in the
+  repository's config and trusted in global config, like every other key.
+- **Tests:** fixtures clone from `https://local.test/<path>`, which the
+  global config `testutil.IsolateGitConfig` writes rewrites to `file:///`.
+- **Rejected:** a case-insensitive match, and checking only the fetched
+  remote.

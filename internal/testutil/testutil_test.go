@@ -11,8 +11,10 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	IsolateGitConfig()
-	os.Exit(m.Run())
+	cleanup := IsolateGitConfig()
+	code := m.Run()
+	cleanup()
+	os.Exit(code)
 }
 
 func TestFixtureVerifiesWithGittuf(t *testing.T) {

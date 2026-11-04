@@ -93,7 +93,7 @@ func TestRefreshRemoteSelection(t *testing.T) {
 
 	sc := testutil.NewScenario(t)
 	clone := sc.Clone(t, "origin")
-	testutil.AddRemote(t, clone, "mirror", sc.Dir)
+	testutil.AddRemote(t, clone, "mirror", testutil.LocalURL(sc.Dir))
 
 	res := execute(t, inRepo(clone), "refresh")
 	assert.Equal(t, ExitFailure, res.code)
@@ -191,8 +191,8 @@ func TestPickerListsOriginFirst(t *testing.T) {
 
 	sc := testutil.NewScenario(t)
 	clone := sc.Clone(t, "origin")
-	testutil.AddRemote(t, clone, "aaa", sc.Dir)
-	testutil.AddRemote(t, clone, "zzz", sc.Dir)
+	testutil.AddRemote(t, clone, "aaa", testutil.LocalURL(sc.Dir))
+	testutil.AddRemote(t, clone, "zzz", testutil.LocalURL(sc.Dir))
 
 	res := executeInteractive(t, inRepo(clone), true, "1\n", "refresh", "--json")
 

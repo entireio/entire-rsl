@@ -304,8 +304,9 @@ not descend from is left alone and reported as `diverged`, with exit code 1.
 When several remotes are configured and none is named, `origin` is offered
 first. Branches, tags and checkpoint refs are not fetched, so fetch
 them with git before comparing them with the RSL. Any fetch is refused when the
-repository's own git config has a key outside a short allowlist, naming the
-keys, so a cloned repository's config cannot make the fetch run a program.
+repository's own git config has a key outside a short allowlist, or a
+remote URL that is not `https://` or `entire://`, naming the keys, so a cloned
+repository's config cannot make the fetch run a program.
 
 ### Fetching before a command
 

@@ -83,6 +83,65 @@ func TestCheckFetchConfigRefuses(t *testing.T) {
 	}
 }
 
+func TestCheckFetchConfigRefusesRemoteURLSchemes(t *testing.T) {
+	t.Parallel()
+
+	for _, url := range []string{
+		"/srv/git/repo.git",
+		"../repo.git",
+		"file:///srv/git/repo.git",
+		"ssh://git@example.com/repo.git",
+		"git@example.com:repo.git",
+		"git://example.com/repo.git",
+		"http://example.com/repo.git",
+		"ext::sh -c touch% /tmp/pwned",
+		"fd::0",
+		"HTTPS://example.com/repo.git",
+		" https://example.com/repo.git",
+		"",
+	} {
+		t.Run(url, func(t *testing.T) {
+			t.Parallel()
+
+			dir := newClone(t)
+			gitIn(t, dir, "config", "remote.other.url", url)
+
+			err := newGit(t).CheckFetchConfig(t.Context(), dir)
+
+			require.ErrorIs(t, err, ErrUnsafeConfig)
+			assert.Contains(t, err.Error(), ": remote.other.url (not an https:// or entire:// URL). Remove them, or fetch the gittuf refs with git yourself")
+			if url != "" {
+				assert.NotContains(t, err.Error(), url, "URLs can hold credentials and are never shown")
+			}
+		})
+	}
+}
+
+func TestCheckFetchConfigChecksEveryRemoteURL(t *testing.T) {
+	t.Parallel()
+
+	dir := newClone(t)
+	appendConfig(t, dir, "[remote \"mirror\"]\n\turl = https://example.com/a\n\turl = git@example.com:b\n[remote \"bare\"]\n\turl\n")
+	gitIn(t, dir, "config", "extensions.worktreeConfig", "true")
+	gitIn(t, dir, "config", "--worktree", "remote.origin.url", "ssh://example.com/c")
+
+	err := newGit(t).CheckFetchConfig(t.Context(), dir)
+
+	require.ErrorIs(t, err, ErrUnsafeConfig)
+	assert.Contains(t, err.Error(), ": remote.mirror.url (not an https:// or entire:// URL), remote.bare.url (not an https:// or entire:// URL), remote.origin.url (not an https:// or entire:// URL).")
+}
+
+func TestCheckFetchConfigAllowsHTTPSAndEntireURLs(t *testing.T) {
+	t.Parallel()
+
+	dir := newClone(t)
+	gitIn(t, dir, "config", "remote.origin.url", "https://user:token@example.com/repo.git")
+	gitIn(t, dir, "config", "remote.entire.url", "entire://example.com/org/repo")
+	gitIn(t, dir, "config", "remote.entire.pushurl", "git@example.com:repo.git")
+
+	assert.NoError(t, newGit(t).CheckFetchConfig(t.Context(), dir))
+}
+
 func TestCheckFetchConfigMatchesNamesAsGitDoes(t *testing.T) {
 	t.Parallel()
 
@@ -168,22 +227,26 @@ func TestCheckFetchConfigFailsWhenGitCannotReadTheConfig(t *testing.T) {
 	assert.Contains(t, err.Error(), "read repository config")
 }
 
-func TestRepositoryConfigKeys(t *testing.T) {
+func TestRepositoryConfig(t *testing.T) {
 	t.Parallel()
 
 	out := []byte("local\x00core.bare\nfalse\x00worktree\x00core.sparsecheckout\x00global\x00core.sshcommand\nssh\x00command\x00core.hookspath\n/dev/null\x00local\x00remote.origin.url\nhttps://example.com\nwith a newline\x00")
 
-	keys, err := repositoryConfigKeys(out)
+	entries, err := repositoryConfig(out)
 
 	require.NoError(t, err)
-	assert.Equal(t, []string{"core.bare", "core.sparsecheckout", "remote.origin.url"}, keys)
+	assert.Equal(t, []configEntry{
+		{key: "core.bare", value: "false"},
+		{key: "core.sparsecheckout"},
+		{key: "remote.origin.url", value: "https://example.com\nwith a newline"},
+	}, entries)
 
-	_, err = repositoryConfigKeys([]byte("local\x00core.bare\nfalse\x00local\x00"))
+	_, err = repositoryConfig([]byte("local\x00core.bare\nfalse\x00local\x00"))
 	require.Error(t, err)
 
-	keys, err = repositoryConfigKeys(nil)
+	entries, err = repositoryConfig(nil)
 	require.NoError(t, err)
-	assert.Empty(t, keys)
+	assert.Empty(t, entries)
 }
 
 func TestSyncSkipsAlternateRefsCommand(t *testing.T) {
@@ -245,6 +308,7 @@ func newClone(t *testing.T) string {
 	gitIn(t, upstream, "commit", "--quiet", "--allow-empty", "-m", "first")
 	clone := filepath.Join(root, "clone")
 	gitIn(t, root, "clone", "--quiet", "--", upstream, clone)
+	gitIn(t, clone, "remote", "set-url", "--", "origin", "https://example.com/upstream.git")
 	return clone
 }
 

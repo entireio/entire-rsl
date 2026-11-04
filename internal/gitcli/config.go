@@ -47,29 +47,45 @@ var fetchAllowlist = map[string]allowed{
 	"gpg":    {keys: []string{"format"}},
 }
 
+// fetchURLSchemes are the only schemes a remote.<name>.url may use. Any other
+// URL, including a local path, scp-like syntax, file:// and the remote
+// helpers, refuses the fetch. They match case-sensitively, as git picks a
+// transport or remote helper by the scheme as written.
+var fetchURLSchemes = []string{"https://", "entire://"}
+
 // repositoryScopes are the config scopes the repository controls: .git/config
 // and config.worktree. Global and system config are the user's own, and the
 // command scope holds entire-rsl's own overrides.
 var repositoryScopes = []string{"local", "worktree"}
 
 // CheckFetchConfig refuses a fetch in root when the repository's own config
-// has a key outside fetchAllowlist. git lists the config, so names match the
-// way git matches them, config.worktree is included, and include files are
-// not followed: an include key is itself refused.
+// has a key outside fetchAllowlist, or a remote.<name>.url that does not use
+// one of fetchURLSchemes. git lists the config, so names match the way git
+// matches them, config.worktree is included, and include files are not
+// followed: an include key is itself refused.
 func (g *Git) CheckFetchConfig(ctx context.Context, root string) error {
 	out, err := g.run(ctx, root, "config", "--list", "-z", "--show-scope", "--no-includes")
 	if err != nil {
 		return fmt.Errorf("read repository config: %w", err)
 	}
-	keys, err := repositoryConfigKeys(out)
+	entries, err := repositoryConfig(out)
 	if err != nil {
 		return err
 	}
 
 	var refused []string
-	for _, key := range keys {
-		if !fetchAllowed(key) && !slices.Contains(refused, sanitize.Line(key)) {
-			refused = append(refused, sanitize.Line(key))
+	for _, e := range entries {
+		var reason string
+		switch {
+		case !fetchAllowed(e.key):
+			reason = sanitize.Line(e.key)
+		case isRemoteURL(e.key) && !fetchURLAllowed(e.value):
+			reason = sanitize.Line(e.key) + " (not an https:// or entire:// URL)"
+		default:
+			continue
+		}
+		if !slices.Contains(refused, reason) {
+			refused = append(refused, reason)
 		}
 	}
 	if len(refused) > 0 {
@@ -78,11 +94,17 @@ func (g *Git) CheckFetchConfig(ctx context.Context, root string) error {
 	return nil
 }
 
-// repositoryConfigKeys reads the keys of the repository scopes from
+// configEntry is one key of the repository's config and its value, empty for
+// a key without one.
+type configEntry struct {
+	key, value string
+}
+
+// repositoryConfig reads the entries of the repository scopes from
 // `git config --list -z --show-scope`, in the order git prints them. Each
 // entry is the scope, a NUL, then the key, and its value after a newline when
 // it has one, then a NUL.
-func repositoryConfigKeys(out []byte) ([]string, error) {
+func repositoryConfig(out []byte) ([]configEntry, error) {
 	fields := bytes.Split(out, []byte{0})
 	if last := len(fields) - 1; len(fields[last]) == 0 {
 		fields = fields[:last]
@@ -91,15 +113,28 @@ func repositoryConfigKeys(out []byte) ([]string, error) {
 		return nil, errors.New("read repository config: git printed an incomplete entry")
 	}
 
-	var keys []string
+	var entries []configEntry
 	for i := 0; i < len(fields); i += 2 {
 		if !slices.Contains(repositoryScopes, string(fields[i])) {
 			continue
 		}
-		key, _, _ := bytes.Cut(fields[i+1], []byte{'\n'})
-		keys = append(keys, string(key))
+		key, value, _ := bytes.Cut(fields[i+1], []byte{'\n'})
+		entries = append(entries, configEntry{key: string(key), value: string(value)})
 	}
-	return keys, nil
+	return entries, nil
+}
+
+// isRemoteURL reports whether an allowed key is remote.<name>.url. git prints
+// the section and key lowercased.
+func isRemoteURL(key string) bool {
+	return strings.HasPrefix(key, "remote.") && strings.HasSuffix(key, ".url")
+}
+
+// fetchURLAllowed reports whether url starts with one of fetchURLSchemes.
+func fetchURLAllowed(url string) bool {
+	return slices.ContainsFunc(fetchURLSchemes, func(scheme string) bool {
+		return strings.HasPrefix(url, scheme)
+	})
 }
 
 // fetchAllowed reports whether a key, as section[.subsection].key, is in

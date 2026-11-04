@@ -13,8 +13,10 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	testutil.IsolateGitConfig()
-	os.Exit(m.Run())
+	cleanup := testutil.IsolateGitConfig()
+	code := m.Run()
+	cleanup()
+	os.Exit(code)
 }
 
 func env(vars map[string]string, cwd string) Env {
