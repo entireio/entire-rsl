@@ -569,8 +569,10 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   `mise.toml`.
   `mise run snapshot` skips signing, which needs the CI identity.
 - **Consequences:** a published release cannot be fixed. A broken one needs a
-  new tag. Signing records the repository, workflow and tag in the public
-  Rekor log. Attestations in a private repository need GitHub Enterprise
+  new tag. A release created from the releases page is published before the
+  workflow runs, so preflight fails and the tag is used up. The README's
+  Releasing section says to push a tag instead. Signing records the
+  repository, workflow and tag in the public Rekor log. Attestations in a private repository need GitHub Enterprise
   Cloud.
 - **Rejected:** signing each archive (the signed checksums cover them),
   CycloneDX (SPDX is goreleaser's default and what GitHub's dependency graph
