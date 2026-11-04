@@ -1,0 +1,1 @@
+Add a follow-up commit to fix crash when extensions.worktreeConfig=true
