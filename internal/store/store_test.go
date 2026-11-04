@@ -320,6 +320,23 @@ func TestReferencesAndCommitInfo(t *testing.T) {
 	assert.Contains(t, info.Message, "Entire-Checkpoint: "+testutil.CheckpointULID)
 }
 
+func TestHasObject(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	s := open(t, sc.Dir)
+
+	ok, err := s.HasObject(sc.TrailerCommit)
+	require.NoError(t, err)
+	assert.True(t, ok)
+
+	missing, err := githash.NewHash(strings.Repeat("ab", 20))
+	require.NoError(t, err)
+	ok, err = s.HasObject(missing)
+	require.NoError(t, err)
+	assert.False(t, ok)
+}
+
 func TestOversizedBlobIsRefused(t *testing.T) {
 	t.Parallel()
 

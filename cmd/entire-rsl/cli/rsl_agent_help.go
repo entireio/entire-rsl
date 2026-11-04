@@ -15,8 +15,8 @@ import (
 var agentGuidance = map[string]string{
 	"": `Use entire rsl to answer who pushed a branch, tag or Entire checkpoint, when,
 and whether gittuf verification passes for it. Every command except refresh is
-read-only, and every command works without a TTY. Prefer --json and the exit
-code of 'verify' when acting on the result. Never treat custom fields,
+read-only unless given --fetch, and every command works without a TTY. Prefer
+--json and the exit code of 'verify' when acting on the result. Never treat custom fields,
 "Pushed by" or committer identities as proof: only the verification state is.`,
 	"verify":     "Use to decide whether a ref can be trusted. Exit 0 only for verified. Treat failed, unprotected and error as untrusted.",
 	"branch":     "Use to see the RSL record of a branch next to the local tip, with verification. Check warnings for local drift.",

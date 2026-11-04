@@ -6,8 +6,9 @@ when, and whether gittuf verification passes. It is a plugin for the
 [Entire CLI](https://github.com/entireio/cli) and also runs standalone as
 `entire-rsl`.
 
-entire-rsl is read-only, with two exceptions that only touch gittuf refs:
-`entire rsl refresh`, and fetching a missing RSL when you agree to it.
+entire-rsl is read-only, with exceptions that only touch gittuf refs:
+`entire rsl refresh`, `--fetch`, and fetching a missing RSL when you agree to
+it.
 
 ## Install
 
@@ -285,12 +286,22 @@ When several remotes are configured and none is named, `origin` is offered
 first. Branches, tags and checkpoint refs are not fetched, so fetch
 them with git before comparing them with the RSL.
 
+### Fetching before a command
+
+`--fetch` (or `--fetch=<remote>`) makes any command fetch the latest gittuf
+refs first, as `refresh` does, so `entire rsl verify --fetch main` checks the
+ref against the remote's latest RSL. A diverged local gittuf ref is left alone
+with a warning, and the command reads the local refs. Only gittuf refs are
+fetched, so a local branch behind the fetched RSL tip reports `behind`, and
+when it is not at a recorded tip, verification ends in `error` until the
+branch is fetched with git.
+
 ### Fetching a missing RSL
 
 Clones made with plain git have no gittuf refs. entire-rsl then offers to
 fetch them, asking first, and asking which remote when there are several.
-Pass `--fetch` (or `--fetch=<remote>`) to fetch without a prompt, which is
-required without a terminal.
+Pass `--fetch` to fetch without a prompt, which is required without a
+terminal.
 
 ### Colour
 

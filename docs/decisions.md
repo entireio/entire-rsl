@@ -347,6 +347,27 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
 - **Rejected:** force-updating local gittuf refs to the remote's, which could
   replace a local policy, and fetching all refs.
 
+## 2026-11-04: --fetch fetches the latest gittuf refs
+
+- **Context:** `--fetch` only fetched when the repository had no local RSL,
+  so `verify --fetch` with a stale local RSL silently verified against it.
+  The user expects `--fetch` to get the latest RSL, as `refresh` does.
+- **Decision:** with `--fetch[=<remote>]`, every command first runs the
+  `refresh` sync (`gitcli.SyncGittufRefs` with fast-forward), then reopens
+  the repository so the store sees the fetched objects. Created and updated
+  refs are named on stderr. A diverged ref is left alone with refresh's
+  warning and the command goes on with the local refs, since what it reports
+  is still true of them. Without `--fetch`, a missing RSL is still offered
+  as before, creating refs only.
+- **Unfetched tip:** only gittuf refs are fetched, so the RSL tip can record
+  an object the repository lacks. `tipstate` reports a local ref at an
+  earlier recorded tip as `behind` without a commit count, and fails with
+  `ErrTipMissing` otherwise, which makes verification `error`, with a
+  message saying to fetch the ref.
+- **Rejected:** failing on a diverged ref (refresh's exit 1 already covers
+  that check), and fetching the verified branch too, which would write refs
+  outside `refs/gittuf/`.
+
 ## 2026-10-21: Colour marks verification outcomes on a terminal
 
 - **Context:** the user asked for green and red on verification and on data

@@ -40,6 +40,7 @@ func TestFetchFlagFetchesAndVerifies(t *testing.T) {
 	clone := sc.Clone(t, "origin")
 
 	res := execute(t, inRepo(clone), "verify", "--fetch", "refs/heads/main")
+	t.Log(res.stdout)
 
 	require.Equal(t, ExitOK, res.code, res.stderr)
 	assert.Contains(t, res.stdout, "verified")
@@ -51,6 +52,75 @@ func TestFetchFlagFetchesAndVerifies(t *testing.T) {
 	again := execute(t, inRepo(clone), "verify", "refs/heads/main")
 	assert.Equal(t, ExitOK, again.code, "the fetched RSL is local now: %s", again.stderr)
 	assert.NotContains(t, again.stderr, "Fetching")
+}
+
+func TestFetchFlagFastForwardsAnExistingRSL(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	clone := sc.Clone(t, "origin")
+	require.Equal(t, ExitOK, execute(t, inRepo(clone), "refresh").code)
+
+	sc.Commit("refs/heads/main", "pushed later")
+	newTip := sc.Record(sc.Cluster, "refs/heads/main", nil)
+
+	res := execute(t, inRepo(clone), "verify", "--fetch", "refs/heads/main")
+
+	require.Equal(t, ExitOK, res.code, res.stderr)
+	assert.Contains(t, res.stderr, "Fetching gittuf refs from origin")
+	assert.Contains(t, res.stderr, "Updated refs/gittuf/reference-state-log")
+	assert.Equal(t, newTip.String(), gitOut(t, clone, "rev-parse", "refs/gittuf/reference-state-log"))
+	assert.Contains(t, res.stdout, "→ #15")
+	assert.Contains(t, res.stdout, "behind: the local ref is behind: it is at entry #9, the RSL tip is entry #15 (1 entry behind, and the tip's object is not in the local repository)")
+}
+
+func TestFetchFlagCannotCompareALocalCommitWithAnUnfetchedTip(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	clone := sc.Clone(t, "origin")
+	require.Equal(t, ExitOK, execute(t, inRepo(clone), "refresh").code)
+	gitOut(t, clone, "-c", "user.name=Local", "-c", "user.email=local@example.com", "commit", "--allow-empty", "-m", "local only")
+	sc.Commit("refs/heads/main", "pushed later")
+	sc.Record(sc.Cluster, "refs/heads/main", nil)
+
+	res := execute(t, inRepo(clone), "verify", "--fetch", "refs/heads/main")
+
+	assert.Equal(t, ExitFailure, res.code)
+	assert.Contains(t, res.stdout, "the object the RSL tip records is not in the local repository")
+}
+
+func TestFetchFlagWarnsAboutADivergedRSL(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	clone := sc.Clone(t, "origin")
+	require.Equal(t, ExitOK, execute(t, inRepo(clone), "refresh").code)
+
+	tree := gitOut(t, clone, "rev-parse", "refs/gittuf/reference-state-log^{tree}")
+	localTip := gitOut(t, clone, "-c", "user.name=Local", "-c", "user.email=local@example.com", "commit-tree", tree, "-p", "refs/gittuf/reference-state-log", "-m", "local only")
+	gitOut(t, clone, "update-ref", "refs/gittuf/reference-state-log", localTip)
+	sc.Commit("refs/heads/main", "remote only")
+	sc.Record(sc.Cluster, "refs/heads/main", nil)
+
+	res := execute(t, inRepo(clone), "log", "--fetch", "--limit", "1")
+
+	assert.Contains(t, res.stderr, "Warning: refs/gittuf/reference-state-log was left at "+localTip)
+	assert.Equal(t, localTip, gitOut(t, clone, "rev-parse", "refs/gittuf/reference-state-log"))
+}
+
+func TestFetchFlagWithSeveralRemotes(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	clone := sc.Clone(t, "origin")
+	testutil.AddRemote(t, clone, "upstream", sc.Dir)
+
+	res := execute(t, inRepo(clone), "log", "--fetch")
+
+	assert.Equal(t, ExitFailure, res.code)
+	assert.Contains(t, res.stderr, "--fetch=<remote> (remotes: origin, upstream)")
+	assert.Empty(t, refs(t, clone, "refs/gittuf/"))
 }
 
 func TestFetchFlagWithUnknownRemote(t *testing.T) {
