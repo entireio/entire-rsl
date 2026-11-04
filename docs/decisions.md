@@ -564,7 +564,9 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   becomes immutable. Attestations live in GitHub's attestation API, not in
   the release. `replace_existing_draft` keeps a re-run from leaving a second
   draft, and `preflight.fail_on_error` stops a run for a tag that already
-  has an immutable release. cosign and syft are pinned in `mise.toml`.
+  has an immutable release. `prerelease: auto` marks `-rc.N` and other
+  suffixed tags as pre-releases on the draft. cosign and syft are pinned in
+  `mise.toml`.
   `mise run snapshot` skips signing, which needs the CI identity.
 - **Consequences:** a published release cannot be fixed. A broken one needs a
   new tag. Signing records the repository, workflow and tag in the public
