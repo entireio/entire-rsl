@@ -1,0 +1,15 @@
+{
+  "tool_use_id": "toolu_01Ho5ym5ph7Qm8bAKWuiq6yW",
+  "agent_id": "a95c34e9c544983c1",
+  "subagent_type": "general-purpose",
+  "task_description": "Write report for 2372",
+  "token_usage": {
+    "input_tokens": 24,
+    "cache_creation_tokens": 82900,
+    "cache_read_tokens": 822061,
+    "output_tokens": 12150,
+    "api_call_count": 12
+  },
+  "started_at": "2026-11-04T16:23:32.930807252Z",
+  "completed_at": "2026-11-04T16:25:18.920292682Z"
+}

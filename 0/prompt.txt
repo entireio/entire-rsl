@@ -1,0 +1,348 @@
+<task-notification>
+<task-id>bmfek7f73</task-id>
+<tool-use-id>toolu_01RSL6HnTH5BtJkQjPXeRYhN</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/bmfek7f73.output</output-file>
+<status>completed</status>
+<summary>Background command "Merge PR 2551 findings and run codex" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a629f150114c58772</task-id>
+<tool-use-id>toolu_014gN6UbYmoPQpStTG1Tqsia</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a629f150114c58772.output</output-file>
+<status>completed</status>
+<summary>Agent "2403 A review-pr" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>I recommend approving PR 2403: no blocking or major findings. There are 3 minor findings and 4 nits. The bug the PR fixes is real on the base: at 500c64d6 there is no protocol gate anywhere in the Go code, so a `file://` URL in `.gitmodules` was fetched without any check.
+
+**Prior review (2026-11-03-001):** 7 of the 8 required changes are fully fixed, and each fix has a test that fails when the fix is reverted (mutations M1 to M7, all caught). Item 4, re-reading the global and system configs on every operation, is only partly resolved and carries on as R2. The three optional items (retitle, the redundant `WithProtocolPolicy` in submodules, item 6's duplicate checks) are also resolved.
+
+**Minor findings:**
+- **R1 (security):** go-git reads only one global file, `~/.gitconfig` or else the XDG one, and ignores includes. A `protocol.*.allow` set in the XDG file while `~/.gitconfig` exists, or in an included file, is ignored, while Git enforces it (config.c:1592-1598). The PR documents this in COMPATIBILITY.md, but the gap now decides a security policy.
+- **R2 (performance):** the global and system configs are still read on every fetch, push and list, and twice per submodule when the orphan refetch runs. Each handshake also does a reflection-based `Merge`.
+- **R3 (compatibility):** network operations now depend on the host's config files and the plugin registry. A bad-syntax global or system file now fails them. The `ConfigLoader` key freezes on the first fetch, so registering a loader later returns `ErrFrozen`. All of this is documented.
+
+**Nits:**
+- R4: `repoConfig` has a redundant nil branch.
+- R5: `Client.resolve` is moved without change, which adds diff noise.
+- R6: no root-package test catches overlay being replaced by a whole-config swap. Only `plumbing/client` covers it.
+- R7: `GIT_PROTOCOL_FROM_USER=1k` is still rejected. It fails closed.
+
+**Test runs:** build, vet, gofmt, `go test -race` on the touched packages and the full root package all pass. golangci-lint could not run because its Go version does not match the installed toolchain. `plumbing/transport/git` TestUploadPackSuite fails the same way on the base commit, so it is an environment problem, not this PR.
+
+I ran the mutations on a copy under the scratchpad. The worktree is clean and still at ff023847.
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2403-A.md
+- 2403-A.json</result>
+<usage><subagent_tokens>146487</subagent_tokens><tool_uses>32</tool_uses><duration_ms>491157</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a4ae5bfcdc45f7b86</task-id>
+<tool-use-id>toolu_01JfAfRLwXfL8Fj2MeNBXm8Q</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a4ae5bfcdc45f7b86.output</output-file>
+<status>completed</status>
+<summary>Agent "2376 C adversarial" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>No abuse path was found in PR 2376 at head 2b34ce5d, and the risk is **low**. Findings: 0 blocking, 0 major, 2 minor, 6 nit. Every hunk is justified except some citation-only line-number edits in `hfs.go` (A6).
+
+- **A1 (minor, security):** `Clean` now lists and removes files through the raw filesystem. That skips the leading-symlink check the worktree wrapper used to apply. Abusing it needs a local race, because the paths come from a directory listing that does not follow symlinks (`worktree.go:1353`).
+- **A4 (minor, still present):** #2372, #2550 and #2551 conflict in the `validPath` doc block. Resolving in their favour brings back the old "final `submodule/.git` allowed" wording and the dead `isDotGitVariant`. #2384 now merges cleanly and keeps both sets of checks in `DotGit.Module`.
+- **A2 and A3 (nits):** two deliberate loosenings, both matching Git and not reachable from a cloned tree. `validPath` refuses `git~1` only under `core.protectNTFS`, and submodule names made only of periods (`...`) are accepted again. On Windows, `DotGit.Module` still refuses those names.
+- **Other nits:**
+  - A5: a stale comment in `config/modules_test.go`.
+  - A7: commit 791731a2 credits Sahana as co-author without her sign-off.
+  - A8: `doClean`'s case-insensitive `.git` skip has no test on case-sensitive hosts. It was the only gate whose reversal no test caught.
+
+**Co-authored commit e43c13e5:** every hunk is justified. It keeps the submodule half of Sahana's #2266 and leaves out the tree-path half on purpose, as its message says. Both bugs it claims reproduce at the base: the parser keeps `path = ..` with no url, and it keeps `path = a/.git/b`. Breaking each of its gates makes a test fail. Sahana's #2443 and #2447 touch only transport code, so they cannot combine with this PR.
+
+**Prior findings:** required items 1 to 6 are resolved, and so are the old title and `build:`-prefix nits. Item 7 is partly fixed (A6 is what remains). The merge hazard is partly fixed (A4). The reserved-names note still applies but is deliberate and matches Git. The shared worktree is clean at 2b34ce5d.
+
+Files are in `/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw`:
+- 2376-C.md
+- 2376-C.json</result>
+<usage><subagent_tokens>166381</subagent_tokens><tool_uses>44</tool_uses><duration_ms>424757</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a395e91f96b8a415f</task-id>
+<tool-use-id>toolu_01FbWZE3QPCB6iqN52iKpp4Z</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a395e91f96b8a415f.output</output-file>
+<status>completed</status>
+<summary>Agent "2403 C adversarial" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Agent C finished its adversarial review of go-git PR 2403 (range `500c64d6..ff023847`). **Risk is low.** The base has no protocol gate at all, so the PR only adds a defence. I found no way for a `.gitmodules` entry, a remote config or a redirect to reach a `user`-only or `never` scheme as a non-user request. Every transport entry point is gated: fetch, push, list, `ArchiveRemote`, the client, direct transports, and HTTP discovery, POST and redirect hops. 7 of the 9 mutations I tried failed the PR's tests. The 2 survivors cover nothing that matters. The PR has no dependency, CI, `go:generate`, `init()` or hidden-character changes.
+
+**Findings:** 2 major, 2 minor, 1 nit. The two majors are major only because the rules say any unneeded hunk is; both are cosmetic.
+- **A1 (major):** `client.go` `resolve()` was moved after `Connect` with its body unchanged. Nothing in the PR's purpose needs the move.
+- **A2 (major):** `ConfigScoped` was split out into a `configScoped` helper that nothing else calls.
+- **A3 (minor):** fetch, push and list now fail on global config syntax that Git accepts. With `[protocol.file] allow = never`, go-git reports "illegal character '.'" where git 2.56 prints `never`. It fails closed, so it is not a bypass, but the PR body's "as it fails Git" is wrong for this case.
+- **A4 (minor, performance):** the global and system configs are still re-parsed on every operation.
+- **A5 (nit):** `ConfigScoped` now skips an unreadable global file instead of erroring. This matches Git and is documented.
+
+**Prior review (2026-11-03):** items 1, 2, 3, 5, 7 and 8 are fixed. Item 4 (performance) is partly fixed (A4). Item 6 (duplicate checks) is fixed, but the `resolve()` move remains (A1).
+
+Report: `/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw/2403-C.md`. JSON (validated): `/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw/2403-C.json`. The shared worktree is clean and still at `ff023847`.</result>
+<usage><subagent_tokens>144121</subagent_tokens><tool_uses>40</tool_uses><duration_ms>497358</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a6bf3f634ebe07654</task-id>
+<tool-use-id>toolu_01Nmo4wrKzCuqmYsWD24RLcm</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a6bf3f634ebe07654.output</output-file>
+<status>completed</status>
+<summary>Agent "2477 C adversarial" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Agent C review of #2477 at 002575ce: **risk is low**. Findings: 1 major, 2 nits (one security, one other).
+
+- **Prior A1 (readiness walk cost): fixed.** On two 16k-commit chains, 16,000 (new common, unknown) pairs in a 1.6 MB stateless request take 2.44s with go-git and 2.67s with git 2.56. The output is identical. The prior review measured 90s and 142 GB for this.
+- **Prior A2 (have objects read in full): fixed.** Haves for 16 packed 32 MiB blobs (one base, 15 deltas) take 0.7ms with no allocation, against 2.2ms for git, with identical output. The prior review measured 1.3s and 3 GB.
+- **Prior A3 (`LargeObjectThreshold` claim): fixed.** The claim is gone from both the code and the commit messages.
+- **A1 (major, other), `storage/filesystem/object.go:689`:** closing the `Packfile` in `EncodedObjectSize` is a drive-by leak fix that the stated purpose does not need. The commit message states it, a test covers it, and it follows the existing `getFromPackfileAt` pattern. It is rated major only because the rules require that for any unneeded hunk. The real risk is low: keep it as justified, or split it into its own commit.
+- **A2 (nit, still present), `plumbing/transport/upload_pack.go:695`:** the v2 haves loop still has no `ctx.Err()` check.
+- **A3 (nit, security):** v1 now ACKs any object the server stores, not only objects reachable from the wants. This matches upstream and v2 at the range base, and go-git does not restrict wants, so nothing new is exposed.
+- **Other checks came back clean.** `GetTypeByOffset` is bounded by the delta depth cap, checks OFS base offsets, and fails closed on corrupt headers. The scanner change is a pure extraction. There are no dependency, CI or hidden-content changes, and no harmful combination with #2472, #2473 or #2503.
+
+Tests and vet pass on all affected packages. The worktree is clean and still at the same HEAD.
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2477-C.md
+- 2477-C.json</result>
+<usage><subagent_tokens>153008</subagent_tokens><tool_uses>33</tool_uses><duration_ms>716259</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bgijffob1</task-id>
+<tool-use-id>toolu_01CABKTQgdzcykjHp5wb8XJx</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/bgijffob1.output</output-file>
+<status>completed</status>
+<summary>Background command "Run codex verification for PR 2403" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bhl1kp4dr</task-id>
+<tool-use-id>toolu_01BX9Dj6Nk8QR1CYccAESsRr</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/bhl1kp4dr.output</output-file>
+<status>completed</status>
+<summary>Background command "Merge PR 2376 findings and run codex" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a3c8e33c2037b9867</task-id>
+<tool-use-id>toolu_016B2bJx1g4U2edFzEJZgrK3</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a3c8e33c2037b9867.output</output-file>
+<status>completed</status>
+<summary>Agent "2384 A review-pr" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Agent A finished the review of PR 2384 (range 2b34ce5d..b44afee6): no blocking findings, verdict approve with one minor follow-up.
+
+- **Counts:** 0 blocking, 0 major, 1 minor, 2 nits.
+- **Claimed bug is real at the range base:** there, `Module` runs the name checks and goes straight to `Chroot`, with no nesting walk. With the walk disabled in a scratch copy, the sibling-nesting test fails for `lib/refs/heads`, `lib/packed-refs`, `lib/refs` and `lib/modules/x`, and so does the once-outer test.
+- **R1 (minor, security, partly fixes prior required change 2):** the new 255-component cap limits how many components a name has, not how long each one is. On a memfs-backed storage, repeat `Module` calls with 255 components cost 2.7s each with 255-byte segments and 35.5s with 4000-byte segments. On osfs, PATH_MAX keeps it to about 35ms. A byte cap on `modules/&lt;name&gt;`, for example 4096, would close it.
+- **R2 (nit, still present):** the commondir and HEAD files are checked as regular files and then opened in a separate call, so a local swap to a FIFO in between blocks the reader.
+- **R3 (nit, new):** the PR body does not mention the new `ErrModuleNameTooDeep` or the depth cap, and still says the cost "follows the directories on disk".
+- **Prior required changes:**
+  - Resolved: the `..` bypass (closed by the #2376 `ValidStorageName` pre-check, so it depends on #2376 landing first), the commondir through a missing component (now an "invalid path" error, which I confirmed), and the unbounded `commonFile` in errors.
+  - Resolved: the commit subject that ended with a period.
+  - Partly resolved: repeat-access cost, now R1.
+
+Tests, `go vet` and `gofmt` are clean. My probes and mutation tests ran in a copy at `$S/tmp/2384-A/src`, and the shared worktree is clean at b44afee6.
+
+Files are in `/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw`:
+- 2384-A.md
+- 2384-A.json</result>
+<usage><subagent_tokens>108558</subagent_tokens><tool_uses>18</tool_uses><duration_ms>672229</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bixh0wee4</task-id>
+<tool-use-id>toolu_01GPXBobWod8m2MpMR9NUkMY</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/bixh0wee4.output</output-file>
+<status>completed</status>
+<summary>Background command "Run codex verification for PR 2477" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>beqagag4w</task-id>
+<tool-use-id>toolu_014H5wjwzjDBYBsYfTdgRjto</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/beqagag4w.output</output-file>
+<status>completed</status>
+<summary>Background command "Run codex verification for PR 2384" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>ac60bfe6a378d10d9</task-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/ac60bfe6a378d10d9.output</output-file>
+<status>completed</status>
+<summary>Agent "Write reports group 2" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>I wrote all five reports and updated each PR's `SUMMARY.md`. Nothing was posted, no worktree was touched and no tests were run.
+
+- go-git 2505 (draft): changes required, risk low, 1 required, `~/git/tasks/reviews/go-git/go-git/2505/2026-11-04-001-REVIEW.md`
+- go-git 2503: approve, risk low, 0 required, `~/git/tasks/reviews/go-git/go-git/2503/2026-11-04-001-REVIEW.md`
+- go-git 2502: changes required, risk low, 3 required, `~/git/tasks/reviews/go-git/go-git/2502/2026-11-04-001-REVIEW.md`
+- go-git 2477: changes required, risk low, 5 required, `~/git/tasks/reviews/go-git/go-git/2477/2026-11-04-001-REVIEW.md`
+- go-git 2473: changes required, risk low, 4 required, `~/git/tasks/reviews/go-git/go-git/2473/2026-11-04-001-REVIEW.md`
+
+Things you may want to check:
+- **2505:** codex would approve. It still lists the `revlist.go:19-25` doc hunk as unjustified, and that hunk is the one required item. The details section records this.
+- **2503:**
+  - The report records that it is stacked on 2502 (range b56b5a5d..HEAD), merges after #2502, and conflicts with #2552 in `writers.go`.
+  - In `SUMMARY.md`, the older "Open concerns (carried across reviews)" list was left as it was. Some items there are now fixed but still listed, such as the gpgsign test isolation.
+- **2502:**
+  - C2 stays Optional, and the details section notes that codex rated it major.
+  - The old carried-concerns list in `SUMMARY.md` still shows two items that are now fixed: the 1s timeouts and the release note. They were added to Resolved, but the old list itself was not edited.
+- **2477:**
+  - In `SUMMARY.md`, the old nit about the `okToGiveUp` comment breaking mid-sentence is marked resolved, but nothing checked it directly. That rests on the 2026-11-03 review saying every earlier required change was fixed.
+  - The two concerns inherited from #2476 still say "still present", and nobody re-checked them in this batch.
+- **2473:** two of the four required items are major, so the contributor message uses "A few things to fix before merge:".</result>
+<usage><subagent_tokens>74543</subagent_tokens><tool_uses>7</tool_uses><duration_ms>99193</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a84dc5f325b46f75d</task-id>
+<tool-use-id>toolu_01XNTT7LbgrWjByExrsxpwWV</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a84dc5f325b46f75d.output</output-file>
+<status>completed</status>
+<summary>Agent "Write reports group 1" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>I wrote all five reviews and updated each SUMMARY.md. I didn't touch any worktree, run tests or post anything.
+
+- **go-git#2552:** changes required, risk low, 2 required: a vanished final fails the save where Git retries, and the `.promisor` marker can be missing. `~/git/tasks/reviews/go-git/go-git/2552/2026-11-04-001-REVIEW.md`
+- **go-git#2551:** changes required, risk low, 3 required: the autocrlf check ignores `.gitattributes` (codex says major), `ErrLocalChanges` still says "reset", and the PR body describes the previous revision. `~/git/tasks/reviews/go-git/go-git/2551/2026-11-04-001-REVIEW.md`
+- **go-git#2550:** changes required, risk none, 2 required: the conflict stage is picked by entry order, which `Index` doesn't guarantee and no test covers, and one test duplicates another. `~/git/tasks/reviews/go-git/go-git/2550/2026-11-04-001-REVIEW.md`
+- **go-git#2511:** changes required, risk low, 2 required: the fixtures pin points at the unmerged go-git-fixtures#103 (blocking), and `WithStrictChain` loses `ErrIncompleteChain`. `~/git/tasks/reviews/go-git/go-git/2511/2026-11-04-001-REVIEW.md`
+- **go-git-fixtures#103:** changes required, risk low (codex says none), 2 required: the README's zlib reproducibility claim, and the 2.54 version gate message claims too much. `~/git/tasks/reviews/go-git/go-git-fixtures/103/2026-11-04-001-REVIEW.md`
+
+Your notes went in where you asked:
+- **#2552 and #2503:** the conflict in `writers.go` is under Optional.
+- **#2511 and #103:** the merge order is Required item 1 in #2511 and Optional in #103.
+- **#2462 overlap:** it is only in #2551's details section.
+
+The 2511 and 103 summaries had an extended layout, so I kept it and added a **Reviewed head:** line to each. In the 103 summary I also pointed "Local checkout" at the `wt-fixtures-pr-103` worktree instead of the stale checkout.</result>
+<usage><subagent_tokens>197357</subagent_tokens><tool_uses>26</tool_uses><duration_ms>306274</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a06901445dfc4820a</task-id>
+<tool-use-id>toolu_01M7ejAsMyTyrATjgh7P5RFw</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a06901445dfc4820a.output</output-file>
+<status>completed</status>
+<summary>Agent "Write reports group 3" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>All four review files are written and each PR's SUMMARY.md is updated. All four come out as changes required.
+
+| PR | Outcome | Risk | Required items | Review file |
+|---|---|---|---|---|
+| go-git 2472 | changes required | low (codex: none) | 2 | `~/git/tasks/reviews/go-git/go-git/2472/2026-11-04-001-REVIEW.md` |
+| go-git 2403 | changes required | low (codex: low) | 9 | `~/git/tasks/reviews/go-git/go-git/2403/2026-11-04-001-REVIEW.md` |
+| go-git 2384 | changes required | low (codex: low) | 3 | `~/git/tasks/reviews/go-git/go-git/2384/2026-11-04-001-REVIEW.md` |
+| go-git 2376 | changes required | low (codex: low) | 8 | `~/git/tasks/reviews/go-git/go-git/2376/2026-11-04-001-REVIEW.md` |
+
+The required items, in brief:
+- **2472:** 2 other items, both nits: no v0/v1 test for the new walker, and a stale-named test that duplicates an existing one. Codex would approve; I kept the lead's outcome.
+- **2403:** 3 security, 1 performance, 1 conformance, 4 other.
+  - Security: the protocol policy ignores the XDG config file when `~/.gitconfig` exists, `include`/`includeIf`, and `GIT_CONFIG_COUNT`/`GIT_CONFIG_PARAMETERS`. A restriction set in any of these fails open compared with git.
+  - Performance: system and global config are re-parsed on every operation.
+  - Conformance: legacy dotted section syntax like `[protocol.file]` now breaks every fetch, though git accepts it.
+  - Other: the `resolve()` move, the `configScoped` extraction, the unreadable-global-file skip also changing `Load`/`ConfigScoped` (codex's third unjustified hunk), and a weak root-level overlay test.
+- **2384:** 1 security, 1 performance, 1 other.
+  - Security: a `Stat` error on `objects`/`refs` when there is no commondir is treated as "not a git dir", so nesting is accepted.
+  - Performance: the 255-component cap doesn't limit bytes, so on memfs one call can take 35.5 s. Codex rates this major.
+  - Other: the PR body doesn't mention the cap or `ErrModuleNameTooDeep`.
+- **2376:** 1 security, 2 conformance, 5 other.
+  - Security: `Clean` no longer runs the leading-symlink check.
+  - Conformance: `.git` in any letter case is skipped whatever `core.ignorecase` says, and `DotGit.Module` applies Win32 rules even with `core.protectNTFS=false`.
+  - Other: the `gitAtLeast` signature change plus the conflict in `worktree_status_test.go` means the merge with main won't compile. The rest are the BSD licence text in `volume.go`, `ErrModuleNameEscape` returned for names that don't escape, a stale test comment, and Sahana's missing Signed-off-by on 791731a2.
+
+Things worth knowing before you use the files:
+- **Dependencies:** the reports record that 2384 depends on 2376 landing first, and that 2472 is stacked on 2477.
+- **Severity tags:** `decisions.md` grouped 2403's C1–C3 as "[security/conformance]". I tagged them `[security]` and still cite the upstream file:line for each.
+- **Extra edits beyond the brief:** I corrected the stale titles in the 2472 and 2403 SUMMARY headers. In 2376 and 2384, I moved older carried concerns into Resolved where today's raw reports or the worktree confirm them fixed. For 2376 I checked that `errLeadingSymlink` is present at the head, and that `rmEntryAndDirsIfEmpty` and `IsUnsafeStorageName` are gone.
+- **What I didn't touch:** no worktrees, no tests run, nothing posted. The messages to the contributor contain no em dashes or semicolons.</result>
+<usage><subagent_tokens>192967</subagent_tokens><tool_uses>32</tool_uses><duration_ms>350605</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>aff2c175cd96597d1</task-id>
+<tool-use-id>toolu_0133S1kfzbux51CdQkRhc1EV</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/aff2c175cd96597d1.output</output-file>
+<status>completed</status>
+<summary>Agent "2372 C adversarial" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>Agent C review of go-git#2372 (head c0c88fa4) is done. Overall risk is **low**, with no blocking or major findings: 1 minor and 1 nit.
+
+- **Prior review:** items 1 to 5 are fixed, and I confirmed each with a mutation test. Validation now runs before any deletion, the index is stored last, unchanged unreadable subtrees no longer fail the diff, write-failure tests exist, and the comments match the order. The prior optional note about the commit message (A1) is still present.
+- **Hunks:** every hunk is justified, including the new `filesystem.Options.ObjectFormat` field, which the SHA-256 racy-git issue in the PR body explains. No supply-chain, CI, hidden-content or network changes.
+- **Credit:** the Co-authored-by in 886bc10e matches mrueg's #2480 author identity, and #2480's change is a subset of that commit.
+- **A1 (minor, security, partly introduced, treenoder.go:89-90):** the public `object.DiffTree`/`Patch` now return changes with names like `../config`, `.git/config` and `a/b/config` where the base failed with "directory not found". I reproduced this on base and head, and `Change.Files()` returns no error. It only matters to callers outside go-git that write `ChangeEntry.Name` to disk, because go-git's own reset, checkout and pull re-check paths before writing. The commit message and docs don't mention it.
+- **A2 (nit, not introduced):** #2376's new treenoder comment points at deletes in `resetWorktreeToTree`, which this PR moves to `removeTrackedDeletions`. A trial merge with #2376 conflicts in 4 files, and treenoder.go merges cleanly with that stale comment.
+
+`go vet` and the tests pass on an archived copy. The shared worktree is clean and still at c0c88fa4.
+
+Files are in /tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/scratchpad/raw:
+- 2372-C.md
+- 2372-C.json</result>
+<usage><subagent_tokens>150515</subagent_tokens><tool_uses>47</tool_uses><duration_ms>1508178</duration_ms></usage>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>bqf06r4fj</task-id>
+<tool-use-id>toolu_01AebUByT1AqrP7eRCY6b5Qy</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/bqf06r4fj.output</output-file>
+<status>completed</status>
+<summary>Background command "Merge PR 2372 findings and run codex" completed (exit code 0)</summary>
+</task-notification>
+
+---
+
+<task-notification>
+<task-id>a95c34e9c544983c1</task-id>
+<tool-use-id>toolu_01Ho5ym5ph7Qm8bAKWuiq6yW</tool-use-id>
+<output-file>/tmp/claude-1000/-home-coder-git-entireio-entire-rsl/824de8b1-bc22-4b8c-bfac-60dd385d2785/tasks/a95c34e9c544983c1.output</output-file>
+<status>completed</status>
+<summary>Agent "Write report for 2372" finished</summary>
+<note>A task-notification fires each time this agent stops with no live background children of its own. The user can send it another message and resume it, so the same task-id may notify more than once.</note>
+<result>PR 2372: **changes required**, risk low, 3 required items. I wrote the report to `~/git/tasks/reviews/go-git/go-git/2372/2026-11-04-001-REVIEW.md` and updated `SUMMARY.md` in the same folder. Nothing was posted, and I did not touch the worktree or run tests.
+
+The three required items:
+1. **Security (minor):** `treeNoder.Children` now reads subtrees by hash and skips the path check. As a result, the public `object.DiffTree`/`Patch` return names like `../config` and `.git/config` (treenoder.go:84-91). Either restore the check or document it, including in the 886bc10e commit message.
+2. **Conformance (major):** Status and mixed reset fail when an unchanged subtree object is missing, because index directory nodes hash to zero (utils/merkletrie/index/node.go:93-103). Git succeeds there by skipping through the cache-tree (unpack-trees.c:764-771, 882-897).
+3. **Other (minor):** rebase onto main. Main's ae4b49cd and this PR both append a test at the end of `worktree_status_test.go`, so they conflict there.
+
+All five required changes from the 2026-11-03 review are fixed, and each fix has a test that fails when it is reverted. Codex agrees with the outcome and the low risk.
+
+- **Optional section:** it says #2550 and #2551 stack on this PR. It also says mrueg's #2480 is superseded by 886bc10e, which credits it with Co-authored-by, so a maintainer should close #2480 once this PR lands.
+- **Message to the contributor:** it opens with "A few things to fix before merge:" because one item is major.
+- **`SUMMARY.md`:** it now has the request-changes verdict, the reviewed head c0c88fa4, today's history line and the new open concerns. The ten prior items that are now fixed moved to Resolved.</result>
+<usage><subagent_tokens>101842</subagent_tokens><tool_uses>12</tool_uses><duration_ms>106070</duration_ms></usage>
+</task-notification>

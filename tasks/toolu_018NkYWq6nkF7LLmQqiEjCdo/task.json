@@ -1,0 +1,15 @@
+{
+  "tool_use_id": "toolu_018NkYWq6nkF7LLmQqiEjCdo",
+  "agent_id": "a9d7105d936894a54",
+  "subagent_type": "fork",
+  "task_description": "Report for go-git 2502",
+  "token_usage": {
+    "input_tokens": 28,
+    "cache_creation_tokens": 84994,
+    "cache_read_tokens": 971771,
+    "output_tokens": 7844,
+    "api_call_count": 13
+  },
+  "started_at": "2026-11-04T16:08:48.623998954Z",
+  "completed_at": "2026-11-04T16:09:58.704807091Z"
+}
