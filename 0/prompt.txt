@@ -1,0 +1,5 @@
+The verify --fetch does not seem to be working correctly. It should fetch the latest from the rsl (e.g. like refresh does).
+
+---
+
+commit changes
