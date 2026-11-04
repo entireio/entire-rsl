@@ -24,6 +24,183 @@ mise run build
 entire plugin install ./bin/entire-rsl
 ```
 
+## Quickstart
+
+### 1. Create a repository on Entire
+
+Follow the [Entire quickstart](https://docs.entire.com/quickstart) to install
+the Entire CLI,
+[create a repository on Entire](https://docs.entire.com/quickstart#create-a-new-repository-on-entire),
+clone it and
+[enable Entire](https://docs.entire.com/quickstart#2-open-a-repository-and-enable-entire)
+in it. Then install entire-rsl (see [Install](#install)) and run the commands
+below from the repository root.
+
+### 2. Fetch the RSL
+
+A new repository already has a policy and a first RSL entry. `refresh` fetches
+them from `origin`, or from the remote you name:
+
+```console
+$ entire rsl refresh
+Fetching gittuf refs from origin...
+REF                              STATUS   LOCAL  REMOTE        COMMITS
+refs/gittuf/policy               created  -      6cb81fc8b792  1 commit
+refs/gittuf/reference-state-log  created  -      37d1fc96740f  1 commit (entry #1)
+```
+
+### 3. Push a checkpoint
+
+[Create a checkpoint](https://docs.entire.com/quickstart#3-create-your-first-checkpoint)
+and push it. Entire pushes the checkpoint ref with the branch and records an
+RSL entry for each:
+
+```console
+$ git push
+[entire] Pushing 1 checkpoint ref(s) to origin... done
+...
+remote: RSL: entry #3 recorded
+To entire://aws-eu-west-2.entire.io/et/paulo/rsl-demo
+ * [new branch]      main -> main
+```
+
+Pushing does not update the local RSL, so fetch it again:
+
+```console
+$ entire rsl refresh
+Fetching gittuf refs from origin...
+REF                              STATUS     LOCAL         REMOTE        COMMITS
+refs/gittuf/policy               unchanged  6cb81fc8b792  6cb81fc8b792  -
+refs/gittuf/reference-state-log  updated    37d1fc96740f  9dec33e898e4  +2 commits (entry #1 → #3)
+```
+
+### 4. Verify the default branch
+
+`verify` prints the state and each check, and exits 0 only when the ref is
+verified:
+
+```console
+$ entire rsl verify main
+Ref                  refs/heads/main
+Verification         verified: gittuf verified every RSL entry for the ref against the policy, and every check passed
+Verified tip         7de46d3dd2a157f83aa0163ac21eebbd6d748ee2
+RSL entries checked  #3 9dec33e898e4 (1 entry)
+Rules                authorize-rsl-signers
+Check tip            pass: the local ref matches the tip the RSL records (7de46d3dd2a157f83aa0163ac21eebbd6d748ee2, entry #3)
+Check root_of_trust  pass: anchored to Entire prod root (SHA256:Ja0D6sYQVI7aSmdIucYfwpQeV57DlvY5EE006iNQaZc), root version 1
+Check signer         pass: signed by Entire aws-eu-west-2 (SHA256:aqzDRRL2FaTkQqhiQSVHbT7kBOl6xpiv6zfKzpkOPKQ)
+```
+
+`branch` adds who pushed it, when, the signer and the ref's RSL history:
+
+```console
+$ entire rsl branch main
+Ref                  refs/heads/main
+Local tip            7de46d3dd2a157f83aa0163ac21eebbd6d748ee2
+RSL tip              7de46d3dd2a157f83aa0163ac21eebbd6d748ee2 (entry #3)
+Pushed by            pjbgf, as recorded by Entire
+Time                 2026-11-04T11:07:08Z (asserted by the signer)
+Signer               SHA256:aqzDRRL2FaTkQqhiQSVHbT7kBOl6xpiv6zfKzpkOPKQ (Entire aws-eu-west-2), signature valid
+Verification         verified: gittuf verified every RSL entry for the ref against the policy, and every check passed
+...
+
+History (1 of 1 entries, newest first)
+NUMBER  ENTRY         TARGET        TIME                  BY     SIGNER                SKIPPED
+3       9dec33e898e4  7de46d3dd2a1  2026-11-04T11:07:08Z  pjbgf  Entire aws-eu-west-2  -
+```
+
+Replace `main` with your default branch.
+
+### 5. Inspect the checkpoint
+
+Find the checkpoint ID with `entire checkpoint list`. `verify` takes it as
+well as a branch:
+
+```console
+$ entire rsl verify 01M6K3TFZF4PNGVATZ6JFR6PEF
+Ref                  refs/entire/checkpoints/EF/01M6K3TFZF4PNGVATZ6JFR6PEF
+Verification         verified: gittuf verified every RSL entry for the ref against the policy, and every check passed
+...
+```
+
+`checkpoint` shows the same detail as `branch`:
+
+```console
+$ entire rsl checkpoint 01M6K3TFZF4PNGVATZ6JFR6PEF
+Checkpoint           01M6K3TFZF4PNGVATZ6JFR6PEF
+Ref                  refs/entire/checkpoints/EF/01M6K3TFZF4PNGVATZ6JFR6PEF
+Local tip            a6d81192ca2eb54b0b14d4745c35a1b6239de363
+RSL tip              a6d81192ca2eb54b0b14d4745c35a1b6239de363 (entry #2)
+Pushed by            pjbgf, as recorded by Entire
+...
+
+History (1 of 1 entries, newest first)
+NUMBER  ENTRY         TARGET        TIME                  BY     SIGNER                SKIPPED
+2       033a6d58d3d8  a6d81192ca2e  2026-11-04T11:07:08Z  pjbgf  Entire aws-eu-west-2  -
+```
+
+`checkpoint` also takes a full commit ID and reads the checkpoint from its
+`Entire-Checkpoint` trailer: `entire rsl checkpoint "$(git rev-parse HEAD)"`.
+
+### 6. Inspect a tag
+
+> [!WARNING]
+> Only tags signed by a key in the repository's policy verify. A tag signed by
+> any other key fails verification, and so does an unsigned or lightweight
+> tag. See
+> [#1](https://github.com/entireio/entire-rsl/issues/1) and
+> [#2](https://github.com/entireio/entire-rsl/issues/2).
+
+Push a signed and a lightweight tag. Entire records an RSL entry for each:
+
+```console
+$ git tag -s v0.1.0 -m "v0.1.0"
+$ git tag v0.1.1
+$ git push origin v0.1.0 v0.1.1
+...
+remote: RSL: entry #4 recorded
+remote: RSL: entry #5 recorded
+To entire://aws-eu-west-2.entire.io/et/paulo/rsl-demo
+ * [new tag]         v0.1.0 -> v0.1.0
+ * [new tag]         v0.1.1 -> v0.1.1
+```
+
+Until the RSL is fetched again, the local RSL has no entries for the tags, so
+they show as `unprotected`:
+
+```console
+$ entire rsl verify v0.1.0
+Ref           refs/tags/v0.1.0
+Verification  unprotected: the RSL has no entries for the ref, so nothing protects it. The repository's RSL coverage may exclude it
+$ entire rsl refresh
+Fetching gittuf refs from origin...
+REF                              STATUS     LOCAL         REMOTE        COMMITS
+refs/gittuf/policy               unchanged  6cb81fc8b792  6cb81fc8b792  -
+refs/gittuf/reference-state-log  updated    9dec33e898e4  58a2e19f9e49  +2 commits (entry #3 → #5)
+```
+
+After the refresh, the tip, root of trust and signer checks pass, but neither
+tag is signed by a key in the policy, so gittuf fails both:
+
+```console
+$ entire rsl verify v0.1.0
+Ref                  refs/tags/v0.1.0
+Verification         failed: gittuf verification failed
+Detail               verifying tag entry failed, gittuf policy verification failed: verifying tag object's signature failed
+Rules                authorize-rsl-signers
+Check tip            pass: the local ref matches the tip the RSL records (9be4e7507d9880fa8ba63de2d9ff0942168148f4, entry #4)
+Check root_of_trust  pass: anchored to Entire prod root (SHA256:Ja0D6sYQVI7aSmdIucYfwpQeV57DlvY5EE006iNQaZc), root version 1
+Check signer         pass: signed by Entire aws-eu-west-2 (SHA256:aqzDRRL2FaTkQqhiQSVHbT7kBOl6xpiv6zfKzpkOPKQ)
+$ entire rsl verify v0.1.1
+Ref                  refs/tags/v0.1.1
+Verification         failed: gittuf verification failed
+Detail               verifying tag entry failed, gittuf policy verification failed: verifying tag object's signature failed
+...
+```
+
+`entire rsl tag <name>` shows the same detail as `branch`, and warns when the
+tag was moved.
+
 ## Usage
 
 ```sh
