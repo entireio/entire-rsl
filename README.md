@@ -201,6 +201,26 @@ Detail               verifying tag entry failed, gittuf policy verification fail
 `entire rsl tag <name>` shows the same detail as `branch`, and warns when the
 tag was moved.
 
+### 7. Verify with gittuf
+
+`entire rsl verify` runs gittuf's full verification of the ref, so it agrees
+with [gittuf](https://github.com/gittuf/gittuf)'s own `verify-ref`:
+
+```sh
+gittuf verify-ref refs/tags/v0.1.0 --verbose
+```
+
+If gittuf fails a ref, `entire rsl verify` fails it too. entire-rsl only adds
+what is Entire specific: who pushed the ref and when, the names of Entire's
+roots of trust and cluster keys, and the root of trust and signer checks.
+
+The one exception is a local ref behind the RSL tip, such as a branch you
+have not pulled since someone else pushed. gittuf fails it with
+`current state of Git reference does not match latest RSL entry`, because it
+requires the local ref to match the newest entry. entire-rsl verifies it,
+since gittuf's verification covered the state it is at, and reports the tip
+check as `behind`. Pull the ref and both agree.
+
 ## Usage
 
 ```sh
