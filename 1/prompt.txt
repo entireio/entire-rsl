@@ -1,0 +1,12 @@
+Update the quick start:
+- instead of "From a release, once published:" add something like "Using the plugin system:"
+- Before a "entire plugin install rsl" we need a "entire plugin index update"
+- also add a direct install, downloading from the release and verifying the artefacts
+
+---
+
+commit changes
+
+---
+
+go
