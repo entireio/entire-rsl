@@ -42,6 +42,40 @@ func TestOpenDiscoversFromSubdirectory(t *testing.T) {
 	require.NoError(t, err)
 }
 
+func TestOpenLinkedWorktree(t *testing.T) {
+	t.Parallel()
+
+	r := testutil.NewRepo(t)
+	r.Commit("refs/heads/main", "only")
+	wt := r.AddWorktree(t, "main")
+
+	for name, e := range map[string]Env{
+		"discovered":       env(nil, wt),
+		"ENTIRE_REPO_ROOT": env(map[string]string{EnvRepoRoot: wt}, t.TempDir()),
+	} {
+		t.Run(name, func(t *testing.T) {
+			t.Parallel()
+
+			got, err := Open(t.Context(), e, discard())
+
+			require.NoError(t, err)
+			assert.True(t, sameDir(wt, got.Root))
+			assert.True(t, sameDir(filepath.Join(r.Dir, ".git"), got.CommonDir), "the common git directory holds the config, objects and shared refs: %s", got.CommonDir)
+		})
+	}
+}
+
+func TestOpenCommonDirOfMainWorktree(t *testing.T) {
+	t.Parallel()
+
+	r := testutil.NewRepo(t)
+
+	got, err := Open(t.Context(), env(nil, r.Dir), discard())
+
+	require.NoError(t, err)
+	assert.True(t, sameDir(filepath.Join(r.Dir, ".git"), got.CommonDir))
+}
+
 func TestOpenPrefersEntireRepoRoot(t *testing.T) {
 	t.Parallel()
 

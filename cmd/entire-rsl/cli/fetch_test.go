@@ -2,6 +2,7 @@ package cli
 
 import (
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -77,6 +78,38 @@ func TestVerifyWithWorktreeConfig(t *testing.T) {
 	res := execute(t, inRepo(sc.Dir), "verify", "refs/heads/main")
 
 	require.Equal(t, ExitOK, res.code, res.stdout+res.stderr)
+}
+
+func TestLinkedWorktree(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	wt := sc.AddWorktree(t, "main")
+
+	for _, args := range [][]string{
+		{"verify", "refs/heads/main"},
+		{"verify", sc.TrailerCommit.String()},
+		{"verify", testutil.CheckpointULID},
+		{"branch", "main"},
+	} {
+		res := execute(t, inRepo(wt), args...)
+		assert.Equal(t, ExitOK, res.code, "%v: %s%s", args, res.stdout, res.stderr)
+		assert.Contains(t, res.stdout, "verified", args)
+	}
+}
+
+func TestLinkedWorktreeFetch(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	clone := sc.Clone(t, "origin")
+	wt := filepath.Join(t.TempDir(), "worktree")
+	gitOut(t, clone, "worktree", "add", "--quiet", "--detach", "--", wt, "main")
+
+	res := execute(t, inRepo(wt), "verify", "--fetch", "refs/heads/main")
+
+	require.Equal(t, ExitOK, res.code, res.stdout+res.stderr)
+	assert.Contains(t, refs(t, clone, "refs/gittuf/"), "refs/gittuf/reference-state-log", "gittuf refs are shared by every worktree")
 }
 
 func enableWorktreeConfig(t *testing.T, dir string) {

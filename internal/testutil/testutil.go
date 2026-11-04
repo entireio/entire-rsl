@@ -14,6 +14,7 @@ import (
 	"encoding/pem"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"testing"
 	"time"
 
@@ -204,6 +205,19 @@ func (r *Repo) Clone(t *testing.T, remote string) string {
 	cmd := exec.CommandContext(t.Context(), "git", "clone", "--quiet", "--origin", remote, "--", r.Dir, dir)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("clone %s: %v: %s", r.Dir, err, out)
+	}
+	return dir
+}
+
+// AddWorktree adds a linked worktree of r, detached at rev, and returns its
+// directory.
+func (r *Repo) AddWorktree(t *testing.T, rev string) string {
+	t.Helper()
+
+	dir := filepath.Join(t.TempDir(), "worktree")
+	cmd := exec.CommandContext(t.Context(), "git", "-C", r.Dir, "worktree", "add", "--quiet", "--detach", "--", dir, rev)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("add worktree: %v: %s", err, out)
 	}
 	return dir
 }

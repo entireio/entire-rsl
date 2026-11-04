@@ -235,7 +235,7 @@ func (a *app) verify(ctx context.Context, s *session, ref string, flags verifyFl
 	keys := slices.Concat(clusters.Known(), a.opts.TrustedKeys, flags.roots)
 	return verify.Verify(ctx, s.repo.Store, ref, verify.Options{
 		Logger:   a.logger,
-		RepoPath: s.repo.Root,
+		RepoPath: s.repo.CommonDir,
 		Timeout:  flags.timeout,
 		LocalTip: local,
 		Keys:     keys,

@@ -464,3 +464,23 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   on a nil config.
 - **Rejected:** using go-git's struct fields for the fetch check, which do
   not cover every key the check needs, and waiting for an upstream fix.
+
+## 2026-11-04: Policy rules are read through the common git directory
+
+- **Context:** in a linked worktree (`git worktree add`), every verification
+  was `error`. Coverage loads the repository through gittuf's git binary
+  backend, whose `gitinterface.LoadRepository` opens `<git dir>/config` to
+  refuse `extensions.compatObjectFormat` (`pkg/gitinterface/repository.go:84`
+  at a818fabe). Given the worktree, the git dir it finds is
+  `.git/worktrees/<name>`, which holds no `config`. go-git already resolves
+  `commondir` itself, so every other read worked.
+- **Decision:** `repo.Open` records the common git directory, the one the
+  worktree's `commondir` file names, or the git directory itself without
+  one, and verification hands it to gittuf for the rules. Policy and RSL
+  refs are shared by all worktrees, so the rules are the same. The fetch
+  still runs from the worktree root, and git writes the gittuf refs to the
+  common directory.
+- **Follow-up:** gittuf should read the config from the common directory, so
+  a worktree path works as given.
+- **Rejected:** asking git for `--git-common-dir`, an extra subprocess for a
+  file go-git already reads the same way.

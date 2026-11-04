@@ -6,6 +6,7 @@ replace github.com/gittuf/gittuf => github.com/pjbgf/gittuf v0.0.0-2026101514345
 
 require (
 	github.com/gittuf/gittuf v0.17.0
+	github.com/go-git/go-billy/v6 v6.0.0-beta.1
 	github.com/go-git/go-git/v6 v6.0.0-beta.1
 	github.com/hiddeco/sshsig v0.2.0
 	github.com/spf13/cobra v1.10.2
@@ -66,7 +67,6 @@ require (
 	github.com/github/smimesign v0.2.0 // indirect
 	github.com/go-chi/chi/v5 v5.3.2 // indirect
 	github.com/go-git/gcfg/v2 v2.0.2 // indirect
-	github.com/go-git/go-billy/v6 v6.0.0-beta.1 // indirect
 	github.com/go-git/go-git/v5 v5.19.3 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.5 // indirect
 	github.com/go-logr/logr v1.4.4 // indirect
