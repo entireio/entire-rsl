@@ -21,8 +21,8 @@ const (
 	Match  = "match"
 	Behind = "behind"
 	Ahead  = "ahead"
-	// Revoked is a commit only a skipped entry's push brought in, even if a
-	// later unskipped entry still contains it.
+	// Revoked is a commit a skipped entry's push brought in before any
+	// unskipped push did, even if a later unskipped entry still contains it.
 	Revoked  = "revoked"
 	Diverged = "diverged"
 	// TooFar is a commit behind the tip whose push is further back than the
@@ -151,30 +151,13 @@ func Relate(ctx context.Context, st *store.Store, reader *rslread.Reader, ref st
 }
 
 // relateBehind places a commit the RSL tip contains: in the push of the
-// oldest unskipped entry whose target contains it, unless a skipped entry's
-// target also contains it. gittuf recovers from a skipped entry with a fix
-// commit that may keep the skipped commits as ancestors, so containment by a
-// later entry alone does not show the commit was verified.
+// oldest unskipped entry whose target contains it, unless an older skipped
+// entry's target also contains it. gittuf recovers from a skipped entry with a
+// fix commit that may keep the skipped commits as ancestors, so containment by
+// a later entry alone does not show the commit was verified. A skipped entry
+// newer than that push does not revoke it, as its target keeps the good
+// history it was pushed on.
 func relateBehind(st *store.Store, rel Relation, unskipped, skipped []rslread.Target, local githash.Hash) (Relation, error) {
-	for _, s := range skipped {
-		isCommit, err := st.IsCommit(s.Target)
-		if err != nil {
-			return Relation{}, err
-		}
-		if !isCommit {
-			continue
-		}
-		contains, err := st.KnowsCommit(s.Target, local)
-		if err != nil {
-			return Relation{}, fmt.Errorf("compare the local tip with skipped entry #%d: %w", s.Number, err)
-		}
-		if contains {
-			entry := s
-			rel.Kind, rel.Entry = Revoked, &entry
-			return rel, nil
-		}
-	}
-
 	idx := 0
 	for i := 1; ; i++ {
 		if i >= len(unskipped) {
@@ -200,8 +183,30 @@ func relateBehind(st *store.Store, rel Relation, unskipped, skipped []rslread.Ta
 		}
 		idx = i
 	}
-
 	entry := unskipped[idx]
+
+	for _, s := range skipped {
+		if s.Number > entry.Number {
+			continue
+		}
+		isCommit, err := st.IsCommit(s.Target)
+		if err != nil {
+			return Relation{}, err
+		}
+		if !isCommit {
+			continue
+		}
+		contains, err := st.KnowsCommit(s.Target, local)
+		if err != nil {
+			return Relation{}, fmt.Errorf("compare the local tip with skipped entry #%d: %w", s.Number, err)
+		}
+		if contains {
+			revoked := s
+			rel.Kind, rel.Entry = Revoked, &revoked
+			return rel, nil
+		}
+	}
+
 	rel.Kind, rel.Entry, rel.EntriesBehind = Behind, &entry, idx
 	var err error
 	if rel.Commits, err = commitsBetween(st, rel.Tip.Target, local); err != nil {
