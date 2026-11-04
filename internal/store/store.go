@@ -432,7 +432,7 @@ func (s *Store) GetObjectSignature(objectID githash.Hash) ([]byte, []byte, error
 // LookupConfig reads a key from the repository's own config. ok is false when
 // the key is unset. Global and system config are not consulted.
 func (s *Store) LookupConfig(key gitstore.ConfigKey) (string, bool, error) {
-	raw, err := s.RawConfig()
+	raw, err := s.rawConfig()
 	if err != nil {
 		return "", false, err
 	}
@@ -459,11 +459,11 @@ func (s *Store) LookupConfig(key gitstore.ConfigKey) (string, bool, error) {
 	return strings.TrimSpace(lastValue(options, name)), true, nil
 }
 
-// RawConfig reads the repository's own config as git does: config, then
+// rawConfig reads the repository's own config as git does: config, then
 // config.worktree when extensions.worktreeConfig is set, whose values come
 // later and so win. go-git's merged config has no Raw when config.worktree
 // exists (v6.0.0-beta.1 config.Merge skips it), so the files are read here.
-func (s *Store) RawConfig() (*config.Config, error) {
+func (s *Store) rawConfig() (*config.Config, error) {
 	fs, ok := s.repo.Storer.(*filesystem.Storage)
 	if !ok {
 		cfg, err := s.repo.Config()

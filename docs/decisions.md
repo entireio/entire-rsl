@@ -237,8 +237,9 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   write; `--no-write-fetch-head`, `--no-auto-maintenance`,
   `--no-recurse-submodules` and `fetch.writeCommitGraph=false` keep the fetch
   from writing anything else; the fetch is refused when the repository's own
-  config names a program git would run (`core.sshCommand`,
-  `remote.<name>.uploadpack`, credential helpers, includes); output is
+  config has a key outside an allowlist (superseded the denylist of
+  `core.sshCommand`, `remote.<name>.uploadpack`, credential helpers and
+  includes, see "The fetch allows only known repository config"); output is
   captured and URL credentials redacted; cancellation interrupts git with a
   five second grace.
 - **Non-interactive:** without a terminal the command fails with how to
@@ -462,6 +463,9 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   win. `LookupConfig` and the fetch check use it. The fetch check therefore
   also refuses an unsafe key set only in `config.worktree`. It fails closed
   on a nil config.
+- **Superseded:** the fetch check now asks git for the config (see "The
+  fetch allows only known repository config"), and `rawConfig` serves only
+  `LookupConfig`.
 - **Rejected:** using go-git's struct fields for the fetch check, which do
   not cover every key the check needs, and waiting for an upstream fix.
 
@@ -484,3 +488,39 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   a worktree path works as given.
 - **Rejected:** asking git for `--git-common-dir`, an extra subprocess for a
   file go-git already reads the same way.
+
+## 2026-11-04: The fetch allows only known repository config
+
+- **Context:** the fetch gate refused a denylist of repository config keys
+  (`core.sshCommand`, `core.gitProxy`, `core.askPass`, credential helpers,
+  `remote.<chosen>.uploadpack`, `.vcs`, `.proxyCommand`, includes, review
+  0003). It missed `core.alternateRefsCommand`: with an alternate in
+  `objects/info/alternates`, `git fetch` runs that command to list the
+  alternate's refs, so a cloned repository's config could run a program
+  when the user fetched the RSL. A test reproduces it with a plain fetch.
+  A denylist fails open on the next such setting git adds.
+- **Decision:** the gate allows only listed keys. git lists the config
+  (`git config --list -z --show-scope --no-includes`, through the hardened
+  runner), so names match the way git matches them, `config.worktree` is
+  read, and include files are not followed. Only the `local` and `worktree`
+  scopes are checked. Global and system config are the user's own, and the
+  `command` scope holds entire-rsl's overrides. Allowed: `core`
+  `repositoryformatversion`, `filemode`, `bare`, `logallrefupdates`,
+  `ignorecase`, `precomposeunicode`, `symlinks`; `extensions.objectformat`
+  and `refstorage`; `remote.<name>` `url`, `pushurl`, `fetch`, `push`,
+  `tagopt`, `mirror`, `prune`, `prunetags`, `promisor`,
+  `partialclonefilter`, `entiredb-original-url`; every `branch.<name>` key,
+  since git reads them only to pick upstreams and editors add their own;
+  `user.name`, `email`, `signingkey`; `commit.gpgsign`, `tag.gpgsign`;
+  `gpg.format`. The list was built from the `.git/config` of every
+  repository under entireio. Any other key, or a listed key without the
+  subsection its section needs, refuses the fetch with every offending key
+  named once, sanitized, in git's order. Values are never shown. A failure
+  to list the config is an error and nothing is fetched. There is no
+  override: the user can fetch the gittuf refs with git.
+- **Defence in depth:** the runner also passes `-c core.alternateRefsCommand=`,
+  which a test shows makes git list an alternate's refs itself.
+- **Consequence:** `extensions.worktreeConfig` is not allowed, so a
+  repository using per-worktree config cannot fetch through entire-rsl. Its
+  read-only commands are unaffected.
+- **Rejected:** extending the denylist, and an override flag.

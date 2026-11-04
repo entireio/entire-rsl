@@ -117,7 +117,7 @@ func TestRefreshRefusesUnsafeConfig(t *testing.T) {
 	res := execute(t, inRepo(clone), "refresh")
 
 	assert.Equal(t, ExitFailure, res.code)
-	assert.Contains(t, res.stderr, "would make a fetch run programs")
+	assert.Contains(t, res.stderr, "will not fetch with")
 }
 
 func TestRefreshNeverWritesThroughASymbolicGittufRef(t *testing.T) {
