@@ -1,0 +1,92 @@
+going forwards, let's say the commits for this repo. resign all commits for the current branch commits
+
+---
+
+no, memory is fine.
+
+Now implement the spec below:
+
+
+<pasted_content id="318a">
+Spec: allowlist for repository config before a gittuf fetch
+
+Goal. Fetch only when every key in the repository's own config is known to be safe. An unknown key refuses the fetch, so the next git setting that runs a program fails closed instead of running.
+
+Scope. It covers the same gate as today: syncGittufRefs before SyncGittufRefs, used by refresh, --fetch and the offered fetch. Read-only commands are unchanged. Global and system config stay trusted.running.
+
+Scope. It covers the same gate as today: syncGittufRefs before SyncGittufRefs, used by refresh, --fetch and the offered fetch. Read-only commands are unchanged. Global and system config
+stay trusted.
+
+1. Read config through git, not go-git
+
+- Run git -C <root> config --list -z --show-scope --no-includes with the same etch.
+- Keep only the local and worktree scopes. command comes from HardenProcessEnv, and global/system belong to the user.
+- Git prints section and key names lowercased and keeps subsections exactly as
+- This removes any parsing difference between go-git and git, picks up config.worktree, and fixes the panic on a nil cfg.Raw.
+- If the command fails, return an error and don't fetch.
+
+2. Allowlist
+
+A key passes only if it matches an entry here. <n> is any subsection.
+
+┌─────────────┬──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┐
+│   Section   │                                                                                                                      │
+├─────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ core        │ repositoryformatversion, filemode, bare, logallrefupdates, ignorecase, precomposeunicode, symlinks                                                │
+├─────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ extensions  │ objectformat, refstorage                                                                                                                          │
+├─────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ remote.<n>  │ url, pushurl, fetch, push, tagopt, mirror, prune, prunetags, sl, promisor, partialclonefilter, entiredb-original-url │
+├─────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ branch.<n>  │ any key                                                                                                              │
+├─────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ user        │ name, email, signingkey                                                                                                                           │
+├─────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ commit, tag │ gpgsign                                                                                                                                           │
+├─────────────┼──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┤
+│ gpg         │ format                                                                                                                                            │
+└─────────────┴──────────────────────────────────────────────────────────────────────────────────────────────────────────────────────┘
+
+Notes on the table:
+- I built it from the .git/config of every repo under ~/git/entireio. entiredb-original-url and branch.<n>.vscode-merge-base both show up there, so the table has to allow them.
+- branch.<n>.* is allowed whole. Git reads it only to choose upstreams, and editors add their own keys there.
+- Everything else is refused, including include.*, includeif.*, extensions.worfscommand, core.sshcommand, credential.*, url.* and remote.<n>.uploadpack.
+
+3. Refusal
+
+- Keep ErrUnsafeConfig and change its message to: the repository's git config  fetch with: <keys>. Remove them, or fetch the gittuf refs with git yourself.
+- List every offending key, sanitized, as section.subsection.key, in the order
+- It's an operational error, exit 1, not a usage error.
+- No override flag. The user can fetch with git directly.
+
+4. Keep the existing layers
+
+- Leave the -c overrides in runInput and HardenProcessEnv as they are.
+- Optionally add -c core.alternateRefsCommand=, but only after a test shows thkip the command.
+
+5. Tests (t.Parallel(), isolated repos)
+
+- Happy path: a config shaped like a fresh git clone, plus each allowlisted ke
+- Refusals: each of these refuses, and the message names the key:
+  - core.alternateRefsCommand
+  - core.sshCommand
+  - credential.helper and credential.<url>.helper
+  - url.<base>.insteadOf
+  - remote.<n>.uploadpack on a remote other than the one chosen
+  - include.path and includeIf.*.path
+  - an unknown key such as core.foo
+- Edge cases: mixed-case spellings ([CORE] SSHCOMMAND) and the deprecated [remd the same way git matches them.
+- Worktree config: a key in config.worktree with extensions.worktreeConfig=tru.
+- End-to-end regression: with an alternate plus core.alternateRefsCommand, refs marker file is never created.
+- Global config: the same keys in GIT_CONFIG_GLOBAL don't refuse.
+
+6. Docs
+
+- SECURITY.md: state that the fetch refuses repository config outside an allow
+- docs/decisions.md: add an entry explaining the switch from denylist to allowfsCommand finding.
+- README.md: one line under "Refreshing from a remote".
+</pasted_content id="318a">
+
+---
+
+go ahead
