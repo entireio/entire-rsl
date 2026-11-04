@@ -1,0 +1,7 @@
+Improve the release workflow:
+- Add prerelease: auto under release: in .goreleaser.yaml. goreleaser will then mark -rc.N tags as pre-releases on the draft, so you don't have to tick it by hand.
+- Add a short "Releasing" section to the README or docs/decisions.md: push a tag, publish the draft, never create the release from the release page. Without it, the next person will make the same mistake. The preflight failure only tells you after the tag name is already used up.
+
+---
+
+go ahead: two commits
