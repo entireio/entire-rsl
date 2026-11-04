@@ -160,16 +160,11 @@ func (a *app) chooseRemote(r *repo.Repo, want string, noneErr error, severalHint
 // syncGittufRefs checks the repository's config is safe to fetch with, then
 // syncs the gittuf refs from remote.
 func (a *app) syncGittufRefs(ctx context.Context, r *repo.Repo, remote string, fastForward bool) ([]gitcli.RefUpdate, error) {
-	cfg, err := r.Store.Repository().Config()
-	if err != nil {
-		return nil, fmt.Errorf("read repository config: %w", err)
-	}
-	if err := gitcli.CheckFetchConfig(cfg.Raw, remote); err != nil {
-		return nil, err
-	}
-
 	git, err := gitcli.Find()
 	if err != nil {
+		return nil, err
+	}
+	if err := git.CheckFetchConfig(ctx, r.Root); err != nil {
 		return nil, err
 	}
 	a.logger.DebugContext(ctx, "fetching gittuf refs", slog.String("remote", remote), slog.Bool("fast_forward", fastForward))

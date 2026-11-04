@@ -13,17 +13,20 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"os"
 	"slices"
 	"strings"
 
 	"github.com/gittuf/gittuf/pkg/githash"
 	"github.com/gittuf/gittuf/pkg/gitinterface"
 	"github.com/gittuf/gittuf/pkg/gitstore"
+	"github.com/go-git/go-billy/v6"
 	gogit "github.com/go-git/go-git/v6"
 	"github.com/go-git/go-git/v6/plumbing"
 	"github.com/go-git/go-git/v6/plumbing/filemode"
 	"github.com/go-git/go-git/v6/plumbing/format/config"
 	"github.com/go-git/go-git/v6/plumbing/object"
+	"github.com/go-git/go-git/v6/storage/filesystem"
 	"github.com/go-git/go-git/v6/storage/memory"
 )
 
@@ -429,9 +432,9 @@ func (s *Store) GetObjectSignature(objectID githash.Hash) ([]byte, []byte, error
 // LookupConfig reads a key from the repository's own config. ok is false when
 // the key is unset. Global and system config are not consulted.
 func (s *Store) LookupConfig(key gitstore.ConfigKey) (string, bool, error) {
-	cfg, err := s.repo.Config()
+	raw, err := s.rawConfig()
 	if err != nil {
-		return "", false, &ObjectError{Op: "read repository config", Err: err}
+		return "", false, err
 	}
 
 	parts := strings.Split(string(key), ".")
@@ -439,7 +442,7 @@ func (s *Store) LookupConfig(key gitstore.ConfigKey) (string, bool, error) {
 		return "", false, nil
 	}
 
-	section := cfg.Raw.Section(parts[0])
+	section := raw.Section(parts[0])
 	options := section.Options
 	if len(parts) > 2 {
 		sub := strings.Join(parts[1:len(parts)-1], ".")
@@ -454,6 +457,90 @@ func (s *Store) LookupConfig(key gitstore.ConfigKey) (string, bool, error) {
 		return "", false, nil
 	}
 	return strings.TrimSpace(lastValue(options, name)), true, nil
+}
+
+// rawConfig reads the repository's own config as git does: config, then
+// config.worktree when extensions.worktreeConfig is set, whose values come
+// later and so win. go-git's merged config has no Raw when config.worktree
+// exists (v6.0.0-beta.1 config.Merge skips it), so the files are read here.
+func (s *Store) rawConfig() (*config.Config, error) {
+	fs, ok := s.repo.Storer.(*filesystem.Storage)
+	if !ok {
+		cfg, err := s.repo.Config()
+		if err != nil {
+			return nil, &ObjectError{Op: "read repository config", Err: err}
+		}
+		if cfg.Raw == nil {
+			return config.New(), nil
+		}
+		return cfg.Raw, nil
+	}
+
+	raw, err := readConfigFile(fs.Filesystem(), "config")
+	if err != nil {
+		return nil, err
+	}
+
+	if !worktreeConfigEnabled(raw) {
+		return raw, nil
+	}
+
+	wt, err := readConfigFile(fs.Filesystem(), "config.worktree")
+	if err != nil {
+		return nil, err
+	}
+	for _, sec := range wt.Sections {
+		for _, o := range sec.Options {
+			raw.AddOption(sec.Name, config.NoSubsection, o.Key, o.Value)
+		}
+		for _, sub := range sec.Subsections {
+			for _, o := range sub.Options {
+				raw.AddOption(sec.Name, sub.Name, o.Key, o.Value)
+			}
+		}
+	}
+	return raw, nil
+}
+
+// readConfigFile decodes a config file in the git directory, empty when the
+// file does not exist.
+func readConfigFile(fs billy.Filesystem, name string) (cfg *config.Config, err error) {
+	cfg = config.New()
+	f, err := fs.Open(name)
+	if errors.Is(err, os.ErrNotExist) {
+		return cfg, nil
+	}
+	if err != nil {
+		return nil, &ObjectError{Op: "read repository " + name, Err: err}
+	}
+	defer func() {
+		if cerr := f.Close(); cerr != nil && err == nil {
+			err = &ObjectError{Op: "read repository " + name, Err: cerr}
+		}
+	}()
+
+	if err := config.NewDecoder(f).Decode(cfg); err != nil {
+		return nil, &ObjectError{Op: "read repository " + name, Err: err}
+	}
+	return cfg, nil
+}
+
+// worktreeConfigEnabled reports whether extensions.worktreeConfig is true,
+// read with git's boolean spellings.
+func worktreeConfigEnabled(raw *config.Config) bool {
+	if !raw.HasSection("extensions") {
+		return false
+	}
+	opts := raw.Section("extensions").Options
+	if !opts.Has("worktreeConfig") {
+		return false
+	}
+	switch strings.ToLower(strings.TrimSpace(lastValue(opts, "worktreeConfig"))) {
+	case "", "true", "yes", "on", "1":
+		return true
+	default:
+		return false
+	}
 }
 
 // lastValue returns the last value set for name, matching git config --get.

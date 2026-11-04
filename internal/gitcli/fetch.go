@@ -31,6 +31,8 @@ const gittufPrefix = "refs/gittuf/"
 // Git runs one resolved git binary.
 type Git struct {
 	path string
+	// env is added to the inherited environment of every git process.
+	env []string
 }
 
 // Find resolves git on PATH to an absolute path, once.
@@ -280,12 +282,15 @@ func (g *Git) run(ctx context.Context, root string, args ...string) ([]byte, err
 // neutralised, and returns its stdout.
 func (g *Git) runInput(ctx context.Context, root, stdin string, args ...string) ([]byte, error) {
 	// --no-replace-objects and an empty graft file make git read the stored
-	// commit graph, so refs/replace/* or grafts cannot fake an ancestry.
+	// commit graph, so refs/replace/* or grafts cannot fake an ancestry. An
+	// empty core.alternateRefsCommand makes git list an alternate's refs
+	// itself instead of running the command a fetch would.
 	full := append([]string{
 		"--no-replace-objects",
 		"-C", root,
 		"-c", "core.fsmonitor=false",
 		"-c", "core.hooksPath=" + os.DevNull,
+		"-c", "core.alternateRefsCommand=",
 		"-c", "protocol.ext.allow=never",
 		"-c", "fetch.writeCommitGraph=false",
 	}, args...)
@@ -293,7 +298,7 @@ func (g *Git) runInput(ctx context.Context, root, stdin string, args ...string) 
 	cmd := exec.CommandContext(ctx, g.path, full...)
 	cmd.Cancel = func() error { return interrupt(cmd.Process) }
 	cmd.WaitDelay = waitDelay
-	cmd.Env = append(os.Environ(), "GIT_GRAFT_FILE="+os.DevNull)
+	cmd.Env = append(append(os.Environ(), "GIT_GRAFT_FILE="+os.DevNull), g.env...)
 	if stdin != "" {
 		cmd.Stdin = strings.NewReader(stdin)
 	}

@@ -237,8 +237,9 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   write; `--no-write-fetch-head`, `--no-auto-maintenance`,
   `--no-recurse-submodules` and `fetch.writeCommitGraph=false` keep the fetch
   from writing anything else; the fetch is refused when the repository's own
-  config names a program git would run (`core.sshCommand`,
-  `remote.<name>.uploadpack`, credential helpers, includes); output is
+  config has a key outside an allowlist (superseded the denylist of
+  `core.sshCommand`, `remote.<name>.uploadpack`, credential helpers and
+  includes, see "The fetch allows only known repository config"); output is
   captured and URL credentials redacted; cancellation interrupts git with a
   five second grace.
 - **Non-interactive:** without a terminal the command fails with how to
@@ -408,3 +409,139 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   behind case.
 - **Rejected:** verifying only up to the matching entry, which would ignore
   later violations in the RSL the user is about to fetch.
+
+## 2026-11-04: verify of a commit needs a verified branch or tag
+
+- **Context:** `verify <full commit ID>` resolved the commit's
+  `Entire-Checkpoint` trailer and verified only the checkpoint ref, printing
+  that ref with no mention of the commit. Any commit, including one on a
+  branch that fails gittuf or on no ref at all, verified when its trailer
+  named a good checkpoint. A commit with no trailer was an error, even on a
+  verified branch.
+- **Decision:** a full commit ID verifies the commit. Every `refs/heads/*`
+  and `refs/tags/*` ref the RSL records is related to it with
+  `tipstate.Relate`. A ref contains the commit when it is `match` or
+  `behind`, that is when an unskipped entry records it or its push brought
+  it in. The containing refs are verified in name order, with the ref's own
+  local lookup so local drift fails as it does for `verify <branch>`, until
+  one is `verified`. Asked on 2026-11-04: the user chose heads and tags only,
+  and containment alone for a commit without a trailer. When the commit has
+  a trailer, the checkpoint it names must verify too, after containment.
+  Several distinct trailers are an error, as for `checkpoint`.
+- **Rejection:** no containing ref is `unprotected`. A commit only a revoked
+  push brought in (`tipstate.Revoked`) is `failed`, even when a later
+  verified entry keeps it as an ancestor, and the ref is named under
+  "Revoked in". Containing refs that all fail take the worst of their
+  states. A ref whose containment cannot be established (its RSL tip object
+  is missing locally, or the push is beyond `tipstate`'s search) makes a
+  rejection `error`, since it may hold the commit. It does not block a
+  verified container.
+- **Output:** the commit, its overall state and reason, the containing refs
+  with the entry that records each, then the full verification of every ref
+  verified for it. JSON has a separate shape (`commit`, `verification`,
+  `contained_in`, `revoked_in`, `unchecked_refs`, `checkpoint`) under the
+  same `schema_version`: the old output described a different ref, so no
+  consumer could rely on it for a commit.
+- **Known limits:** an annotated tag relates by exact match, so a commit
+  under an annotated tag is contained only through a branch. Relating walks
+  each ref's history, so the cost grows with the number of branches and
+  tags.
+- **Rejected:** any protected ref as a container, which would let a
+  checkpoint ref vouch for the commit that names it, and keeping the
+  checkpoint as the subject of `verify <commit>`.
+
+## 2026-11-04: The repository's config is read from its files
+
+- **Context:** with `extensions.worktreeConfig=true` and a `config.worktree`
+  file, go-git v6.0.0-beta.1 returns a merged config whose `Raw` is nil:
+  `config.Merge` skips `Raw` and never rebuilds it, although its comment
+  says it does. `LookupConfig`, which gittuf calls during verification, and
+  the fetch config check both dereferenced it, so `verify` reported a panic
+  and `refresh` and `--fetch` crashed.
+- **Decision:** `store.RawConfig` reads `config` and, when the extension is
+  set, overlays `config.worktree` in the order git reads them, so its values
+  win. `LookupConfig` and the fetch check use it. The fetch check therefore
+  also refuses an unsafe key set only in `config.worktree`. It fails closed
+  on a nil config.
+- **Superseded:** the fetch check now asks git for the config (see "The
+  fetch allows only known repository config"), and `rawConfig` serves only
+  `LookupConfig`.
+- **Rejected:** using go-git's struct fields for the fetch check, which do
+  not cover every key the check needs, and waiting for an upstream fix.
+
+## 2026-11-04: Policy rules are read through the common git directory
+
+- **Context:** in a linked worktree (`git worktree add`), every verification
+  was `error`. Coverage loads the repository through gittuf's git binary
+  backend, whose `gitinterface.LoadRepository` opens `<git dir>/config` to
+  refuse `extensions.compatObjectFormat` (`pkg/gitinterface/repository.go:84`
+  at a818fabe). Given the worktree, the git dir it finds is
+  `.git/worktrees/<name>`, which holds no `config`. go-git already resolves
+  `commondir` itself, so every other read worked.
+- **Decision:** `repo.Open` records the common git directory, the one the
+  worktree's `commondir` file names, or the git directory itself without
+  one, and verification hands it to gittuf for the rules. Policy and RSL
+  refs are shared by all worktrees, so the rules are the same. The fetch
+  still runs from the worktree root, and git writes the gittuf refs to the
+  common directory.
+- **Follow-up:** gittuf should read the config from the common directory, so
+  a worktree path works as given.
+- **Rejected:** asking git for `--git-common-dir`, an extra subprocess for a
+  file go-git already reads the same way.
+
+## 2026-11-04: The fetch allows only known repository config
+
+- **Context:** the fetch gate refused a denylist of repository config keys
+  (`core.sshCommand`, `core.gitProxy`, `core.askPass`, credential helpers,
+  `remote.<chosen>.uploadpack`, `.vcs`, `.proxyCommand`, includes, review
+  0003). It missed `core.alternateRefsCommand`: with an alternate in
+  `objects/info/alternates`, `git fetch` runs that command to list the
+  alternate's refs, so a cloned repository's config could run a program
+  when the user fetched the RSL. A test reproduces it with a plain fetch.
+  A denylist fails open on the next such setting git adds.
+- **Decision:** the gate allows only listed keys. git lists the config
+  (`git config --list -z --show-scope --no-includes`, through the hardened
+  runner), so names match the way git matches them, `config.worktree` is
+  read, and include files are not followed. Only the `local` and `worktree`
+  scopes are checked. Global and system config are the user's own, and the
+  `command` scope holds entire-rsl's overrides. Allowed: `core`
+  `repositoryformatversion`, `filemode`, `bare`, `logallrefupdates`,
+  `ignorecase`, `precomposeunicode`, `symlinks`; `extensions.objectformat`,
+  `refstorage` and `worktreeconfig`; `remote.<name>` `url`, `pushurl`, `fetch`, `push`,
+  `tagopt`, `mirror`, `prune`, `prunetags`, `promisor`,
+  `partialclonefilter`, `entiredb-original-url`; every `branch.<name>` key,
+  since git reads them only to pick upstreams and editors add their own;
+  `user.name`, `email`, `signingkey`; `commit.gpgsign`, `tag.gpgsign`;
+  `gpg.format`. The list was built from the `.git/config` of every
+  repository under entireio. Any other key, or a listed key without the
+  subsection its section needs, refuses the fetch with every offending key
+  named once, sanitized, in git's order. Values are never shown. A failure
+  to list the config is an error and nothing is fetched. There is no
+  override: the user can fetch the gittuf refs with git.
+- **Defence in depth:** the runner also passes `-c core.alternateRefsCommand=`,
+  which a test shows makes git list an alternate's refs itself.
+- **Per-worktree config:** `extensions.worktreeConfig` is allowed. It only
+  makes git read `config.worktree`, whose keys are listed in the `worktree`
+  scope and checked against the same allowlist.
+- **Rejected:** extending the denylist, and an override flag.
+
+## 2026-11-04: The fetch accepts only https:// and entire:// remote URLs
+
+- **Context:** the fetch gate allowed `remote.<name>.url` with any value. A
+  repository's own config could point the remote at a local path, `file://`,
+  ssh or scp-like syntax, `git://`, plain `http://`, or another remote
+  helper such as `fd::`. Entire's remotes are `https://`, or `entire://`
+  through the Entire CLI's remote helper.
+- **Decision:** before a fetch, every `remote.<name>.url` value in the
+  `local` and `worktree` scopes must start with `https://` or `entire://`,
+  for every remote, not only the one fetched. The prefix matches
+  case-sensitively, as git picks a transport or remote helper by the scheme
+  as written. A key without a value is refused. The key is named with
+  `(not an https:// or entire:// URL)`, and the URL is never shown, since
+  it can hold credentials. `pushurl` is not checked, as a fetch never uses
+  it. A rewrite through `url.<base>.insteadOf` is still refused in the
+  repository's config and trusted in global config, like every other key.
+- **Tests:** fixtures clone from `https://local.test/<path>`, which the
+  global config `testutil.IsolateGitConfig` writes rewrites to `file:///`.
+- **Rejected:** a case-insensitive match, and checking only the fetched
+  remote.

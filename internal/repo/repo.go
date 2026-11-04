@@ -9,9 +9,13 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 
 	"github.com/entireio/entire-rsl/internal/store"
+	"github.com/go-git/go-billy/v6"
+	"github.com/go-git/go-billy/v6/util"
 	gogit "github.com/go-git/go-git/v6"
+	"github.com/go-git/go-git/v6/storage/filesystem"
 )
 
 // EnvRepoRoot is set by the Entire CLI to the repository root when it runs
@@ -26,6 +30,10 @@ type Repo struct {
 	Store *store.Store
 	// Root is the directory the repository was opened from.
 	Root string
+	// CommonDir is the git directory that holds the config, objects and
+	// shared refs. In a linked worktree it is the main repository's, not
+	// the worktree's own git directory.
+	CommonDir string
 }
 
 // Env is how Open reads the process environment.
@@ -95,7 +103,35 @@ func open(path string, detect bool) (*Repo, error) {
 		root = wt.Filesystem().Root()
 	}
 
-	return &Repo{Store: s, Root: root}, nil
+	fs, ok := g.Storer.(*filesystem.Storage)
+	if !ok {
+		return nil, errors.New("open repository: not stored on disk")
+	}
+	common, err := commonDir(fs.Filesystem())
+	if err != nil {
+		return nil, fmt.Errorf("open repository: %w", err)
+	}
+
+	return &Repo{Store: s, Root: root, CommonDir: common}, nil
+}
+
+// commonDir is the git directory, or the directory its commondir file
+// names, as in a linked worktree (gitrepository-layout).
+func commonDir(gitFS billy.Filesystem) (string, error) {
+	gitDir := gitFS.Root()
+	b, err := util.ReadFile(gitFS, "commondir")
+	if errors.Is(err, os.ErrNotExist) {
+		return gitDir, nil
+	}
+	if err != nil {
+		return "", fmt.Errorf("read commondir: %w", err)
+	}
+
+	dir := strings.TrimSpace(string(b))
+	if !filepath.IsAbs(dir) {
+		dir = filepath.Join(gitDir, dir)
+	}
+	return filepath.Clean(dir), nil
 }
 
 func discoverRoot(cwd string) (string, error) {

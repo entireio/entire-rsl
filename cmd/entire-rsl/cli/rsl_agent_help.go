@@ -18,7 +18,7 @@ and whether gittuf verification passes for it. Every command except refresh is
 read-only unless given --fetch, and every command works without a TTY. Prefer
 --json and the exit code of 'verify' when acting on the result. Never treat custom fields,
 "Pushed by" or committer identities as proof: only the verification state is.`,
-	"verify":     "Use to decide whether a ref can be trusted. Exit 0 only for verified. Treat failed, unprotected and error as untrusted.",
+	"verify":     "Use to decide whether a ref or a commit can be trusted. A commit is trusted only when a verified branch or tag contains it. Exit 0 only for verified. Treat failed, unprotected and error as untrusted.",
 	"branch":     "Use to see the RSL record of a branch next to the local tip, with verification. Check warnings for local drift.",
 	"tag":        "Use for tags. A tag_moved warning means the tag was re-pointed after it was first pushed.",
 	"checkpoint": "Use with a checkpoint ID or a commit that carries an Entire-Checkpoint trailer.",

@@ -31,6 +31,7 @@ type Scenario struct {
 	CheckpointEntry               githash.Hash // refs/entire/checkpoints/7Z/<ULID>
 	RogueEntry                    githash.Hash // refs/heads/rogue, signed by Rogue
 	FixedGoodEntry                githash.Hash // refs/heads/fixed, first and valid
+	RevokedCommit                 githash.Hash // refs/heads/fixed, only the skipped entry brought it in
 	RevokedEntry, RevokeAnnot     githash.Hash // refs/heads/fixed, rogue and skipped
 	FixedEntry                    githash.Hash // refs/heads/fixed, the fix back to the good state
 }
@@ -88,7 +89,7 @@ func NewScenario(t *testing.T) *Scenario {
 	// fix resets the branch to the good commit.
 	good := s.Commit("refs/heads/fixed", "good work")
 	s.FixedGoodEntry = s.Record(s.Cluster, "refs/heads/fixed", pushedBy(PusherBob))
-	s.Commit("refs/heads/fixed", "rogue work")
+	s.RevokedCommit = s.Commit("refs/heads/fixed", "rogue work")
 	s.RevokedEntry = s.Record(s.Rogue, "refs/heads/fixed", nil)
 	s.RevokeAnnot = s.Annotate(s.Cluster, true, "revoked: signed by an unknown key", s.RevokedEntry)
 	s.SetRef("refs/heads/fixed", good)

@@ -5,6 +5,7 @@ import (
 	"errors"
 	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -20,8 +21,10 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	testutil.IsolateGitConfig()
-	os.Exit(m.Run())
+	cleanup := testutil.IsolateGitConfig()
+	code := m.Run()
+	cleanup()
+	os.Exit(code)
 }
 
 func open(t *testing.T, dir string) *Store {
@@ -298,6 +301,65 @@ func TestLookupConfig(t *testing.T) {
 		requireSame(t, "LookupConfig "+string(key), want, wantErr, got, gotErr)
 		assert.Equal(t, wantOK, gotOK, string(key))
 	}
+}
+
+func TestLookupConfigReadsWorktreeConfig(t *testing.T) {
+	t.Parallel()
+
+	r := testutil.NewRepo(t)
+	gitCmd(t, r.Dir, "config", "core.repositoryformatversion", "1")
+	gitCmd(t, r.Dir, "config", "extensions.worktreeConfig", "true")
+	gitCmd(t, r.Dir, "config", "gitsign.rekor", "https://base.example")
+	gitCmd(t, r.Dir, "config", "--worktree", "gitsign.rekor", "https://worktree.example")
+	gitCmd(t, r.Dir, "config", "--worktree", "remote.origin.url", "https://worktree.example/repo")
+	s := open(t, r.Dir)
+
+	for _, key := range []gitstore.ConfigKey{gitstore.ConfigUserName, gitstore.ConfigGitsignRekor, "remote.origin.url", "extensions.worktreeConfig"} {
+		want, wantOK, wantErr := r.Git.LookupConfig(key)
+		got, gotOK, gotErr := s.LookupConfig(key)
+		requireSame(t, "LookupConfig "+string(key), want, wantErr, got, gotErr)
+		assert.Equal(t, wantOK, gotOK, string(key))
+	}
+}
+
+func TestLookupConfigInLinkedWorktree(t *testing.T) {
+	t.Parallel()
+
+	r := testutil.NewRepo(t)
+	r.Commit("refs/heads/main", "only")
+	wt := r.AddWorktree(t, "main")
+	gitCmd(t, r.Dir, "config", "core.repositoryformatversion", "1")
+	gitCmd(t, r.Dir, "config", "extensions.worktreeConfig", "true")
+	gitCmd(t, r.Dir, "config", "gitsign.rekor", "https://base.example")
+	gitCmd(t, r.Dir, "config", "remote.origin.url", "https://base.example/repo")
+	gitCmd(t, wt, "config", "--worktree", "gitsign.rekor", "https://worktree.example")
+	s := open(t, wt)
+
+	for key, want := range map[gitstore.ConfigKey]string{
+		gitstore.ConfigGitsignRekor: "https://worktree.example",
+		"remote.origin.url":         "https://base.example/repo",
+		"extensions.worktreeConfig": "true",
+	} {
+		got, ok, err := s.LookupConfig(key)
+		require.NoError(t, err, string(key))
+		assert.True(t, ok, string(key))
+		assert.Equal(t, want, got, string(key))
+		assert.Equal(t, gitCmd(t, wt, "config", "--get", string(key)), got, "git agrees on %s", key)
+	}
+}
+
+func TestRawConfigIgnoresWorktreeConfigWithoutTheExtension(t *testing.T) {
+	t.Parallel()
+
+	r := testutil.NewRepo(t)
+	gitCmd(t, r.Dir, "config", "gitsign.rekor", "https://base.example")
+	require.NoError(t, os.WriteFile(filepath.Join(r.Dir, ".git", "config.worktree"), []byte("[gitsign]\n\trekor = https://worktree.example\n"), 0o600))
+	s := open(t, r.Dir)
+
+	got, ok, err := s.LookupConfig(gitstore.ConfigGitsignRekor)
+	require.NoError(t, err)
+	assert.True(t, ok)
+	assert.Equal(t, "https://base.example", got, "git reads config.worktree only with extensions.worktreeConfig")
 }
 
 func TestReferencesAndCommitInfo(t *testing.T) {

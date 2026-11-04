@@ -22,8 +22,10 @@ import (
 )
 
 func TestMain(m *testing.M) {
-	testutil.IsolateGitConfig()
-	os.Exit(m.Run())
+	cleanup := testutil.IsolateGitConfig()
+	code := m.Run()
+	cleanup()
+	os.Exit(code)
 }
 
 func run(ctx context.Context, t *testing.T, dir, ref string, timeout time.Duration) Result {
@@ -428,6 +430,7 @@ func TestRevokedCommitKeptByARecoveryCommitFailsVerification(t *testing.T) {
 
 	r := testutil.NewRepo(t)
 	r.Bootstrap()
+	base := r.Commit("refs/heads/main", "base")
 	good := r.Commit("refs/heads/main", "good")
 	r.Record(r.Cluster, "refs/heads/main", nil)
 	rogue := r.Commit("refs/heads/main", "rogue")
@@ -455,6 +458,11 @@ func TestRevokedCommitKeptByARecoveryCommitFailsVerification(t *testing.T) {
 	tip := checkByName(t, atRogue, CheckTip)
 	assert.Equal(t, CheckFail, tip.Status)
 	assert.Contains(t, tip.Detail, "brought in by skipped entry")
+
+	r.SetRef("refs/heads/main", base)
+	atBase := run(t.Context(), t, r.Dir, "refs/heads/main", time.Minute)
+
+	assert.Equal(t, Verified, atBase.State, "an unskipped push brought base in before the skipped one: %s: %v", atBase.Reason, atBase.Err)
 }
 
 func TestBehindWithAMissingObjectIsAnError(t *testing.T) {

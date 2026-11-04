@@ -94,8 +94,10 @@ func checkedRange(targets []rslread.Target) *Checked {
 // Options configure Verify.
 type Options struct {
 	Logger *slog.Logger
-	// RepoPath is the repository root, used to list policy rules through
-	// gittuf's git binary backed repository.
+	// RepoPath is the repository's common git directory, used to list
+	// policy rules through gittuf's git binary backed repository. gittuf
+	// reads the config from the git directory it finds there, which a
+	// linked worktree's own git directory does not hold.
 	RepoPath string
 	// LocalTip reads the local value of a ref, nil when it does not exist.
 	LocalTip func(ref string) (githash.Hash, error)

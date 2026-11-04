@@ -39,6 +39,7 @@ entire-rsl reports whether a repository's gittuf Reference State Log verifies. I
 - Any case where entire-rsl reports `verified` for a ref whose RSL history does not pass gittuf verification, has no applicable policy, or could not be fully evaluated
 - Terminal escape or control sequences from repository data reaching the terminal through text output
 - Any write to refs, objects or git config other than the remote-tracking RSL refs written by a confirmed fetch
+- Any repository config that makes a fetch run a program. Before a fetch, entire-rsl refuses every key in the repository's own config (`.git/config` and `config.worktree`) outside an allowlist, so an unknown key fails closed, and every `remote.<name>.url` that is not `https://` or `entire://`. Global and system config are trusted as the user's own
 - Argument or option injection into the git subprocesses entire-rsl runs
 
 ### Out of Scope

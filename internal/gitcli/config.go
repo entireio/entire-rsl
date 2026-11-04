@@ -1,58 +1,156 @@
 package gitcli
 
 import (
+	"bytes"
+	"context"
 	"errors"
 	"fmt"
+	"slices"
 	"strings"
 
-	"github.com/go-git/go-git/v6/plumbing/format/config"
+	"github.com/entireio/entire-rsl/internal/sanitize"
 )
 
-// ErrUnsafeConfig is returned when the repository's own config would make a
-// fetch run a program or read further config.
-var ErrUnsafeConfig = errors.New("the repository's git config would make a fetch run programs it names")
+// ErrUnsafeConfig is returned when the repository's own config has a key
+// outside fetchAllowlist.
+var ErrUnsafeConfig = errors.New("the repository's git config has keys entire-rsl will not fetch with")
 
-// CheckFetchConfig refuses a fetch from remote when the repository's own
-// config, which entire-rsl does not trust, sets a key that makes git run a
-// program during the fetch, or includes other config files. The same keys in
-// global or system config are the user's own and are allowed.
-func CheckFetchConfig(raw *config.Config, remote string) error {
-	var found []string
+// allowed lists the keys of one config section a fetch may run with.
+type allowed struct {
+	keys []string
+	// anyKey allows every key of the section.
+	anyKey bool
+	// subsection requires the key to be in a subsection, as in
+	// remote.<name>.url, and forbids it otherwise.
+	subsection bool
+}
 
-	check := func(section, subsection string, opts config.Options, keys ...string) {
-		for _, key := range keys {
-			if opts.Has(key) {
-				name := section + "." + key
-				if subsection != "" {
-					name = section + "." + subsection + "." + key
-				}
-				found = append(found, name)
-			}
-		}
+// fetchAllowlist is every repository config key a fetch may run with, by
+// section, lowercased as git prints them. Any other key refuses the fetch,
+// so a setting that makes git run a program fails closed even when it is new
+// to entire-rsl. branch.<name>.* is allowed whole: git reads it only to pick
+// upstreams, and editors keep their own keys there.
+var fetchAllowlist = map[string]allowed{
+	"core": {keys: []string{
+		"repositoryformatversion", "filemode", "bare", "logallrefupdates",
+		"ignorecase", "precomposeunicode", "symlinks",
+	}},
+	"extensions": {keys: []string{"objectformat", "refstorage", "worktreeconfig"}},
+	"remote": {subsection: true, keys: []string{
+		"url", "pushurl", "fetch", "push", "tagopt", "mirror", "prune",
+		"prunetags", "promisor", "partialclonefilter", "entiredb-original-url",
+	}},
+	"branch": {subsection: true, anyKey: true},
+	"user":   {keys: []string{"name", "email", "signingkey"}},
+	"commit": {keys: []string{"gpgsign"}},
+	"tag":    {keys: []string{"gpgsign"}},
+	"gpg":    {keys: []string{"format"}},
+}
+
+// fetchURLSchemes are the only schemes a remote.<name>.url may use. Any other
+// URL, including a local path, scp-like syntax, file:// and the remote
+// helpers, refuses the fetch. They match case-sensitively, as git picks a
+// transport or remote helper by the scheme as written.
+var fetchURLSchemes = []string{"https://", "entire://"}
+
+// repositoryScopes are the config scopes the repository controls: .git/config
+// and config.worktree. Global and system config are the user's own, and the
+// command scope holds entire-rsl's own overrides.
+var repositoryScopes = []string{"local", "worktree"}
+
+// CheckFetchConfig refuses a fetch in root when the repository's own config
+// has a key outside fetchAllowlist, or a remote.<name>.url that does not use
+// one of fetchURLSchemes. git lists the config, so names match the way git
+// matches them, config.worktree is included, and include files are not
+// followed: an include key is itself refused.
+func (g *Git) CheckFetchConfig(ctx context.Context, root string) error {
+	out, err := g.run(ctx, root, "config", "--list", "-z", "--show-scope", "--no-includes")
+	if err != nil {
+		return fmt.Errorf("read repository config: %w", err)
+	}
+	entries, err := repositoryConfig(out)
+	if err != nil {
+		return err
 	}
 
-	for _, s := range raw.Sections {
-		switch strings.ToLower(s.Name) {
-		case "include", "includeif":
-			found = append(found, s.Name)
-		case "core":
-			check("core", "", s.Options, "sshCommand", "gitProxy", "askPass")
-		case "credential":
-			check("credential", "", s.Options, "helper")
-			for _, sub := range s.Subsections {
-				check("credential", sub.Name, sub.Options, "helper")
-			}
-		case "remote":
-			for _, sub := range s.Subsections {
-				if sub.Name == remote {
-					check("remote", sub.Name, sub.Options, "uploadpack", "vcs", "proxyCommand")
-				}
-			}
+	var refused []string
+	for _, e := range entries {
+		var reason string
+		switch {
+		case !fetchAllowed(e.key):
+			reason = sanitize.Line(e.key)
+		case isRemoteURL(e.key) && !fetchURLAllowed(e.value):
+			reason = sanitize.Line(e.key) + " (not an https:// or entire:// URL)"
+		default:
+			continue
+		}
+		if !slices.Contains(refused, reason) {
+			refused = append(refused, reason)
 		}
 	}
-
-	if len(found) > 0 {
-		return fmt.Errorf("%w: %s. Remove them from .git/config or fetch with git yourself", ErrUnsafeConfig, strings.Join(found, ", "))
+	if len(refused) > 0 {
+		return fmt.Errorf("%w: %s. Remove them, or fetch the gittuf refs with git yourself", ErrUnsafeConfig, strings.Join(refused, ", "))
 	}
 	return nil
+}
+
+// configEntry is one key of the repository's config and its value, empty for
+// a key without one.
+type configEntry struct {
+	key, value string
+}
+
+// repositoryConfig reads the entries of the repository scopes from
+// `git config --list -z --show-scope`, in the order git prints them. Each
+// entry is the scope, a NUL, then the key, and its value after a newline when
+// it has one, then a NUL.
+func repositoryConfig(out []byte) ([]configEntry, error) {
+	fields := bytes.Split(out, []byte{0})
+	if last := len(fields) - 1; len(fields[last]) == 0 {
+		fields = fields[:last]
+	}
+	if len(fields)%2 != 0 {
+		return nil, errors.New("read repository config: git printed an incomplete entry")
+	}
+
+	var entries []configEntry
+	for i := 0; i < len(fields); i += 2 {
+		if !slices.Contains(repositoryScopes, string(fields[i])) {
+			continue
+		}
+		key, value, _ := bytes.Cut(fields[i+1], []byte{'\n'})
+		entries = append(entries, configEntry{key: string(key), value: string(value)})
+	}
+	return entries, nil
+}
+
+// isRemoteURL reports whether an allowed key is remote.<name>.url. git prints
+// the section and key lowercased.
+func isRemoteURL(key string) bool {
+	return strings.HasPrefix(key, "remote.") && strings.HasSuffix(key, ".url")
+}
+
+// fetchURLAllowed reports whether url starts with one of fetchURLSchemes.
+func fetchURLAllowed(url string) bool {
+	return slices.ContainsFunc(fetchURLSchemes, func(scheme string) bool {
+		return strings.HasPrefix(url, scheme)
+	})
+}
+
+// fetchAllowed reports whether a key, as section[.subsection].key, is in
+// fetchAllowlist. The section and key compare case-insensitively, as git
+// does, and any subsection passes.
+func fetchAllowed(key string) bool {
+	first, last := strings.Index(key, "."), strings.LastIndex(key, ".")
+	if first < 0 {
+		return false
+	}
+	section, name := strings.ToLower(key[:first]), strings.ToLower(key[last+1:])
+	hasSubsection := first != last
+
+	a, ok := fetchAllowlist[section]
+	if !ok || a.subsection != hasSubsection {
+		return false
+	}
+	return a.anyKey || slices.Contains(a.keys, name)
 }

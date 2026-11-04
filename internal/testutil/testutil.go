@@ -14,6 +14,8 @@ import (
 	"encoding/pem"
 	"os"
 	"os/exec"
+	"path/filepath"
+	"strings"
 	"testing"
 	"time"
 
@@ -25,13 +27,28 @@ import (
 	"golang.org/x/crypto/ssh"
 )
 
+// LocalURLBase is the https:// prefix the global config IsolateGitConfig
+// writes rewrites to file:///, so a remote can name a local repository with a
+// URL the fetch accepts. Use LocalURL to build one.
+const LocalURLBase = "https://local.test/"
+
 // IsolateGitConfig points every git subprocess of the test binary away from
 // the developer's global and system configuration, so settings such as
-// commit.gpgsign cannot leak into fixtures. Call it from TestMain, before any
-// test runs.
-func IsolateGitConfig() {
+// commit.gpgsign cannot leak into fixtures. Its global config only rewrites
+// LocalURLBase. Call it from TestMain, before any test runs, and call the
+// returned function after them to remove that config.
+func IsolateGitConfig() (cleanup func()) {
+	dir, err := os.MkdirTemp("", "entire-rsl-gitconfig-")
+	if err != nil {
+		panic(err)
+	}
+	global := filepath.Join(dir, "gitconfig")
+	if err := os.WriteFile(global, []byte("[url \"file:///\"]\n\tinsteadOf = "+LocalURLBase+"\n"), 0o600); err != nil {
+		panic(err)
+	}
+
 	for key, value := range map[string]string{
-		"GIT_CONFIG_GLOBAL":   os.DevNull,
+		"GIT_CONFIG_GLOBAL":   global,
 		"GIT_CONFIG_NOSYSTEM": "1",
 		"GIT_CONFIG_COUNT":    "0",
 		"GIT_TERMINAL_PROMPT": "0",
@@ -51,6 +68,13 @@ func IsolateGitConfig() {
 			panic(err)
 		}
 	}
+	return func() { _ = os.RemoveAll(dir) }
+}
+
+// LocalURL returns the URL under LocalURLBase that names the repository at
+// dir, an absolute path.
+func LocalURL(dir string) string {
+	return LocalURLBase + strings.TrimPrefix(filepath.ToSlash(dir), "/")
 }
 
 // The identity fixtures commit as, matching gittuf's test repositories.
@@ -195,15 +219,29 @@ func (r *Repo) Bootstrap(patterns ...string) {
 	}
 }
 
-// Clone clones r into a new directory with git, under remote name. git clone
-// fetches branches and tags only, so the clone has no gittuf refs.
+// Clone clones r from its LocalURL into a new directory with git, under
+// remote name. git clone fetches branches and tags only, so the clone has no
+// gittuf refs.
 func (r *Repo) Clone(t *testing.T, remote string) string {
 	t.Helper()
 
 	dir := t.TempDir()
-	cmd := exec.CommandContext(t.Context(), "git", "clone", "--quiet", "--origin", remote, "--", r.Dir, dir)
+	cmd := exec.CommandContext(t.Context(), "git", "clone", "--quiet", "--origin", remote, "--", LocalURL(r.Dir), dir)
 	if out, err := cmd.CombinedOutput(); err != nil {
 		t.Fatalf("clone %s: %v: %s", r.Dir, err, out)
+	}
+	return dir
+}
+
+// AddWorktree adds a linked worktree of r, detached at rev, and returns its
+// directory.
+func (r *Repo) AddWorktree(t *testing.T, rev string) string {
+	t.Helper()
+
+	dir := filepath.Join(t.TempDir(), "worktree")
+	cmd := exec.CommandContext(t.Context(), "git", "-C", r.Dir, "worktree", "add", "--quiet", "--detach", "--", dir, rev)
+	if out, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("add worktree: %v: %s", err, out)
 	}
 	return dir
 }

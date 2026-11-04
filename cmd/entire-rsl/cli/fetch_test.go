@@ -1,7 +1,9 @@
 package cli
 
 import (
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -31,6 +33,111 @@ func TestNoRSLWithoutConsentDoesNotFetch(t *testing.T) {
 	assert.Contains(t, res.stderr, "--fetch")
 	assert.Empty(t, refs(t, clone, "refs/gittuf/"))
 	assert.Empty(t, refs(t, clone, "refs/remotes/origin/gittuf/"))
+}
+
+func TestFetchWithWorktreeConfig(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+
+	t.Run("allowed keys", func(t *testing.T) {
+		t.Parallel()
+
+		clone := sc.Clone(t, "origin")
+		enableWorktreeConfig(t, clone)
+		gitOut(t, clone, "config", "--worktree", "user.name", "Jane Doe")
+
+		res := execute(t, inRepo(clone), "verify", "--fetch", "refs/heads/main")
+
+		require.Equal(t, ExitOK, res.code, res.stderr)
+		assert.Contains(t, res.stdout, "verified")
+	})
+
+	t.Run("refused key", func(t *testing.T) {
+		t.Parallel()
+
+		clone := sc.Clone(t, "origin")
+		enableWorktreeConfig(t, clone)
+		gitOut(t, clone, "config", "--worktree", "core.sshCommand", "touch /tmp/pwned")
+
+		res := execute(t, inRepo(clone), "refresh")
+
+		assert.Equal(t, ExitFailure, res.code)
+		assert.Contains(t, res.stderr, "will not fetch with: core.sshcommand. Remove them, or fetch the gittuf refs with git yourself")
+		assert.Empty(t, refs(t, clone, "refs/remotes/origin/gittuf/"))
+	})
+}
+
+func TestFetchRefusesAlternateRefsCommand(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	clone := sc.Clone(t, "origin")
+	other := testutil.NewRepo(t)
+	other.Commit("refs/heads/main", "other")
+	marker := filepath.Join(t.TempDir(), "marker")
+	require.NoError(t, os.WriteFile(filepath.Join(clone, ".git", "objects", "info", "alternates"), []byte(filepath.Join(other.Dir, ".git", "objects")+"\n"), 0o600))
+	gitOut(t, clone, "config", "core.alternateRefsCommand", "touch '"+filepath.ToSlash(marker)+"'; true")
+
+	for _, args := range [][]string{{"refresh"}, {"verify", "--fetch", "main"}} {
+		res := execute(t, inRepo(clone), args...)
+
+		assert.Equal(t, ExitFailure, res.code, args)
+		assert.Contains(t, res.stderr, "will not fetch with: core.alternaterefscommand.", args)
+		assert.NoFileExists(t, marker, args)
+		assert.Empty(t, refs(t, clone, "refs/remotes/origin/gittuf/"), args)
+	}
+}
+
+func TestVerifyWithWorktreeConfig(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	enableWorktreeConfig(t, sc.Dir)
+	gitOut(t, sc.Dir, "config", "--worktree", "core.sparseCheckout", "true")
+
+	res := execute(t, inRepo(sc.Dir), "verify", "refs/heads/main")
+
+	require.Equal(t, ExitOK, res.code, res.stdout+res.stderr)
+}
+
+func TestLinkedWorktree(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	wt := sc.AddWorktree(t, "main")
+
+	for _, args := range [][]string{
+		{"verify", "refs/heads/main"},
+		{"verify", sc.TrailerCommit.String()},
+		{"verify", testutil.CheckpointULID},
+		{"branch", "main"},
+	} {
+		res := execute(t, inRepo(wt), args...)
+		assert.Equal(t, ExitOK, res.code, "%v: %s%s", args, res.stdout, res.stderr)
+		assert.Contains(t, res.stdout, "verified", args)
+	}
+}
+
+func TestLinkedWorktreeFetch(t *testing.T) {
+	t.Parallel()
+
+	sc := testutil.NewScenario(t)
+	clone := sc.Clone(t, "origin")
+	wt := filepath.Join(t.TempDir(), "worktree")
+	gitOut(t, clone, "worktree", "add", "--quiet", "--detach", "--", wt, "main")
+
+	res := execute(t, inRepo(wt), "verify", "--fetch", "refs/heads/main")
+
+	require.Equal(t, ExitOK, res.code, res.stdout+res.stderr)
+	assert.Contains(t, refs(t, clone, "refs/gittuf/"), "refs/gittuf/reference-state-log", "gittuf refs are shared by every worktree")
+}
+
+func enableWorktreeConfig(t *testing.T, dir string) {
+	t.Helper()
+
+	gitOut(t, dir, "config", "core.repositoryformatversion", "1")
+	gitOut(t, dir, "config", "extensions.worktreeConfig", "true")
 }
 
 func TestFetchFlagFetchesAndVerifies(t *testing.T) {
@@ -114,7 +221,7 @@ func TestFetchFlagWithSeveralRemotes(t *testing.T) {
 
 	sc := testutil.NewScenario(t)
 	clone := sc.Clone(t, "origin")
-	testutil.AddRemote(t, clone, "upstream", sc.Dir)
+	testutil.AddRemote(t, clone, "upstream", testutil.LocalURL(sc.Dir))
 
 	res := execute(t, inRepo(clone), "log", "--fetch")
 
@@ -161,7 +268,7 @@ func TestPickRemoteWhenSeveral(t *testing.T) {
 	empty.Commit("refs/heads/main", "unrelated")
 
 	clone := empty.Clone(t, "aaa-empty")
-	testutil.AddRemote(t, clone, "zzz-scenario", sc.Dir)
+	testutil.AddRemote(t, clone, "zzz-scenario", testutil.LocalURL(sc.Dir))
 
 	res := execute(t, inRepo(clone), "log")
 	assert.Equal(t, ExitFailure, res.code)
@@ -232,6 +339,8 @@ func TestFetchRefusesUnsafeRepositoryConfig(t *testing.T) {
 		"credential helper": {"credential.helper", "!touch /tmp/pwned"},
 		"include":           {"include.path", "/tmp/evil.config"},
 		"askpass":           {"core.askPass", "/tmp/evil"},
+		"local path remote": {"remote.origin.url", sc.Dir},
+		"file remote":       {"remote.origin.url", "file://" + filepath.ToSlash(sc.Dir)},
 	} {
 		t.Run(name, func(t *testing.T) {
 			t.Parallel()
@@ -242,7 +351,7 @@ func TestFetchRefusesUnsafeRepositoryConfig(t *testing.T) {
 			res := execute(t, inRepo(clone), "log", "--fetch")
 
 			assert.Equal(t, ExitFailure, res.code)
-			assert.Contains(t, res.stderr, "would make a fetch run programs")
+			assert.Contains(t, res.stderr, "will not fetch with")
 			assert.Empty(t, refs(t, clone, "refs/gittuf/"))
 			assert.Empty(t, refs(t, clone, "refs/remotes/origin/gittuf/"))
 		})

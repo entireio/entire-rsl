@@ -1,0 +1,4 @@
+Commit        699c3e686153d9a00df452bb0aaed12d6a3405f2
+Verification  failed: the commit is only in pushes an annotation revoked, so no branch or tag vouches for it
+Contained in  -
+Revoked in    refs/heads/healed, only in the push recorded by skipped #17 2389486e984b, which an annotation revoked
