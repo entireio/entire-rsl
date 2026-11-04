@@ -1,0 +1,17 @@
+Add a section on verifying using gittuf:
+
+gittuf verify-ref refs/tags/v0.1.0 --verbose
+
+Verification with gittuf verify-ref and entire rsl verify must always align. The latter only adds additional metadata that is Entire specific.
+
+---
+
+2
+
+---
+
+add as a new commit
+
+---
+
+go
