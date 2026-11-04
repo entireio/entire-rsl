@@ -27,30 +27,34 @@ The steps below need `cosign` and `gh`. Set `TAG` to the release tag, and `OS`
 (`linux`, `darwin`) and `ARCH` (`amd64`, `arm64`) to your platform:
 
 ```sh
-TAG=v0.1.0 OS=linux ARCH=amd64
-ARCHIVE="entire-rsl_${TAG#v}_${OS}_${ARCH}.tar.gz"
-BASE="https://github.com/entireio/entire-rsl/releases/download/${TAG}"
-curl -fsSLO "${BASE}/${ARCHIVE}"
-curl -fsSLO "${BASE}/checksums.txt"
-curl -fsSLO "${BASE}/checksums.txt.sigstore.json"
-cosign verify-blob \
-  --certificate-identity "https://github.com/entireio/entire-rsl/.github/workflows/release.yml@refs/tags/${TAG}" \
-  --certificate-oidc-issuer https://token.actions.githubusercontent.com \
-  --bundle checksums.txt.sigstore.json \
-  checksums.txt
-grep " ${ARCHIVE}\$" checksums.txt | sha256sum --check # shasum -a 256 --check on macOS
-gh attestation verify "${ARCHIVE}" \
-  --repo entireio/entire-rsl \
-  --signer-workflow entireio/entire-rsl/.github/workflows/release.yml
-tar -xzf "${ARCHIVE}" entire-rsl
-install -m 0755 entire-rsl ~/.local/bin/entire-rsl
+(
+  set -euo pipefail
+  TAG=v0.1.0 OS=linux ARCH=amd64
+  ARCHIVE="entire-rsl_${TAG#v}_${OS}_${ARCH}.tar.gz"
+  BASE="https://github.com/entireio/entire-rsl/releases/download/${TAG}"
+  curl -fsSLO "${BASE}/${ARCHIVE}"
+  curl -fsSLO "${BASE}/checksums.txt"
+  curl -fsSLO "${BASE}/checksums.txt.sigstore.json"
+  cosign verify-blob \
+    --certificate-identity "https://github.com/entireio/entire-rsl/.github/workflows/release.yml@refs/tags/${TAG}" \
+    --certificate-oidc-issuer https://token.actions.githubusercontent.com \
+    --bundle checksums.txt.sigstore.json \
+    checksums.txt
+  grep " ${ARCHIVE}\$" checksums.txt | sha256sum --check
+  gh attestation verify "${ARCHIVE}" \
+    --repo entireio/entire-rsl \
+    --signer-workflow entireio/entire-rsl/.github/workflows/release.yml
+  tar -xzf "${ARCHIVE}" entire-rsl
+  install -m 0755 entire-rsl ~/.local/bin/entire-rsl
+)
 ```
 
-Stop if any check fails. Entire finds `entire-rsl` on `PATH`, so any
-directory on `PATH` works in place of `~/.local/bin`.
-`entire plugin install ./entire-rsl` links rather than copies, so the file
-must stay where it is. On Windows the archive is a `.zip` holding
-`entire-rsl.exe`.
+The subshell stops at the first failed step, so nothing is installed unless
+every check passes. Entire finds `entire-rsl` on `PATH`, so any directory on
+`PATH` works in place of `~/.local/bin`. `entire plugin install ./entire-rsl`
+links rather than copies, so the file must stay where it is. On macOS, use
+`shasum -a 256 --check` in place of `sha256sum --check`. On Windows the
+archive is a `.zip` holding `entire-rsl.exe`.
 
 From a local build:
 
