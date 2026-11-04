@@ -1,0 +1,8 @@
+Improve the release pipeline:
+- Sign checksums or artifacts with Sigstore.
+- Publish an SPDX or CycloneDX SBOM.
+- Ensure that this works if a repository with immutable releases enabled.
+
+---
+
+commit changes
