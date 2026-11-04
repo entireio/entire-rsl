@@ -1,0 +1,10 @@
+Review verify <commit-sha>. Ensure that it states correctly what it is verifying. If the commit itself is not inside a verified ref (first checked by gittuf), it should be rejected.
+
+---
+
+heads and tags only
+verify ref containment
+
+---
+
+go ahead
