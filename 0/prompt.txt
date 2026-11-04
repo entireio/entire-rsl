@@ -1,0 +1,39 @@
+In windows:
+
+
+<pasted_content id="e449">
+ok      github.com/entireio/entire-rsl/internal/entirefields    0.053s
+--- FAIL: TestSyncSkipsAlternateRefsCommand (2.99s)
+    config_test.go:213: 
+            Error Trace:    D:/a/entire-rsl/entire-rsl/internal/gitcli/config_test.go:213
+            Error:          unable to find file "C:\\Users\\RUNNER~1\\AppData\\Local\\Temp\\REDACTED\\001\\marker"
+            Test:           TestSyncSkipsAlternateRefsCommand
+            Messages:       a plain fetch runs it, so the override is what stopped it
+FAIL
+FAIL    github.com/entireio/entire-rsl/internal/gitcli    12.987s
+</pasted_content id="e449">
+
+
+In general:
+
+
+<pasted_content id="e449">
+Good ancestors marked revoked after skip
+High Severity
+
+findContainers treats tipstate.Revoked as “this commit arrived only in a revoked push.” Relate actually returns Revoked whenever any skipped entry contains the commit, including good history that a later revoked push still has as ancestors. After a revocation, verify of those earlier commits fails even though an unskipped entry recorded them.
+</pasted_content id="e449">
+
+
+
+
+<pasted_content id="e449">
+Worktree config read ignores common dir
+Medium Severity
+
+rawConfig opens config on go-git's storage filesystem. In a linked worktree that filesystem is .git/worktrees/<name>, which has no config (it lives in the common dir). The read comes back empty, so extensions.worktreeConfig is never seen and LookupConfig misses both the shared config and that worktree's config.worktree. commonDir already resolves this path for gittuf, but the new config reader does not use it.
+</pasted_content id="e449">
+
+---
+
+yep
