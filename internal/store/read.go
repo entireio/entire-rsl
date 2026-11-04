@@ -59,6 +59,22 @@ func (s *Store) IsShallowBoundary(id githash.Hash) (bool, error) {
 	return slices.Contains(shallow, h), nil
 }
 
+// HasObject reports whether id names an object in the repository.
+func (s *Store) HasObject(id githash.Hash) (bool, error) {
+	h, err := toGoGit(id)
+	if err != nil {
+		return false, err
+	}
+	err = s.repo.Storer.HasEncodedObject(h)
+	if errors.Is(err, plumbing.ErrObjectNotFound) {
+		return false, nil
+	}
+	if err != nil {
+		return false, &ObjectError{Op: opReadObject, ID: id.String(), Err: err}
+	}
+	return true, nil
+}
+
 // IsCommit reports whether id names a commit object.
 func (s *Store) IsCommit(id githash.Hash) (bool, error) {
 	h, err := toGoGit(id)
@@ -67,7 +83,7 @@ func (s *Store) IsCommit(id githash.Hash) (bool, error) {
 	}
 	obj, err := s.repo.Storer.EncodedObject(plumbing.AnyObject, h)
 	if err != nil {
-		return false, &ObjectError{Op: "read object", ID: id.String(), Err: err}
+		return false, &ObjectError{Op: opReadObject, ID: id.String(), Err: err}
 	}
 	return obj.Type() == plumbing.CommitObject, nil
 }

@@ -82,6 +82,9 @@ func (e *ObjectError) Unwrap() error { return e.Err }
 // opReadShallow names reads of the shallow boundary list in errors.
 const opReadShallow = "read shallow boundaries"
 
+// opReadObject names object reads in errors.
+const opReadObject = "read object"
+
 // maxWalk caps the commits one history walk visits.
 const maxWalk = 10_000_000
 
@@ -385,7 +388,7 @@ func (s *Store) GetObjectSignature(objectID githash.Hash) ([]byte, []byte, error
 
 	obj, err := s.repo.Storer.EncodedObject(plumbing.AnyObject, id)
 	if err != nil {
-		return nil, nil, &ObjectError{Op: "read object", ID: objectID.String(), Err: err}
+		return nil, nil, &ObjectError{Op: opReadObject, ID: objectID.String(), Err: err}
 	}
 
 	if obj.Type() == plumbing.CommitObject {

@@ -37,6 +37,11 @@ const maxCoverSearch = 1000
 // ErrNoEntries is returned when the RSL holds no unskipped entry for the ref.
 var ErrNoEntries = errors.New("the RSL has no unskipped entry for the ref")
 
+// ErrTipMissing is returned when the object the RSL tip records is not in the
+// local repository and the local ref is not at an earlier recorded tip, so
+// the two cannot be compared.
+var ErrTipMissing = errors.New("the object the RSL tip records is not in the local repository")
+
 // Relation is how a local tip relates to the RSL record of its ref.
 type Relation struct {
 	// Entry is, for Behind, the unskipped entry that recorded the local tip,
@@ -53,6 +58,9 @@ type Relation struct {
 	// Commits counts the commits between the local tip and the RSL tip: the
 	// local ref lacks them for Behind, the RSL lacks them for Ahead.
 	Commits int
+	// TipMissing is set for Behind when the object the RSL tip records is
+	// not in the local repository, so Commits could not be counted.
+	TipMissing bool
 }
 
 // Relate compares local with the entries for ref. Errors reading the
@@ -81,15 +89,30 @@ func Relate(ctx context.Context, st *store.Store, reader *rslread.Reader, ref st
 		return rel, nil
 	}
 
+	// Fetching only the gittuf refs brings the RSL tip's entry without the
+	// object it records.
+	tipKnown, err := st.HasObject(rel.Tip.Target)
+	if err != nil {
+		return Relation{}, err
+	}
+
 	for i := 1; i < len(unskipped); i++ {
 		if unskipped[i].Target.Equal(local) {
 			entry := unskipped[i]
 			rel.Kind, rel.Entry, rel.Exact, rel.EntriesBehind = Behind, &entry, true, i
+			if !tipKnown {
+				rel.TipMissing = true
+				return rel, nil
+			}
 			if rel.Commits, err = commitsBetween(st, rel.Tip.Target, local); err != nil {
 				return Relation{}, err
 			}
 			return rel, nil
 		}
+	}
+
+	if !tipKnown {
+		return Relation{}, fmt.Errorf("%w (%s, entry #%d). Fetch the ref to compare it with the RSL", ErrTipMissing, rel.Tip.Target.String(), rel.Tip.Number)
 	}
 
 	// Ancestry only applies to commits. Anything else, such as a tag
@@ -221,6 +244,10 @@ func (r Relation) Describe() string {
 		where := fmt.Sprintf("in the push recorded by entry #%d", r.Entry.Number)
 		if r.Exact {
 			where = fmt.Sprintf("at entry #%d", r.Entry.Number)
+		}
+		if r.TipMissing {
+			return fmt.Sprintf("the local ref is behind: it is %s, the RSL tip is entry #%d (%s behind, and the tip's object is not in the local repository). Fetch to update it",
+				where, r.Tip.Number, plural(r.EntriesBehind, "entry", "entries"))
 		}
 		return fmt.Sprintf("the local ref is behind: it is %s, the RSL tip is entry #%d (%s, %s behind). Fetch to update it",
 			where, r.Tip.Number, plural(r.EntriesBehind, "entry", "entries"), plural(r.Commits, "commit", "commits"))
