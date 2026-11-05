@@ -79,6 +79,9 @@ changelog:
 # after that.
 release:
   draft: true
+  # Marks a tag with a pre-release suffix, such as v1.2.0-rc.1, as a
+  # pre-release on the draft.
+  prerelease: auto
   # A re-run after a failure deletes the earlier run's draft instead of
   # leaving a second one beside it.
   replace_existing_draft: true
