@@ -20,9 +20,9 @@ import (
 	"time"
 
 	"github.com/entireio/entire-rsl/internal/clusters"
+	"github.com/gittuf/gittuf/experimental/gittuf"
 	"github.com/gittuf/gittuf/pkg/githash"
 	"github.com/gittuf/gittuf/pkg/gitinterface"
-	"github.com/gittuf/gittuf/pkg/policy"
 	"github.com/gittuf/gittuf/pkg/rsl"
 	"golang.org/x/crypto/ssh"
 )
@@ -152,6 +152,12 @@ type Repo struct {
 // signer for.
 var DefaultRefPatterns = []string{"git:refs/heads/*", "git:refs/tags/*", "git:refs/entire/checkpoints/*"}
 
+// gittuf's policy refs (internal/policy), which gittuf does not export.
+const (
+	PolicyRef        = "refs/gittuf/policy"
+	PolicyStagingRef = "refs/gittuf/policy-staging"
+)
+
 // NewRepo creates an empty repository with no gittuf policy.
 func NewRepo(t *testing.T) *Repo {
 	t.Helper()
@@ -206,7 +212,7 @@ func (r *Repo) Bootstrap(patterns ...string) {
 		patterns = DefaultRefPatterns
 	}
 
-	_, err := policy.Bootstrap(context.Background(), r.Git, policy.BootstrapParams{
+	tree, err := gittuf.AuthorPolicy(context.Background(), r.Git, gittuf.AuthorPolicyParams{
 		RootSigners:         []crypto.Signer{r.Root.Private},
 		RootPublicKeys:      []crypto.PublicKey{r.Root.Public},
 		RootThreshold:       1,
@@ -215,7 +221,21 @@ func (r *Repo) Bootstrap(patterns ...string) {
 		Expires:             time.Date(2100, time.January, 1, 0, 0, 0, 0, time.UTC),
 	})
 	if err != nil {
-		r.t.Fatalf("bootstrap gittuf policy: %v", err)
+		r.t.Fatalf("author gittuf policy: %v", err)
+	}
+
+	// Stage then apply, as gittuf's own policy commands do, so the RSL holds
+	// an unsigned entry for each ref.
+	tip, err := r.Git.Commit(tree, PolicyStagingRef, "Bootstrap gittuf policy", false)
+	if err != nil {
+		r.t.Fatalf("commit gittuf policy: %v", err)
+	}
+	if err := rsl.NewReferenceEntry(PolicyStagingRef, tip).Commit(r.Git, false); err != nil {
+		r.t.Fatalf("record RSL entry for %s: %v", PolicyStagingRef, err)
+	}
+	r.SetRef(PolicyRef, tip)
+	if err := rsl.NewReferenceEntry(PolicyRef, tip).Commit(r.Git, false); err != nil {
+		r.t.Fatalf("record RSL entry for %s: %v", PolicyRef, err)
 	}
 }
 

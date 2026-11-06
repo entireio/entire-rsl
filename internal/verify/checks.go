@@ -11,8 +11,9 @@ import (
 	"github.com/entireio/entire-rsl/internal/rslread"
 	"github.com/entireio/entire-rsl/internal/store"
 	"github.com/entireio/entire-rsl/internal/tipstate"
+	"github.com/gittuf/gittuf/experimental/gittuf"
+	"github.com/gittuf/gittuf/experimental/gittuf/options/loadpolicy"
 	"github.com/gittuf/gittuf/pkg/githash"
-	"github.com/gittuf/gittuf/pkg/policy"
 )
 
 // CheckStatus is the outcome of one check.
@@ -114,7 +115,8 @@ func checkTip(ctx context.Context, st *store.Store, reader *rslread.Reader, ref 
 func checkRoot(ctx context.Context, st *store.Store, keys []clusters.Key) (Check, *clusters.Key, error) {
 	c := Check{Name: CheckRoot}
 
-	info, err := policy.InspectRoot(ctx, st)
+	repo := gittuf.NewStorerRepository(st)
+	loaded, err := repo.LoadPolicy(ctx)
 	if err != nil {
 		if isOperational(ctx, err) {
 			return Check{}, nil, fmt.Errorf("inspect the root of trust: %w", err)
@@ -122,6 +124,7 @@ func checkRoot(ctx context.Context, st *store.Store, keys []clusters.Key) (Check
 		c.Status, c.Detail = CheckFail, "the root of trust does not verify: "+err.Error()
 		return c, nil, nil
 	}
+	info := loaded.Root()
 
 	roots := byRole(keys, clusters.RoleFleetRoot)
 	var anchor *clusters.Key
@@ -132,7 +135,7 @@ func checkRoot(ctx context.Context, st *store.Store, keys []clusters.Key) (Check
 		}
 		// gittuf requires every initial root key it is given to have signed
 		// the first root, so each known root is tried on its own.
-		_, err = policy.InspectRoot(ctx, st, policy.WithInitialRootKeys(pub))
+		_, err = repo.LoadPolicy(ctx, loadpolicy.WithInitialRootKeys(pub))
 		if err == nil {
 			anchor = &roots[i]
 			break

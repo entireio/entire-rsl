@@ -21,7 +21,7 @@ var writeCalls = []*regexp.Regexp{
 	regexp.MustCompile(`^\.(SetReference|DeleteReference|CheckAndSetReference|CheckAndDeleteReference|RemoveReference|SetEncodedObject|SetConfig|SetIndex|SetShallow)\($`),
 	regexp.MustCompile(`^\.(WriteBlob|WriteTree|Commit|CommitUsingSpecificKey|CommitWithoutNumber|ResetDueToError)\($`),
 	regexp.MustCompile(`^\.(RecordRSL\w*|SkipAllInvalidReferenceEntriesForRef|ApplyPolicy|StagePolicy|PushPolicy|PullPolicy|PushRSL|PullRSL|ReconcileLocalRSLWithRemote|Sync)\($`),
-	regexp.MustCompile(`^(policy\.Bootstrap|policy\.Author|rsl\.SkipAllInvalidReferenceEntriesForRef)\($`),
+	regexp.MustCompile(`^(gittuf\.AuthorPolicy|rsl\.SkipAllInvalidReferenceEntriesForRef)\($`),
 	regexp.MustCompile(`^\.(Push|Fetch|FetchRefSpec|FetchObject|CreateBranch|CreateTag|DeleteTag|DeleteBranch|DeleteRemote|CreateRemote|Worktree)\($`),
 	regexp.MustCompile(`^os\.(WriteFile|Create|CreateTemp|Mkdir|MkdirAll|MkdirTemp|Remove|RemoveAll|Rename|OpenFile|Chmod|Chtimes|Symlink|Link|Truncate)\($`),
 }
@@ -200,7 +200,7 @@ import (
 	"os"
 	"os/exec"
 
-	"github.com/gittuf/gittuf/pkg/policy"
+	"github.com/gittuf/gittuf/experimental/gittuf"
 	"github.com/gittuf/gittuf/pkg/rsl"
 )
 
@@ -214,7 +214,7 @@ func entry(st store) error {
 
 func record(r repo) error { return r.RecordRSLEntryForReference(nil, "x", true) }
 
-func boot(s store) { policy.Bootstrap(nil, s, policy.BootstrapParams{}) }
+func author(s store) { gittuf.AuthorPolicy(nil, s, gittuf.AuthorPolicyParams{}) }
 
 func run() { _ = exec.Command("git", "update-ref", "refs/heads/x", "y") }
 `
@@ -224,7 +224,7 @@ func run() { _ = exec.Command("git", "update-ref", "refs/heads/x", "y") }
 	for _, f := range findings {
 		matches = append(matches, f.match)
 	}
-	assert.ElementsMatch(t, []string{"os.WriteFile(", ".SetReference(", ".Commit(", ".RecordRSLEntryForReference(", "policy.Bootstrap(", `"update-ref"`}, matches)
+	assert.ElementsMatch(t, []string{"os.WriteFile(", ".SetReference(", ".Commit(", ".RecordRSLEntryForReference(", "gittuf.AuthorPolicy(", `"update-ref"`}, matches)
 }
 
 func TestGuardIgnoresStringsOutsideProcessCode(t *testing.T) {

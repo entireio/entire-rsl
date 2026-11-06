@@ -166,11 +166,11 @@ func (r *Reader) walk(ctx context.Context, visit func(raw) (bool, error)) error 
 func (r *Reader) parent(entry rsl.Entry) (rsl.Entry, bool, error) {
 	id := entry.GetID()
 
-	parents, err := r.st.GetCommitParentIDs(id)
+	info, err := r.st.GetCommitInfo(id)
 	if err != nil {
 		return nil, false, fmt.Errorf("read parents of RSL entry %s: %w", id.String(), err)
 	}
-	if len(parents) == 0 {
+	if len(info.ParentIDs) == 0 {
 		shallow, err := r.st.IsShallowBoundary(id)
 		if err != nil {
 			return nil, false, err

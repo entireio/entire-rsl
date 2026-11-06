@@ -24,7 +24,6 @@ import (
 	"github.com/gittuf/gittuf/experimental/gittuf"
 	"github.com/gittuf/gittuf/pkg/githash"
 	"github.com/gittuf/gittuf/pkg/gitstore"
-	"github.com/gittuf/gittuf/pkg/policy"
 	"github.com/gittuf/gittuf/pkg/rsl"
 )
 
@@ -41,6 +40,10 @@ const (
 
 // gitRuleScheme prefixes a gittuf rule pattern that protects a ref.
 const gitRuleScheme = "git:"
+
+// PolicyRef is gittuf's applied policy ref (internal/policy.PolicyRef), which
+// gittuf does not export.
+const PolicyRef = "refs/gittuf/policy"
 
 // Result is the outcome of verifying one ref.
 type Result struct {
@@ -178,7 +181,7 @@ func Verify(ctx context.Context, st *store.Store, ref string, opts Options) (res
 	opts.Logger.DebugContext(ctx, "running gittuf verification",
 		slog.String("ref", ref), slog.String("from_entry", first.GetID().String()))
 
-	tip, err := policy.VerifyRefFromEntry(ctx, st, ref, first.GetID())
+	tip, err := gittuf.NewStorerRepository(st).VerifyRefFromEntry(ctx, ref, first.GetID())
 	if err != nil {
 		if isOperational(ctx, err) {
 			return errorResult(ctx, ref, "verification could not complete", err)
@@ -209,7 +212,7 @@ func Verify(ctx context.Context, st *store.Store, ref string, opts Options) (res
 // hasPolicy reports whether the RSL records an applied policy, as gittuf's
 // own HasPolicy does (experimental/gittuf/policy.go).
 func hasPolicy(st gitstore.Storer) (bool, error) {
-	_, _, err := rsl.GetLatestReferenceUpdaterEntry(st, rsl.ForReference(policy.Ref), rsl.IsUnskipped())
+	_, _, err := rsl.GetLatestReferenceUpdaterEntry(st, rsl.ForReference(PolicyRef), rsl.IsUnskipped())
 	if errors.Is(err, rsl.ErrRSLEntryNotFound) {
 		return false, nil
 	}
@@ -261,7 +264,7 @@ func listCoveringRules(ctx context.Context, repoPath, ref string) ([]string, err
 	target := gitRuleScheme + ref
 	var names []string
 
-	rules, err := repo.ListRules(ctx, policy.Ref)
+	rules, err := repo.ListRules(ctx, PolicyRef)
 	if err != nil {
 		return nil, fmt.Errorf("list policy rules: %w", err)
 	}
@@ -271,7 +274,7 @@ func listCoveringRules(ctx context.Context, repoPath, ref string) ([]string, err
 		}
 	}
 
-	globals, err := repo.ListGlobalRules(ctx, policy.Ref)
+	globals, err := repo.ListGlobalRules(ctx, PolicyRef)
 	if err != nil {
 		return nil, fmt.Errorf("list global policy rules: %w", err)
 	}
@@ -294,6 +297,7 @@ func isOperational(ctx context.Context, err error) bool {
 		errors.Is(err, store.ErrReadOnly) ||
 		errors.Is(err, store.ErrWalkLimit) ||
 		errors.Is(err, gitstore.ErrReferenceNotFound) ||
+		errors.Is(err, gittuf.ErrRefNotFullyQualified) ||
 		errors.As(err, &objErr)
 }
 

@@ -16,7 +16,7 @@ import (
 	"github.com/entireio/entire-rsl/internal/repo"
 	"github.com/entireio/entire-rsl/internal/rslread"
 	"github.com/entireio/entire-rsl/internal/sanitize"
-	"github.com/gittuf/gittuf/pkg/policy"
+	"github.com/entireio/entire-rsl/internal/verify"
 	pkgrsl "github.com/gittuf/gittuf/pkg/rsl"
 )
 
@@ -184,7 +184,7 @@ func (a *app) syncGittufRefs(ctx context.Context, r *repo.Repo, remote string, f
 // not hosted on Entire.
 func warnMissingGittufRefs(w io.Writer, remote string, updates []gitcli.RefUpdate) {
 	var missing []string
-	for _, ref := range []string{pkgrsl.Ref, policy.Ref} {
+	for _, ref := range []string{pkgrsl.Ref, verify.PolicyRef} {
 		if !slices.ContainsFunc(updates, func(u gitcli.RefUpdate) bool { return u.Ref == ref }) {
 			missing = append(missing, ref)
 		}
