@@ -1,0 +1,9 @@
+bump the pjbgf/gittuf to latest from the branch api-and-tag
+
+---
+
+commit changes
+
+---
+
+go

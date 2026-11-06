@@ -3,9 +3,13 @@
   "checkpoint_id": "01M6S2FE82PXEDE1AWFNMXGM5Z",
   "strategy": "manual-commit",
   "branch": "gittuf-api",
-  "checkpoints_count": 1,
+  "checkpoints_count": 3,
   "files_touched": [
     "cmd/entire-rsl/cli/repo.go",
+    "cmd/entire-rsl/cli/rsl_verify_test.go",
+    "cmd/entire-rsl/cli/testdata/tag_moved.json",
+    "cmd/entire-rsl/cli/testdata/tag_moved.txt",
+    "cmd/entire-rsl/cli/testdata/verify_tag_moved.txt",
     "go.mod",
     "go.sum",
     "internal/guard/readonly_test.go",
@@ -26,24 +30,31 @@
       "compact_transcript": "/0/transcript.jsonl",
       "content_hash": "/0/content_hash.txt",
       "prompt": "/0/prompt.txt"
+    },
+    {
+      "metadata": "/1/metadata.json",
+      "transcript": "/1/full.jsonl",
+      "compact_transcript": "/1/transcript.jsonl",
+      "content_hash": "/1/content_hash.txt",
+      "prompt": "/1/prompt.txt"
     }
   ],
   "token_usage": {
-    "input_tokens": 96,
-    "cache_creation_tokens": 138028,
-    "cache_read_tokens": 6037881,
-    "output_tokens": 20521,
-    "api_call_count": 48
+    "input_tokens": 160,
+    "cache_creation_tokens": 227299,
+    "cache_read_tokens": 8907799,
+    "output_tokens": 30689,
+    "api_call_count": 78
   },
   "redaction": {
-    "replacements": 0,
+    "replacements": 18,
     "layers": {
       "betterleaks": 0,
       "connection_string": 0,
       "credential_key": 0,
       "credential_value": 0,
       "credentialed_uri": 0,
-      "entropy": 0,
+      "entropy": 18,
       "key_context": 0,
       "provider_token": 0,
       "shell_stdin": 0
