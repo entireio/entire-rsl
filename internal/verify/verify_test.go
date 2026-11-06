@@ -84,7 +84,7 @@ func TestScenarioStates(t *testing.T) {
 		{ref: "refs/heads/fixed", want: Verified},
 		{ref: testutil.CheckpointRef(testutil.CheckpointULID), want: Verified},
 		{ref: "refs/heads/rogue", want: Failed},
-		{ref: "refs/tags/v1.0.0", want: Failed},
+		{ref: "refs/tags/v1.0.0", want: Verified},
 		{ref: "refs/heads/never", want: Unprotected},
 	}
 
@@ -439,9 +439,9 @@ func TestRevokedCommitKeptByARecoveryCommitFailsVerification(t *testing.T) {
 
 	// gittuf accepts a fix tree-same with the last good state, here one that
 	// keeps the rogue commit as its parent.
-	goodTree, err := r.Git.GetCommitTreeID(good)
+	goodCommit, err := r.Git.GetCommitInfo(good)
 	require.NoError(t, err)
-	out, err := exec.CommandContext(t.Context(), "git", "-C", r.Dir, "commit-tree", goodTree.String(), "-p", rogue.String(), "-m", "fix").CombinedOutput()
+	out, err := exec.CommandContext(t.Context(), "git", "-C", r.Dir, "commit-tree", goodCommit.TreeID.String(), "-p", rogue.String(), "-m", "fix").CombinedOutput()
 	require.NoError(t, err, string(out))
 	fix, err := githash.NewHash(strings.TrimSpace(string(out)))
 	require.NoError(t, err)

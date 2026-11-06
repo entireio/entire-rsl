@@ -4,7 +4,8 @@ import (
 	"os"
 	"testing"
 
-	"github.com/gittuf/gittuf/pkg/policy"
+	"github.com/gittuf/gittuf/experimental/gittuf"
+	verifyopts "github.com/gittuf/gittuf/experimental/gittuf/options/verify"
 	"github.com/gittuf/gittuf/pkg/rsl"
 	"github.com/stretchr/testify/assert"
 	"github.com/stretchr/testify/require"
@@ -26,7 +27,7 @@ func TestFixtureVerifiesWithGittuf(t *testing.T) {
 	commit := r.Commit("refs/heads/main", "first")
 	entry := r.Record(r.Cluster, "refs/heads/main", rsl.CustomFields{"custom.entire.io/pusher": "01J9ZAAAAAAAAAAAAAAAAAAAAA (jane)"})
 
-	tip, err := policy.VerifyRef(t.Context(), r.Git, "refs/heads/main")
+	tip, err := gittuf.NewStorerRepository(r.Git).VerifyRef(t.Context(), "refs/heads/main", verifyopts.WithLatestOnly())
 	require.NoError(t, err)
 	assert.Equal(t, commit, tip)
 
@@ -47,7 +48,7 @@ func TestFixtureRogueSignatureFailsGittuf(t *testing.T) {
 	r.Commit("refs/heads/main", "first")
 	r.Record(r.Rogue, "refs/heads/main", nil)
 
-	_, err := policy.VerifyRef(t.Context(), r.Git, "refs/heads/main")
+	_, err := gittuf.NewStorerRepository(r.Git).VerifyRef(t.Context(), "refs/heads/main", verifyopts.WithLatestOnly())
 	require.Error(t, err)
 }
 
@@ -82,11 +83,11 @@ func TestScenarioVerificationOutcomes(t *testing.T) {
 	s := NewScenario(t)
 
 	for _, ref := range []string{"refs/heads/main", "refs/heads/feature", "refs/heads/fixed", CheckpointRef(CheckpointULID)} {
-		_, err := policy.VerifyRef(t.Context(), s.Git, ref)
+		_, err := gittuf.NewStorerRepository(s.Git).VerifyRef(t.Context(), ref, verifyopts.WithLatestOnly())
 		require.NoError(t, err, ref)
 	}
 
-	_, err := policy.VerifyRef(t.Context(), s.Git, "refs/heads/rogue")
+	_, err := gittuf.NewStorerRepository(s.Git).VerifyRef(t.Context(), "refs/heads/rogue", verifyopts.WithLatestOnly())
 	assert.Error(t, err, "rogue")
 }
 
@@ -99,11 +100,11 @@ func TestAppendedEntriesVerifyWithGittuf(t *testing.T) {
 	first := r.Record(r.Cluster, "refs/heads/main", nil)
 	r.AppendEntries(t, r.Cluster, "refs/heads/main", target, 25)
 
-	tip, err := policy.VerifyRef(t.Context(), r.Git, "refs/heads/main")
+	tip, err := gittuf.NewStorerRepository(r.Git).VerifyRef(t.Context(), "refs/heads/main", verifyopts.WithLatestOnly())
 	require.NoError(t, err)
 	assert.Equal(t, target, tip)
 
-	_, err = policy.VerifyRefFromEntry(t.Context(), r.Git, "refs/heads/main", first)
+	_, err = gittuf.NewStorerRepository(r.Git).VerifyRefFromEntry(t.Context(), "refs/heads/main", first)
 	require.NoError(t, err)
 
 	latest, err := rsl.GetLatestEntry(r.Git)

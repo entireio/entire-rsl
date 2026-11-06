@@ -46,7 +46,7 @@ func (s *Store) CommitInfo(id githash.Hash) (CommitInfo, error) {
 }
 
 // IsShallowBoundary reports whether id is a shallow boundary: a commit whose
-// parents were cut off by a shallow fetch, so GetCommitParentIDs reports none.
+// parents were cut off by a shallow fetch, so GetCommitInfo reports no parents.
 func (s *Store) IsShallowBoundary(id githash.Hash) (bool, error) {
 	h, err := toGoGit(id)
 	if err != nil {

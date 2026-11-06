@@ -10,10 +10,11 @@ import (
 	"testing"
 
 	"github.com/entireio/entire-rsl/internal/testutil"
+	"github.com/gittuf/gittuf/experimental/gittuf"
+	verifyopts "github.com/gittuf/gittuf/experimental/gittuf/options/verify"
 	"github.com/gittuf/gittuf/pkg/githash"
 	"github.com/gittuf/gittuf/pkg/gitinterface"
 	"github.com/gittuf/gittuf/pkg/gitstore"
-	"github.com/gittuf/gittuf/pkg/policy"
 	"github.com/gittuf/gittuf/pkg/rsl"
 	gogit "github.com/go-git/go-git/v6"
 	"github.com/stretchr/testify/assert"
@@ -82,17 +83,9 @@ func TestMatchesGitinterfaceOnScenario(t *testing.T) {
 	for _, id := range ids {
 		commits = append(commits, id)
 
-		wantMsg, wantErr := ref.GetCommitMessage(id)
-		gotMsg, gotErr := got.GetCommitMessage(id)
-		requireSame(t, "GetCommitMessage "+id.String(), wantMsg, wantErr, gotMsg, gotErr)
-
-		wantTree, wantErr := ref.GetCommitTreeID(id)
-		gotTree, gotErr := got.GetCommitTreeID(id)
-		requireSame(t, "GetCommitTreeID", wantTree, wantErr, gotTree, gotErr)
-
-		wantParents, wantErr := ref.GetCommitParentIDs(id)
-		gotParents, gotErr := got.GetCommitParentIDs(id)
-		requireSame(t, "GetCommitParentIDs", wantParents, wantErr, gotParents, gotErr)
+		wantInfo, wantErr := ref.GetCommitInfo(id)
+		gotInfo, gotErr := got.GetCommitInfo(id)
+		requireSame(t, "GetCommitInfo "+id.String(), wantInfo, wantErr, gotInfo, gotErr)
 
 		wantPayload, wantSig, wantErr := ref.GetObjectSignature(id)
 		gotPayload, gotSig, gotErr := got.GetObjectSignature(id)
@@ -100,7 +93,7 @@ func TestMatchesGitinterfaceOnScenario(t *testing.T) {
 		requireSame(t, "GetObjectSignature signature", wantSig, wantErr, gotSig, gotErr)
 	}
 
-	refs := []string{"refs/heads/main", "refs/heads/feature", "refs/heads/rogue", "refs/heads/fixed", "refs/tags/v1.0.0", rsl.Ref, policy.Ref, policy.StagingRef, testutil.CheckpointRef(testutil.CheckpointULID), "refs/heads/missing", "HEAD"}
+	refs := []string{"refs/heads/main", "refs/heads/feature", "refs/heads/rogue", "refs/heads/fixed", "refs/tags/v1.0.0", rsl.Ref, testutil.PolicyRef, testutil.PolicyStagingRef, testutil.CheckpointRef(testutil.CheckpointULID), "refs/heads/missing", "HEAD"}
 	for _, name := range refs {
 		wantTip, wantErr := ref.GetReference(name)
 		gotTip, gotErr := got.GetReference(name)
@@ -113,10 +106,11 @@ func TestMatchesGitinterfaceOnScenario(t *testing.T) {
 		}
 	}
 
-	policyTip, err := ref.GetReference(policy.Ref)
+	policyTip, err := ref.GetReference(testutil.PolicyRef)
 	require.NoError(t, err)
-	policyTree, err := ref.GetCommitTreeID(policyTip)
+	policyCommit, err := ref.GetCommitInfo(policyTip)
 	require.NoError(t, err)
+	policyTree := policyCommit.TreeID
 
 	wantFiles, wantErr := ref.GetAllFilesInTree(policyTree)
 	gotFiles, gotErr := got.GetAllFilesInTree(policyTree)
@@ -207,10 +201,11 @@ func TestFilePathsChangedByMergeMatchesGitinterface(t *testing.T) {
 	r.SetRef("refs/heads/side", base)
 	right := r.Commit("refs/heads/side", "right")
 
-	leftTree, err := r.Git.GetCommitTreeID(left)
+	leftCommit, err := r.Git.GetCommitInfo(left)
 	require.NoError(t, err)
-	rightTree, err := r.Git.GetCommitTreeID(right)
+	rightCommit, err := r.Git.GetCommitInfo(right)
 	require.NoError(t, err)
+	leftTree, rightTree := leftCommit.TreeID, rightCommit.TreeID
 
 	got := open(t, r.Dir)
 	for name, tree := range map[string]githash.Hash{"tree of last parent": rightTree, "tree of first parent": leftTree} {
@@ -228,17 +223,18 @@ func TestVerificationMatchesGitinterface(t *testing.T) {
 	t.Parallel()
 
 	sc := testutil.NewScenario(t)
-	got := open(t, sc.Dir)
+	want := gittuf.NewStorerRepository(sc.Git)
+	got := gittuf.NewStorerRepository(open(t, sc.Dir))
 
 	for _, ref := range []string{"refs/heads/main", "refs/heads/feature", "refs/heads/rogue", "refs/heads/fixed", "refs/tags/v1.0.0", testutil.CheckpointRef(testutil.CheckpointULID)} {
-		wantTip, wantErr := policy.VerifyRef(t.Context(), sc.Git, ref)
-		gotTip, gotErr := policy.VerifyRef(t.Context(), got, ref)
+		wantTip, wantErr := want.VerifyRef(t.Context(), ref, verifyopts.WithLatestOnly())
+		gotTip, gotErr := got.VerifyRef(t.Context(), ref, verifyopts.WithLatestOnly())
 		requireSame(t, "VerifyRef "+ref, wantTip, wantErr, gotTip, gotErr)
 
 		first, _, err := rsl.GetFirstReferenceUpdaterEntryForRef(sc.Git, ref)
 		require.NoError(t, err)
-		wantTip, wantErr = policy.VerifyRefFromEntry(t.Context(), sc.Git, ref, first.GetID())
-		gotTip, gotErr = policy.VerifyRefFromEntry(t.Context(), got, ref, first.GetID())
+		wantTip, wantErr = want.VerifyRefFromEntry(t.Context(), ref, first.GetID())
+		gotTip, gotErr = got.VerifyRefFromEntry(t.Context(), ref, first.GetID())
 		requireSame(t, "VerifyRefFromEntry "+ref, wantTip, wantErr, gotTip, gotErr)
 	}
 }
@@ -453,7 +449,7 @@ func TestWalksStopWhenContextIsDone(t *testing.T) {
 	_, err = s.KnowsCommit(sc.TrailerCommit, sc.MainFirst)
 	require.ErrorIs(t, err, context.Canceled)
 
-	policyTip, err := sc.Git.GetReference(policy.Ref)
+	policyTip, err := sc.Git.GetReference(testutil.PolicyRef)
 	require.NoError(t, err)
 	_, err = s.GetFilePathsChangedByCommit(policyTip)
 	require.ErrorIs(t, err, context.Canceled)

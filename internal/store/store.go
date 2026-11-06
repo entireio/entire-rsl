@@ -202,32 +202,29 @@ func (s *Store) ReadBlob(blobID githash.Hash) ([]byte, error) {
 	return data, nil
 }
 
-// GetCommitMessage returns a commit's message, trimmed as gitinterface does.
-func (s *Store) GetCommitMessage(commitID githash.Hash) (string, error) {
+// GetCommitInfo returns a commit's tree, parents and message, as gitinterface
+// does: the message trimmed and nil parents for a root commit or a shallow
+// boundary.
+func (s *Store) GetCommitInfo(commitID githash.Hash) (gitstore.CommitInfo, error) {
 	commit, err := s.commit(commitID)
 	if err != nil {
-		return "", err
+		return gitstore.CommitInfo{}, err
 	}
-	return strings.TrimSpace(commit.Message), nil
+
+	treeID, err := fromGoGit(commit.TreeHash)
+	if err != nil {
+		return gitstore.CommitInfo{}, err
+	}
+	parents, err := s.parentIDs(commit)
+	if err != nil {
+		return gitstore.CommitInfo{}, err
+	}
+	return gitstore.CommitInfo{TreeID: treeID, ParentIDs: parents, Message: strings.TrimSpace(commit.Message)}, nil
 }
 
-// GetCommitTreeID returns a commit's tree.
-func (s *Store) GetCommitTreeID(commitID githash.Hash) (githash.Hash, error) {
-	commit, err := s.commit(commitID)
-	if err != nil {
-		return s.ZeroHash(), err
-	}
-	return fromGoGit(commit.TreeHash)
-}
-
-// GetCommitParentIDs returns a commit's parents, nil for a root commit or a
-// shallow boundary, as gitinterface does.
-func (s *Store) GetCommitParentIDs(commitID githash.Hash) ([]githash.Hash, error) {
-	commit, err := s.commit(commitID)
-	if err != nil {
-		return nil, err
-	}
-
+// parentIDs returns a commit's parents, nil for a root commit or a shallow
+// boundary.
+func (s *Store) parentIDs(commit *object.Commit) ([]githash.Hash, error) {
 	shallow, err := s.shallow()
 	if err != nil {
 		return nil, err
@@ -639,7 +636,7 @@ func (s *Store) GetFilePathsChangedByCommit(commitID githash.Hash) ([]string, er
 		return nil, err
 	}
 
-	parents, err := s.GetCommitParentIDs(commitID)
+	parents, err := s.parentIDs(commit)
 	if err != nil {
 		return nil, err
 	}

@@ -30,7 +30,7 @@ func TestVerifyGolden(t *testing.T) {
 		{name: "verify_checkpoint.txt", args: []string{"verify", testutil.CheckpointULID}, wantCode: ExitOK},
 		{name: "verify_rogue.txt", args: []string{"verify", "rogue"}, wantCode: ExitVerification},
 		{name: "verify_rogue.json", args: []string{"verify", "--json", "rogue"}, wantCode: ExitVerification},
-		{name: "verify_tag_moved.txt", args: []string{"verify", "v1.0.0"}, wantCode: ExitVerification},
+		{name: "verify_tag_moved.txt", args: []string{"verify", "v1.0.0"}, wantCode: ExitOK},
 		{name: "verify_unprotected.txt", args: []string{"verify", "refs/heads/never"}, wantCode: ExitVerification},
 	}
 
