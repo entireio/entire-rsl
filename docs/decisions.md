@@ -369,6 +369,23 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   that check), and fetching the verified branch too, which would write refs
   outside `refs/gittuf/`.
 
+## 2026-11-09: a diverged gittuf ref fails every fetch
+
+- **Context:** the user asked that a remote's gittuf refs that do not
+  fast-forward the local ones fail loudly with a non-zero exit everywhere
+  they are fetched, not only in `refresh`. `--fetch` warned and went on with
+  the local refs, and `refresh` exited 1 without an `Error:` line.
+- **Decision:** after any sync (`refresh`, `--fetch`, the missing-RSL prompt),
+  a diverged ref returns an error that names each diverged ref with its local
+  and remote commits and points at `refs/remotes/<remote>/gittuf/*`. It is
+  reported as `Error:` with exit 1. `refresh` still prints its table or JSON
+  first. `--fetch` and the prompt fail before the command reads the RSL, so
+  nothing is reported from refs the remote disagrees with. The missing-RSL
+  prompt only creates refs, so only a symbolic local gittuf ref diverges
+  there. Local refs are still never changed.
+- **Supersedes:** the 2026-11-04 decision to warn and go on with the local
+  refs under `--fetch`.
+
 ## 2026-10-21: Colour marks verification outcomes on a terminal
 
 - **Context:** the user asked for green and red on verification and on data
