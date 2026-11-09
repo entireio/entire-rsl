@@ -1,0 +1,11 @@
+Refresh currently errors if the remote has policy/rsl lines that are not FF. the same should take place across all --fetch commands.
+
+The error should be loud and return exit != 0. Ensure test coverage across the different usage points.
+
+---
+
+review with codex
+
+---
+
+commit changes
