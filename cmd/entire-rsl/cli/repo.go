@@ -199,8 +199,8 @@ func warnMissingGittufRefs(w io.Writer, remote string, updates []gitcli.RefUpdat
 
 // fetchLatest syncs the gittuf refs from the remote --fetch names, or the
 // only remote, as refresh does: missing local refs are created and existing
-// ones fast-forwarded. A diverged ref is left alone with a warning, and the
-// command goes on with the local refs.
+// ones fast-forwarded. A diverged ref is left alone and fails the command
+// before it reads the RSL.
 func (a *app) fetchLatest(ctx context.Context, r *repo.Repo) error {
 	want := a.fetchFrom
 	if want == fetchAnyRemote {
@@ -221,16 +221,28 @@ func (a *app) fetchLatest(ctx context.Context, r *repo.Repo) error {
 			fmt.Fprintf(a.opts.Stderr, "Created %s\n", sanitize.Line(u.Ref))
 		case gitcli.RefUpdated:
 			fmt.Fprintf(a.opts.Stderr, "Updated %s\n", sanitize.Line(u.Ref))
-		case gitcli.RefDiverged:
-			warnDiverged(a.opts.Stderr, u)
 		}
 	}
-	return nil
+	return divergedError(choice.name, updates)
 }
 
-// warnDiverged explains that a local gittuf ref was left as it was.
-func warnDiverged(w io.Writer, u gitcli.RefUpdate) {
-	fmt.Fprintf(w, "Warning: %s was left at %s: the remote's %s does not descend from it\n", sanitize.Line(u.Ref), u.Old, u.New)
+// divergedError names the local gittuf refs a sync left alone because the
+// remote's do not descend from them, or returns nil when there are none.
+// The caller reports it, sanitised, so it is not sanitised here.
+func divergedError(remote string, updates []gitcli.RefUpdate) error {
+	var b strings.Builder
+	for _, u := range updates {
+		if u.Status != gitcli.RefDiverged {
+			continue
+		}
+		fmt.Fprintf(&b, "\n  %s: local %s, remote %s (%s)", u.Ref, u.Old, u.New, commitsText(u, nil))
+	}
+	if b.Len() == 0 {
+		return nil
+	}
+	return fmt.Errorf("local gittuf refs have diverged from %s and were left unchanged:%s\n"+
+		"entire-rsl never overwrites a local gittuf ref: compare each with %s and resolve it with git",
+		remote, b.String(), gitcli.TrackingPrefix(remote)+"*")
 }
 
 // offerFetch fetches the gittuf refs from a remote when the repository has
@@ -267,7 +279,7 @@ func (a *app) offerFetch(ctx context.Context, r *repo.Repo) error {
 			fmt.Fprintf(a.opts.Stderr, "Created %s\n", sanitize.Line(u.Ref))
 		}
 	}
-	return nil
+	return divergedError(choice.name, updates)
 }
 
 func (a *app) interactive() bool {
