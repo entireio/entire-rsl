@@ -338,7 +338,8 @@ gittuf policy do.
 missing ones are created and existing ones are fast-forwarded. Each ref shows
 how many commits it gained, and the RSL also its entry numbers before and
 after, such as `+2 commits (entry #14 → #16)`. A local ref the remote's does
-not descend from is left alone and reported as `diverged`, with exit code 1.
+not descend from is left alone and reported as `diverged`, then an error on
+stderr names each diverged ref, and the command exits 1.
 When several remotes are configured and none is named, `origin` is offered
 first. Branches, tags and checkpoint refs are not fetched, so fetch
 them with git before comparing them with the RSL. Any fetch is refused when the
@@ -351,7 +352,8 @@ repository's config cannot make the fetch run a program.
 `--fetch` (or `--fetch=<remote>`) makes any command fetch the latest gittuf
 refs first, as `refresh` does, so `entire rsl verify --fetch main` checks the
 ref against the remote's latest RSL. A diverged local gittuf ref is left alone
-with a warning, and the command reads the local refs. Only gittuf refs are
+and the command fails with exit 1 before reading the RSL, naming each diverged
+ref. The same holds when a missing RSL is fetched at the prompt. Only gittuf refs are
 fetched, so a local branch behind the fetched RSL tip reports `behind`, and
 when it is not at a recorded tip, verification ends in `error` until the
 branch is fetched with git.

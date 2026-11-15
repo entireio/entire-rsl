@@ -64,7 +64,8 @@ when it fetches gittuf refs: with --fetch, with refresh, or when the
 repository has no local RSL and you agree to fetch it. Then it updates
 refs/remotes/<remote>/gittuf/*, creates missing refs/gittuf/* refs and, with
 --fetch or refresh, fast-forwards existing ones. A local gittuf ref the
-remote's does not descend from is left as it was.
+remote's does not descend from is left as it was, and fails the command
+with exit 1.
 
 Exit codes:
   0  success, or verification passed

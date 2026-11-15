@@ -197,23 +197,49 @@ func TestFetchFlagCannotCompareALocalCommitWithAnUnfetchedTip(t *testing.T) {
 	assert.Contains(t, res.stdout, "the object the RSL tip records is not in the local repository")
 }
 
-func TestFetchFlagWarnsAboutADivergedRSL(t *testing.T) {
+func TestFetchFlagFailsOnADivergedRSL(t *testing.T) {
+	t.Parallel()
+
+	for _, args := range [][]string{
+		{"branch", "main"},
+		{"branch", "main", "--json"},
+		{"tag", "v1.0.0"},
+		{"checkpoint", testutil.CheckpointULID},
+		{"verify", "refs/heads/main"},
+		{"verify", "refs/heads/main", "--json"},
+		{"log", "--limit", "1"},
+		{"entry", "1"},
+	} {
+		t.Run(strings.Join(args, " "), func(t *testing.T) {
+			t.Parallel()
+
+			sc := testutil.NewScenario(t)
+			clone := sc.Clone(t, "origin")
+			localTip := divergeRSL(t, sc, clone)
+
+			res := execute(t, inRepo(clone), append(args, "--fetch")...)
+
+			assert.Equal(t, ExitFailure, res.code)
+			assert.Empty(t, res.stdout, "the command must not run on a diverged RSL")
+			assert.Contains(t, res.stderr, "Error: local gittuf refs have diverged from origin and were left unchanged:\n  refs/gittuf/reference-state-log: local "+localTip)
+			assert.Equal(t, localTip, gitOut(t, clone, "rev-parse", "refs/gittuf/reference-state-log"))
+		})
+	}
+}
+
+func TestPromptToFetchFailsOnADivergedRef(t *testing.T) {
 	t.Parallel()
 
 	sc := testutil.NewScenario(t)
 	clone := sc.Clone(t, "origin")
-	require.Equal(t, ExitOK, execute(t, inRepo(clone), "refresh").code)
+	gitOut(t, clone, "symbolic-ref", "refs/gittuf/policy", "refs/heads/main")
 
-	tree := gitOut(t, clone, "rev-parse", "refs/gittuf/reference-state-log^{tree}")
-	localTip := gitOut(t, clone, "-c", "user.name=Local", "-c", "user.email=local@example.com", "commit-tree", tree, "-p", "refs/gittuf/reference-state-log", "-m", "local only")
-	gitOut(t, clone, "update-ref", "refs/gittuf/reference-state-log", localTip)
-	sc.Commit("refs/heads/main", "remote only")
-	sc.Record(sc.Cluster, "refs/heads/main", nil)
+	res := executeInteractive(t, inRepo(clone), true, "y\n", "log", "--limit", "1")
 
-	res := execute(t, inRepo(clone), "log", "--fetch", "--limit", "1")
-
-	assert.Contains(t, res.stderr, "Warning: refs/gittuf/reference-state-log was left at "+localTip)
-	assert.Equal(t, localTip, gitOut(t, clone, "rev-parse", "refs/gittuf/reference-state-log"))
+	assert.Equal(t, ExitFailure, res.code)
+	assert.Empty(t, res.stdout)
+	assert.Contains(t, res.stderr, "Error: local gittuf refs have diverged from origin and were left unchanged:\n  refs/gittuf/policy: ")
+	assert.Equal(t, "refs/heads/main", gitOut(t, clone, "symbolic-ref", "refs/gittuf/policy"))
 }
 
 func TestFetchFlagWithSeveralRemotes(t *testing.T) {
@@ -344,11 +370,12 @@ func TestFetchNeverOverwritesExistingLocalGittufRefs(t *testing.T) {
 
 	res := execute(t, inRepo(clone), "log", "--fetch", "--limit", "1")
 
-	require.Equal(t, ExitOK, res.code, res.stderr)
+	assert.Equal(t, ExitFailure, res.code)
 	assert.Equal(t, before, gitOut(t, clone, "rev-parse", "refs/gittuf/policy"), "the existing local policy ref is untouched")
 	assert.Equal(t, gitOut(t, sc.Dir, "rev-parse", "refs/gittuf/policy"), gitOut(t, clone, "rev-parse", "refs/remotes/origin/gittuf/policy"))
 	assert.Contains(t, res.stderr, "Created refs/gittuf/reference-state-log")
 	assert.NotContains(t, res.stderr, "Created refs/gittuf/policy\n")
+	assert.Contains(t, res.stderr, "Error: local gittuf refs have diverged from origin and were left unchanged:\n  refs/gittuf/policy: local "+before)
 }
 
 func TestFetchIgnoresConfiguredRefmapAndPruning(t *testing.T) {

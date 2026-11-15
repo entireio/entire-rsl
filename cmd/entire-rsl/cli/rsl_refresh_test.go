@@ -64,27 +64,44 @@ func TestRefreshFastForwardsTheLocalRSL(t *testing.T) {
 	assert.Equal(t, "unchanged", refreshStatuses(t, updated.stdout)["refs/gittuf/policy"])
 }
 
-func TestRefreshLeavesDivergedRefsAlone(t *testing.T) {
-	t.Parallel()
+// divergeRSL refreshes clone, then adds a local RSL entry the remote never
+// saw and a remote entry the clone has not fetched, so the histories
+// diverge. It returns the local tip.
+func divergeRSL(t *testing.T, sc *testutil.Scenario, clone string) string {
+	t.Helper()
 
-	sc := testutil.NewScenario(t)
-	clone := sc.Clone(t, "origin")
 	require.Equal(t, ExitOK, execute(t, inRepo(clone), "refresh").code)
-
-	// A local entry the remote never saw, then a remote entry: the histories
-	// diverge.
 	tree := gitOut(t, clone, "rev-parse", "refs/gittuf/reference-state-log^{tree}")
 	localTip := gitOut(t, clone, "-c", "user.name=Local", "-c", "user.email=local@example.com", "commit-tree", tree, "-p", "refs/gittuf/reference-state-log", "-m", "local only")
 	gitOut(t, clone, "update-ref", "refs/gittuf/reference-state-log", localTip)
 	sc.Commit("refs/heads/main", "remote only")
 	sc.Record(sc.Cluster, "refs/heads/main", nil)
+	return localTip
+}
 
-	res := execute(t, inRepo(clone), "refresh")
+func TestRefreshFailsOnDivergedRefs(t *testing.T) {
+	t.Parallel()
 
-	assert.Equal(t, ExitFailure, res.code)
-	assert.Contains(t, res.stdout, "diverged")
-	assert.Contains(t, res.stdout, "remote +1, local +1")
-	assert.Contains(t, res.stderr, "Warning: refs/gittuf/reference-state-log was left at "+localTip)
+	sc := testutil.NewScenario(t)
+	clone := sc.Clone(t, "origin")
+	localTip := divergeRSL(t, sc, clone)
+	remoteTip := gitOut(t, sc.Dir, "rev-parse", "refs/gittuf/reference-state-log")
+
+	text := execute(t, inRepo(clone), "refresh")
+
+	assert.Equal(t, ExitFailure, text.code)
+	assert.Contains(t, text.stdout, "diverged")
+	assert.Contains(t, text.stdout, "remote +1, local +1")
+	assert.Contains(t, text.stderr, "Error: local gittuf refs have diverged from origin and were left unchanged:\n"+
+		"  refs/gittuf/reference-state-log: local "+localTip+", remote "+remoteTip+" (remote +1, local +1)\n"+
+		"entire-rsl never overwrites a local gittuf ref: compare each with refs/remotes/origin/gittuf/* and resolve it with git")
+	assert.Equal(t, localTip, gitOut(t, clone, "rev-parse", "refs/gittuf/reference-state-log"))
+
+	asJSON := execute(t, inRepo(clone), "refresh", "--json")
+
+	assert.Equal(t, ExitFailure, asJSON.code)
+	assert.Equal(t, "diverged", refreshStatuses(t, asJSON.stdout)["refs/gittuf/reference-state-log"])
+	assert.Contains(t, asJSON.stderr, "Error: local gittuf refs have diverged from origin")
 	assert.Equal(t, localTip, gitOut(t, clone, "rev-parse", "refs/gittuf/reference-state-log"))
 }
 
@@ -132,6 +149,7 @@ func TestRefreshNeverWritesThroughASymbolicGittufRef(t *testing.T) {
 	res := execute(t, inRepo(clone), "refresh", "--json")
 
 	assert.Equal(t, ExitFailure, res.code)
+	assert.Contains(t, res.stderr, ", local ref is symbolic)")
 	policy := refreshRefs(t, res.stdout)["refs/gittuf/policy"]
 	assert.Equal(t, "diverged", policy.Status)
 	assert.True(t, policy.Symbolic)

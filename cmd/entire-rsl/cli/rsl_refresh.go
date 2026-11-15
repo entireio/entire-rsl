@@ -15,10 +15,6 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// errDiverged is returned when a local gittuf ref was left alone because the
-// remote's does not descend from it.
-var errDiverged = errors.New("some local gittuf refs have diverged from the remote and were left unchanged")
-
 type rslEntriesJSON struct {
 	Old uint64 `json:"old,omitempty"`
 	New uint64 `json:"new"`
@@ -61,7 +57,8 @@ refs/gittuf/* refs:
   updated    the remote's ref fast-forwarded the local one
   unchanged  the local ref already matched
   diverged   the remote's ref does not descend from the local one, so the
-             local ref was left as it was (exit 1)
+             local ref was left as it was. The table is still printed, then
+             an error names each diverged ref (exit 1)
 
 Only gittuf refs are written. Branches, tags and checkpoint refs are not
 fetched: fetch them with git to compare them with the RSL.
@@ -92,11 +89,6 @@ terminal.`,
 			}
 			entries := a.rslEntryNumbers(cmd.Context(), updates)
 
-			diverged := false
-			for _, u := range updates {
-				diverged = diverged || u.Status == gitcli.RefDiverged
-			}
-
 			if asJSON {
 				out := refreshJSON{SchemaVersion: schemaVersion, Remote: choice.name, Refs: make([]refreshRefJSON, 0, len(updates))}
 				for _, u := range updates {
@@ -113,10 +105,7 @@ terminal.`,
 				return err
 			}
 
-			if diverged {
-				return silentExit(ExitFailure, errDiverged)
-			}
-			return nil
+			return divergedError(choice.name, updates)
 		},
 	}
 	cmd.Flags().BoolVar(&asJSON, "json", false, "print JSON")
@@ -225,12 +214,6 @@ func writeRefreshTable(cmd *cobra.Command, st styles, updates []gitcli.RefUpdate
 	}
 	if err := tw.Flush(); err != nil {
 		return fmt.Errorf("write table: %w", err)
-	}
-
-	for _, u := range updates {
-		if u.Status == gitcli.RefDiverged {
-			warnDiverged(cmd.ErrOrStderr(), u)
-		}
 	}
 	return nil
 }
