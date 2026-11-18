@@ -1,6 +1,6 @@
 module github.com/entireio/entire-rsl
 
-go 1.27.3
+go 1.27.4
 
 replace github.com/gittuf/gittuf => github.com/pjbgf/gittuf v0.0.0-20261106182955-1f01e527aa4d
 
