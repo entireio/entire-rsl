@@ -1,0 +1,20 @@
+review changes with codex
+
+---
+
+<pasted_content id="14b2">
+- Add a workflow-level concurrency group. Run B then waits for A to publish and fails at GoReleaser's preflight, because the release is already immutable:
+concurrency:
+  group: release-${{ github.ref }}
+  cancel-in-progress: false
+- Skip publishing by release ID. GoReleaser does not hand the ID to later steps, so you would look it up by tag again, which is the same race. Serialization already closes it.
+</pasted_content id="14b2">
+
+---
+
+That should fix the feedback:
+P1 — An overlapping run can publish a partially uploaded release. The workflow verifies files in its own dist/, then looks up the draft by tag to publish it. If a second run for that tag replaces the first draft, the first run can finish verification and publish the replacement while the second run is still uploading. Publication freezes the assets, so missing archives or signatures can't be added afterward. Serialize the full workflow per tag and publish by the release ID associated with the verified uploads. I traced this race through the workflow and GoReleaser's draft-replacement code. Publish step, line 78 · GoReleaser draft replacement
+
+---
+
+go ahead
