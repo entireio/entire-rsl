@@ -576,13 +576,19 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   the workflow's OIDC identity into `checksums.txt.sigstore.json`.
   `actions/attest` records build provenance for every file in
   `checksums.txt`. The job then verifies the signature, the checksums and
-  the provenance. goreleaser uploads everything to a draft that a
-  maintainer publishes, so every asset is in place before the release
-  becomes immutable. Attestations live in GitHub's attestation API, not in
-  the release. `replace_existing_draft` keeps a re-run from leaving a second
-  draft, and `preflight.fail_on_error` stops a run for a tag that already
-  has an immutable release. `prerelease: auto` marks `-rc.N` and other
-  suffixed tags as pre-releases on the draft. cosign and syft are pinned in
+  the provenance. goreleaser uploads everything to a draft, and the
+  workflow publishes it only after those checks pass, so every asset is in
+  place and verified before the release becomes immutable. goreleaser's
+  `changelog.use: github-native` fills the release body through GitHub's
+  generate-notes API, as the "Generate release notes" button does.
+  Attestations live in GitHub's attestation API, not in the release.
+  `replace_existing_draft` keeps a re-run from leaving a second draft, and
+  `preflight.fail_on_error` stops a run for a tag that already has an
+  immutable release. A concurrency group per tag, which never cancels a
+  run in progress, keeps two runs from racing, where one deletes the other's
+  draft and the other publishes a draft still being uploaded.
+  `prerelease: auto` marks `-rc.N` and other suffixed tags as pre-releases
+  on the draft. cosign and syft are pinned in
   `mise.toml`.
   `mise run snapshot` skips signing, which needs the CI identity.
 - **Consequences:** a published release cannot be fixed. A broken one needs a
@@ -594,5 +600,31 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
 - **Rejected:** signing each archive (the signed checksums cover them),
   CycloneDX (SPDX is goreleaser's default and what GitHub's dependency graph
   exports), uploading signatures after goreleaser publishes (refused once
-  the release is immutable), and the mise-action cache in the release job
-  (zizmor `cache-poisoning`).
+  the release is immutable), publishing by release ID (goreleaser does not
+  hand the ID on, so finding it means a lookup by tag again, and the
+  concurrency group already closes the race), and the mise-action cache in
+  the release job (zizmor `cache-poisoning`).
+
+## 2026-11-26: Release notes start at the previous stable tag
+
+- **Context:** goreleaser hands GitHub's generate-notes API the previous git
+  tag as the start point. When `v0.2.0` followed `v0.2.0-rc.2`, its notes
+  listed only what changed since that candidate. The workflow publishes
+  without review, so nobody would catch it. A local run of goreleaser 2.18.3
+  on a scratch repository also showed that when `v0.3.0` and `v0.3.0-rc.1`
+  point at the same commit, pushing `v0.3.0` builds and releases
+  `0.3.0-rc.1`, because `git tag --points-at HEAD` sorts the candidate first.
+  Setting `GITHUB_REF` as Actions does changed neither result.
+- **Decision:** `git.ignore_tags: ["*-*"]` in `.goreleaser.yaml` keeps
+  pre-release tags from ever being the previous tag. The release workflow
+  sets `GORELEASER_CURRENT_TAG` to the pushed tag, so the current tag is
+  never guessed and a candidate tag can still be released.
+- **Consequences:** a candidate's notes cover everything since the last
+  stable release, not since the previous candidate. A tag with a hyphen is
+  never a start point, which only pre-release tags have under `vX.Y.Z`.
+- **Rejected:** `ignore_tags: ["{{ if not .Prerelease }}*-*{{ end }}"]`
+  (goreleaser renders it before it knows the current tag, so `.Prerelease`
+  is always empty and it behaves like `*-*`), `git.tag_sort: semver` with
+  `prerelease_suffix` (failed with "git doesn't contain any tags"), and
+  computing `GORELEASER_PREVIOUS_TAG` in the workflow (more shell for the
+  same result).
