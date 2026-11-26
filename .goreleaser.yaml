@@ -70,13 +70,16 @@ signs:
 snapshot:
   version_template: "{{ incpatch .Version }}-next"
 
+# GitHub's generate-notes API writes the release body, as the "Generate
+# release notes" button does. It lists the pull requests merged since the
+# previous tag.
 changelog:
-  disable: true
+  use: github-native
 
 # Immutable releases freeze a release's assets and tag once it is published.
-# goreleaser uploads every asset, signature and SBOM included, to a draft,
-# which stays a draft until a maintainer publishes it. Nothing is uploaded
-# after that.
+# goreleaser uploads every asset, signature and SBOM included, to a draft.
+# The release workflow publishes the draft only after it has verified the
+# signature, checksums and provenance. Nothing is uploaded after that.
 release:
   draft: true
   # Marks a tag with a pre-release suffix, such as v1.2.0-rc.1, as a

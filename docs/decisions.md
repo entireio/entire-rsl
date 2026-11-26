@@ -576,12 +576,15 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   the workflow's OIDC identity into `checksums.txt.sigstore.json`.
   `actions/attest` records build provenance for every file in
   `checksums.txt`. The job then verifies the signature, the checksums and
-  the provenance. goreleaser uploads everything to a draft that a
-  maintainer publishes, so every asset is in place before the release
-  becomes immutable. Attestations live in GitHub's attestation API, not in
-  the release. `replace_existing_draft` keeps a re-run from leaving a second
-  draft, and `preflight.fail_on_error` stops a run for a tag that already
-  has an immutable release. `prerelease: auto` marks `-rc.N` and other
+  the provenance. goreleaser uploads everything to a draft, and the
+  workflow publishes it only after those checks pass, so every asset is in
+  place and verified before the release becomes immutable. goreleaser's
+  `changelog.use: github-native` fills the release body through GitHub's
+  generate-notes API, as the "Generate release notes" button does.
+  Attestations live in GitHub's attestation API, not in the release.
+  `replace_existing_draft` keeps a re-run from leaving a second draft, and
+  `preflight.fail_on_error` stops a run for a tag that already has an
+  immutable release. `prerelease: auto` marks `-rc.N` and other
   suffixed tags as pre-releases on the draft. cosign and syft are pinned in
   `mise.toml`.
   `mise run snapshot` skips signing, which needs the CI identity.

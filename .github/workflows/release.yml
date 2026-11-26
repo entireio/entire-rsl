@@ -12,7 +12,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     permissions:
-      # Create the draft release and upload its assets.
+      # Create the draft release, upload its assets and publish it.
       contents: write
       # Mint the OIDC token behind the keyless cosign signature and the
       # provenance attestation.
@@ -45,7 +45,7 @@ jobs:
         with:
           subject-checksums: ./dist/checksums.txt
 
-      # Checks what users will check, before a maintainer publishes the
+      # Checks what users will check, before the next step publishes the
       # draft and makes it immutable.
       - name: Verify signature, checksums and provenance
         env:
@@ -64,3 +64,12 @@ jobs:
               --repo "$GITHUB_REPOSITORY" \
               --signer-workflow "$GITHUB_REPOSITORY/.github/workflows/release.yml"
           done
+
+      # Publishing makes the release immutable, so it runs last and only
+      # when every check above passed. A failed run leaves the draft for a
+      # re-run, which replaces it.
+      - name: Publish release
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          TAG: ${{ github.ref_name }}
+        run: gh release edit "$TAG" --repo "$GITHUB_REPOSITORY" --draft=false

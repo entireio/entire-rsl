@@ -389,8 +389,9 @@ records in [docs/reviews/](docs/reviews/), and benchmarks in
 1. Push a `v*` tag, for example `git tag v1.2.0 && git push origin v1.2.0`.
    A suffix such as `-rc.1` marks the release as a pre-release.
 2. Wait for the Release workflow. It uploads every asset to a draft release
-   and verifies the signature, checksums and provenance.
-3. Review the draft on the releases page and publish it.
+   with notes generated from the pull requests merged since the previous
+   tag, verifies the signature, checksums and provenance, and then publishes
+   the release.
 
 Never create a release from the releases page. Publishing makes a release
 immutable before the workflow has uploaded anything, and the workflow then
