@@ -1,0 +1,11 @@
+With changelog.use: github-native, goreleaser gives GitHub's generate-notes API the previous git tag as the start point. When a stable tag follows release candidates, that start point is the last -rc.N tag. The published stable release then lists only the PRs merged since that candidate, not everything since the last stable release. Because the workflow now publishes on its own, nobody reviews the notes first.
+
+Let's run a local test to confirm what's the correct setting for this
+
+---
+
+yes, go ahead
+
+---
+
+go ahead
