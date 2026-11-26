@@ -1,0 +1,7 @@
+Improve the release process so the GH release:
+- description comes auto populated (e.g. as if the "Generate release notes" was clicked)
+- the status is released as opposed to draft
+
+---
+
+go ahead
