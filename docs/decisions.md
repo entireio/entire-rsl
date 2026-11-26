@@ -584,8 +584,11 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   Attestations live in GitHub's attestation API, not in the release.
   `replace_existing_draft` keeps a re-run from leaving a second draft, and
   `preflight.fail_on_error` stops a run for a tag that already has an
-  immutable release. `prerelease: auto` marks `-rc.N` and other
-  suffixed tags as pre-releases on the draft. cosign and syft are pinned in
+  immutable release. A concurrency group per tag, which never cancels a
+  run in progress, keeps two runs from racing, where one deletes the other's
+  draft and the other publishes a draft still being uploaded.
+  `prerelease: auto` marks `-rc.N` and other suffixed tags as pre-releases
+  on the draft. cosign and syft are pinned in
   `mise.toml`.
   `mise run snapshot` skips signing, which needs the CI identity.
 - **Consequences:** a published release cannot be fixed. A broken one needs a
@@ -597,8 +600,10 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
 - **Rejected:** signing each archive (the signed checksums cover them),
   CycloneDX (SPDX is goreleaser's default and what GitHub's dependency graph
   exports), uploading signatures after goreleaser publishes (refused once
-  the release is immutable), and the mise-action cache in the release job
-  (zizmor `cache-poisoning`).
+  the release is immutable), publishing by release ID (goreleaser does not
+  hand the ID on, so finding it means a lookup by tag again, and the
+  concurrency group already closes the race), and the mise-action cache in
+  the release job (zizmor `cache-poisoning`).
 
 ## 2026-11-26: Release notes start at the previous stable tag
 
