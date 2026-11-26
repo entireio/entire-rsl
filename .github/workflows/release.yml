@@ -36,6 +36,9 @@ jobs:
       - name: Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          # Without it goreleaser picks v1.2.0-rc.1 over v1.2.0 when both
+          # tags point at the same commit, and releases the candidate.
+          GORELEASER_CURRENT_TAG: ${{ github.ref_name }}
         run: goreleaser release --clean
 
       # Stored by GitHub's attestation API, not as a release asset, so it

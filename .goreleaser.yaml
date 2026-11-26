@@ -76,6 +76,15 @@ snapshot:
 changelog:
   use: github-native
 
+# Pre-release tags such as v1.2.0-rc.1 are never the previous tag, so a
+# stable release lists everything since the last stable release, not only
+# what changed since its last candidate. goreleaser renders this list before
+# it knows the current tag, so a condition on .Prerelease has no effect. The
+# release workflow names the current tag through GORELEASER_CURRENT_TAG.
+git:
+  ignore_tags:
+    - "*-*"
+
 # Immutable releases freeze a release's assets and tag once it is published.
 # goreleaser uploads every asset, signature and SBOM included, to a draft.
 # The release workflow publishes the draft only after it has verified the

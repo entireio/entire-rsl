@@ -599,3 +599,27 @@ entireio/cli `main` as of 2026-10-19 (`21836151e`).
   exports), uploading signatures after goreleaser publishes (refused once
   the release is immutable), and the mise-action cache in the release job
   (zizmor `cache-poisoning`).
+
+## 2026-11-26: Release notes start at the previous stable tag
+
+- **Context:** goreleaser hands GitHub's generate-notes API the previous git
+  tag as the start point. When `v0.2.0` followed `v0.2.0-rc.2`, its notes
+  listed only what changed since that candidate. The workflow publishes
+  without review, so nobody would catch it. A local run of goreleaser 2.18.3
+  on a scratch repository also showed that when `v0.3.0` and `v0.3.0-rc.1`
+  point at the same commit, pushing `v0.3.0` builds and releases
+  `0.3.0-rc.1`, because `git tag --points-at HEAD` sorts the candidate first.
+  Setting `GITHUB_REF` as Actions does changed neither result.
+- **Decision:** `git.ignore_tags: ["*-*"]` in `.goreleaser.yaml` keeps
+  pre-release tags from ever being the previous tag. The release workflow
+  sets `GORELEASER_CURRENT_TAG` to the pushed tag, so the current tag is
+  never guessed and a candidate tag can still be released.
+- **Consequences:** a candidate's notes cover everything since the last
+  stable release, not since the previous candidate. A tag with a hyphen is
+  never a start point, which only pre-release tags have under `vX.Y.Z`.
+- **Rejected:** `ignore_tags: ["{{ if not .Prerelease }}*-*{{ end }}"]`
+  (goreleaser renders it before it knows the current tag, so `.Prerelease`
+  is always empty and it behaves like `*-*`), `git.tag_sort: semver` with
+  `prerelease_suffix` (failed with "git doesn't contain any tags"), and
+  computing `GORELEASER_PREVIOUS_TAG` in the workflow (more shell for the
+  same result).

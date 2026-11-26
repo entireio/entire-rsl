@@ -390,7 +390,7 @@ records in [docs/reviews/](docs/reviews/), and benchmarks in
    A suffix such as `-rc.1` marks the release as a pre-release.
 2. Wait for the Release workflow. It uploads every asset to a draft release
    with notes generated from the pull requests merged since the previous
-   tag, verifies the signature, checksums and provenance, and then publishes
+   stable tag, verifies the signature, checksums and provenance, and then publishes
    the release.
 
 Never create a release from the releases page. Publishing makes a release
